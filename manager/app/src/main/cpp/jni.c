@@ -327,7 +327,6 @@ NativeBridgeNP(getSusfsFeatureStatus, jobject) {
     jfieldID statusSpoofCmdlineField = GetEnvironment()->GetFieldID(env, cls, "statusSpoofCmdline", "Z");
     jfieldID statusOpenRedirectField = GetEnvironment()->GetFieldID(env, cls, "statusOpenRedirect", "Z");
     jfieldID statusMagicMountField = GetEnvironment()->GetFieldID(env, cls, "statusMagicMount", "Z");
-    jfieldID statusOverlayfsAutoKstatField = GetEnvironment()->GetFieldID(env, cls, "statusOverlayfsAutoKstat", "Z");
     jfieldID statusSusSuField = GetEnvironment()->GetFieldID(env, cls, "statusSusSu", "Z");
 
     GetEnvironment()->SetBooleanField(env, obj, statusSusPathField, status.status_sus_path);
@@ -343,7 +342,6 @@ NativeBridgeNP(getSusfsFeatureStatus, jobject) {
     GetEnvironment()->SetBooleanField(env, obj, statusSpoofCmdlineField, status.status_spoof_cmdline);
     GetEnvironment()->SetBooleanField(env, obj, statusOpenRedirectField, status.status_open_redirect);
     GetEnvironment()->SetBooleanField(env, obj, statusMagicMountField, status.status_magic_mount);
-    GetEnvironment()->SetBooleanField(env, obj, statusOverlayfsAutoKstatField, status.status_overlayfs_auto_kstat);
     GetEnvironment()->SetBooleanField(env, obj, statusSusSuField, status.status_sus_su);
 
     return obj;

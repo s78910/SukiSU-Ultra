@@ -688,11 +688,10 @@ fun rememberSelectKmiDialog(onSelected: (String?) -> Unit): DialogHandle {
         }
 
         var selection by remember { mutableStateOf<String?>(null) }
-        val backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme.copy(
-                surface = backgroundColor
+                surface = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
             ListDialog(state = rememberUseCaseState(visible = true, onFinishedRequest = {

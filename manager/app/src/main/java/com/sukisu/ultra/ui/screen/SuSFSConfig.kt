@@ -83,6 +83,7 @@ import com.sukisu.ultra.ui.screen.extensions.SusPathsContent
 import com.sukisu.ultra.ui.screen.extensions.SusMountsContent
 import com.sukisu.ultra.ui.screen.extensions.TryUmountContent
 import com.sukisu.ultra.ui.screen.extensions.KstatConfigContent
+import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion_1_5_8
 import kotlinx.coroutines.launch
 
 /**
@@ -98,7 +99,13 @@ enum class SuSFSTab(val displayNameRes: Int) {
     ENABLED_FEATURES(R.string.susfs_tab_enabled_features);
 
     companion object {
-        fun getAllTabs(): List<SuSFSTab> = entries
+        fun getAllTabs(isSusVersion_1_5_8: Boolean): List<SuSFSTab> {
+            return if (isSusVersion_1_5_8) {
+                entries.toList()
+            } else {
+                entries.filter { it != PATH_SETTINGS }
+            }
+        }
     }
 }
 
@@ -137,6 +144,9 @@ fun SuSFSConfigScreen(
     var tryUmounts by remember { mutableStateOf(emptySet<String>()) }
     var androidDataPath by remember { mutableStateOf("") }
     var sdcardPath by remember { mutableStateOf("") }
+
+    // SUS挂载隐藏控制状态
+    var hideSusMountsForAllProcs by remember { mutableStateOf(true) }
 
     // Kstat配置相关状态
     var kstatConfigs by remember { mutableStateOf(emptySet<String>()) }
@@ -180,7 +190,8 @@ fun SuSFSConfigScreen(
     var showResetUmountsDialog by remember { mutableStateOf(false) }
     var showResetKstatDialog by remember { mutableStateOf(false) }
 
-    val allTabs = SuSFSTab.getAllTabs()
+    val allTabs = SuSFSTab.getAllTabs(isSusVersion_1_5_8())
+
 
     // 实时判断是否可以启用开机自启动
     val canEnableAutoStart by remember {
@@ -223,6 +234,7 @@ fun SuSFSConfigScreen(
         sdcardPath = SuSFSManager.getSdcardPath(context)
         kstatConfigs = SuSFSManager.getKstatConfigs(context)
         addKstatPaths = SuSFSManager.getAddKstatPaths(context)
+        hideSusMountsForAllProcs = SuSFSManager.getHideSusMountsForAllProcs(context)
 
         // 加载槽位信息
         loadSlotInfo()
@@ -1533,8 +1545,13 @@ fun SuSFSConfigScreen(
                         )
                     }
                     SuSFSTab.SUS_MOUNTS -> {
+                        // 检查版本支持
+                        val isSusVersion_1_5_8 = remember { SuSFSManager.isSusVersion_1_5_8() }
+
                         SusMountsContent(
                             susMounts = susMounts,
+                            hideSusMountsForAllProcs = hideSusMountsForAllProcs,
+                            isSusVersion_1_5_8 = isSusVersion_1_5_8,
                             isLoading = isLoading,
                             onAddMount = { showAddMountDialog = true },
                             onRemoveMount = { mount ->
@@ -1545,9 +1562,19 @@ fun SuSFSConfigScreen(
                                     }
                                     isLoading = false
                                 }
+                            },
+                            onToggleHideSusMountsForAllProcs = { hideForAll ->
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    if (SuSFSManager.setHideSusMountsForAllProcs(context, hideForAll)) {
+                                        hideSusMountsForAllProcs = hideForAll
+                                    }
+                                    isLoading = false
+                                }
                             }
                         )
                     }
+
                     SuSFSTab.TRY_UMOUNT -> {
                         TryUmountContent(
                             tryUmounts = tryUmounts,

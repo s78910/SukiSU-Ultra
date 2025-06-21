@@ -134,6 +134,16 @@ object ScriptGenerator {
         kstatConfigs: Set<String>,
         addKstatPaths: Set<String>
     ) {
+        // 添加Kstat路径
+        if (addKstatPaths.isNotEmpty()) {
+            appendLine("# 添加Kstat路径")
+            addKstatPaths.forEach { path ->
+                appendLine("\"${'$'}SUSFS_BIN\" add_sus_kstat '$path'")
+                appendLine("echo \"$(get_current_time): 添加Kstat路径: $path\" >> \"${'$'}LOG_FILE\"")
+            }
+            appendLine()
+        }
+
         // 添加Kstat静态配置
         if (kstatConfigs.isNotEmpty()) {
             appendLine("# 添加Kstat静态配置")
@@ -142,19 +152,12 @@ object ScriptGenerator {
                 if (parts.size >= 13) {
                     val path = parts[0]
                     val params = parts.drop(1).joinToString("' '", "'", "'")
-                    appendLine("\"${'$'}SUSFS_BIN\" add_sus_kstat_statically $params")
+                    appendLine("\"${'$'}SUSFS_BIN\" add_sus_kstat_statically '$path' $params")
                     appendLine("echo \"$(get_current_time): 添加Kstat静态配置: $path\" >> \"${'$'}LOG_FILE\"")
-                }
-            }
-            appendLine()
-        }
 
-        // 添加Kstat路径
-        if (addKstatPaths.isNotEmpty()) {
-            appendLine("# 添加Kstat路径")
-            addKstatPaths.forEach { path ->
-                appendLine("\"${'$'}SUSFS_BIN\" add_sus_kstat '$path'")
-                appendLine("echo \"$(get_current_time): 添加Kstat路径: $path\" >> \"${'$'}LOG_FILE\"")
+                    appendLine("\"${'$'}SUSFS_BIN\" update_sus_kstat '$path'")
+                    appendLine("echo \"$(get_current_time): 更新Kstat配置: $path\" >> \"${'$'}LOG_FILE\"")
+                }
             }
             appendLine()
         }
@@ -351,7 +354,10 @@ object ScriptGenerator {
     /**
      * 生成boot-completed.sh脚本内容
      */
-    fun generateBootCompletedScript(targetPath: String): String {
+    fun generateBootCompletedScript(
+        targetPath: String,
+        hideSusMountsForAllProcs: Boolean = true
+    ): String {
         return buildString {
             appendLine("#!/system/bin/sh")
             appendLine("# SuSFS Boot-Completed Script")
@@ -363,6 +369,24 @@ object ScriptGenerator {
             appendLine()
             appendLine(generateBinaryCheck(targetPath))
             appendLine()
+
+            // SUS挂载隐藏控制仅限1.5.8及以上版本
+            appendLine("# 设置SUS挂载隐藏控制（仅限1.5.8及以上版本）")
+            appendLine("SUSFS_VERSION=$(${'$'}SUSFS_BIN show version 2>/dev/null | grep -o 'v[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+' | head -1)")
+            appendLine("if [ -n \"${'$'}SUSFS_VERSION\" ]; then")
+            appendLine("    VERSION_NUM=$(echo \"${'$'}SUSFS_VERSION\" | sed 's/v//' | awk -F. '{printf \"%d%02d%02d\", $1, $2, $3}')")
+            appendLine("    if [ \"${'$'}VERSION_NUM\" -ge 10508 ]; then")
+            val hideValue = if (hideSusMountsForAllProcs) 1 else 0
+            appendLine("        \"${'$'}SUSFS_BIN\" hide_sus_mnts_for_all_procs $hideValue")
+            appendLine("        echo \"$(get_current_time): SUS挂载隐藏控制设置为: ${if (hideSusMountsForAllProcs) "对所有进程隐藏" else "仅对非KSU进程隐藏"}\" >> \"${'$'}LOG_FILE\"")
+            appendLine("    else")
+            appendLine("        echo \"$(get_current_time): 当前版本 ${'$'}SUSFS_VERSION 不支持SUS挂载隐藏控制功能，需要1.5.8及以上版本\" >> \"${'$'}LOG_FILE\"")
+            appendLine("    fi")
+            appendLine("else")
+            appendLine("    echo \"$(get_current_time): 无法获取SuSFS版本信息，跳过SUS挂载隐藏控制设置\" >> \"${'$'}LOG_FILE\"")
+            appendLine("fi")
+            appendLine()
+
             appendLine("echo \"$(get_current_time): Boot-Completed脚本执行完成\" >> \"${'$'}LOG_FILE\"")
         }
     }

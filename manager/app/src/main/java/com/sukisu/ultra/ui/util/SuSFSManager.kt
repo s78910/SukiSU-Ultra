@@ -35,6 +35,7 @@ object SuSFSManager {
     private const val KEY_EXECUTE_IN_POST_FS_DATA = "execute_in_post_fs_data"
     private const val KEY_KSTAT_CONFIGS = "kstat_configs"
     private const val KEY_ADD_KSTAT_PATHS = "add_kstat_paths"
+    private const val KEY_HIDE_SUS_MOUNTS_FOR_ALL_PROCS = "hide_sus_mounts_for_all_procs"
     // 常量
     private const val SUSFS_BINARY_BASE_NAME = "ksu_susfs"
     private const val DEFAULT_UNAME = "default"
@@ -77,8 +78,37 @@ object SuSFSManager {
         return CommandResult(result.isSuccess, result.out.joinToString("\n"), result.err.joinToString("\n"))
     }
 
+    // 版本比较
+    private fun compareVersions(version1: String, version2: String): Int {
+        val v1Parts = version1.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
+        val v2Parts = version2.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
 
-     // 配置存取方法
+        val maxLength = maxOf(v1Parts.size, v2Parts.size)
+
+        for (i in 0 until maxLength) {
+            val v1Part = v1Parts.getOrNull(i) ?: 0
+            val v2Part = v2Parts.getOrNull(i) ?: 0
+
+            when {
+                v1Part > v2Part -> return 1
+                v1Part < v2Part -> return -1
+            }
+        }
+        return 0
+    }
+
+    // 检查当前SuSFS版本是否支持SUS挂载隐藏控制功能
+    fun isSusVersion_1_5_8(): Boolean {
+        return try {
+            val currentVersion = getSuSFSVersion()
+            compareVersions(currentVersion, "1.5.8") >= 0
+        } catch (_: Exception) {
+            true
+        }
+    }
+
+
+    // 配置存取方法
     fun saveUnameValue(context: Context, value: String) =
         getPrefs(context).edit { putString(KEY_UNAME_VALUE, value) }
 
@@ -118,6 +148,13 @@ object SuSFSManager {
             }
         }
     }
+
+    // SUS挂载隐藏控制
+    fun saveHideSusMountsForAllProcs(context: Context, hideForAll: Boolean) =
+        getPrefs(context).edit { putBoolean(KEY_HIDE_SUS_MOUNTS_FOR_ALL_PROCS, hideForAll) }
+
+    fun getHideSusMountsForAllProcs(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_HIDE_SUS_MOUNTS_FOR_ALL_PROCS, true)
 
     // 路径和配置管理
     fun saveSusPaths(context: Context, paths: Set<String>) =
@@ -304,7 +341,8 @@ object SuSFSManager {
                 "sdcardPath" to getSdcardPath(context),
                 "enableLog" to getEnableLogState(context),
                 "kstatConfigs" to getKstatConfigs(context),
-                "addKstatPaths" to getAddKstatPaths(context)
+                "addKstatPaths" to getAddKstatPaths(context),
+                "hideSusMountsForAllProcs" to getHideSusMountsForAllProcs(context)
             )
 
             // 生成脚本
@@ -323,7 +361,9 @@ object SuSFSManager {
                 "post-mount.sh" to ScriptGenerator.generatePostMountScript(
                     targetPath, config.getSetSafe<String>("susMounts"), config.getSetSafe<String>("tryUmounts")
                 ),
-                "boot-completed.sh" to ScriptGenerator.generateBootCompletedScript(targetPath)
+                "boot-completed.sh" to ScriptGenerator.generateBootCompletedScript(
+                    targetPath, config["hideSusMountsForAllProcs"] as Boolean
+                )
             )
 
             // 创建脚本文件
@@ -374,7 +414,6 @@ object SuSFSManager {
             Triple("status_hide_symbols", context.getString(R.string.hide_symbols_feature_label), status.statusHideSymbols),
             Triple("status_sus_kstat", context.getString(R.string.sus_kstat_feature_label), status.statusSusKstat),
             Triple("status_magic_mount", context.getString(R.string.magic_mount_feature_label), status.statusMagicMount),
-            Triple("status_overlayfs_auto_kstat", context.getString(R.string.overlayfs_auto_kstat_feature_label), status.statusOverlayfsAutoKstat),
             Triple("status_sus_su", context.getString(R.string.sus_su_feature_label), status.statusSusSu)
         )
 
@@ -392,6 +431,25 @@ object SuSFSManager {
             saveEnableLogState(context, enabled)
             if (isAutoStartEnabled(context)) createMagiskModule(context)
             showToast(context, if (enabled) context.getString(R.string.susfs_log_enabled) else context.getString(R.string.susfs_log_disabled))
+        }
+        return success
+    }
+
+    // SUS挂载隐藏控制
+    suspend fun setHideSusMountsForAllProcs(context: Context, hideForAll: Boolean): Boolean {
+        if (!isSusVersion_1_5_8()) {
+            return false
+        }
+
+        val success = executeSusfsCommand(context, "hide_sus_mnts_for_all_procs ${if (hideForAll) 1 else 0}")
+        if (success) {
+            saveHideSusMountsForAllProcs(context, hideForAll)
+            if (isAutoStartEnabled(context)) createMagiskModule(context)
+            showToast(context, if (hideForAll)
+                context.getString(R.string.susfs_hide_mounts_all_enabled)
+            else
+                context.getString(R.string.susfs_hide_mounts_all_disabled)
+            )
         }
         return success
     }
