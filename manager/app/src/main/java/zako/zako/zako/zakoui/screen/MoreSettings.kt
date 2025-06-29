@@ -237,6 +237,11 @@ fun MoreSettingsScreen(
         mutableStateOf(prefs.getBoolean("is_hide_tag_row", false))
     }
 
+    // 内核版本简洁模式开关状态
+    var isKernelSimpleMode by remember {
+        mutableStateOf(prefs.getBoolean("is_kernel_simple_mode", false))
+    }
+
     // 显示更多模块信息开关状态
     var showMoreModuleInfo by remember {
         mutableStateOf(prefs.getBoolean("show_more_module_info", false))
@@ -292,6 +297,12 @@ fun MoreSettingsScreen(
     val onSimpleModeChange = { newValue: Boolean ->
         prefs.edit { putBoolean("is_simple_mode", newValue) }
         isSimpleMode = newValue
+    }
+
+    // 内核版本简洁模式开关状态
+    val onKernelSimpleModeChange = { newValue: Boolean ->
+        prefs.edit { putBoolean("is_kernel_simple_mode", newValue) }
+        isKernelSimpleMode = newValue
     }
 
     // 隐藏内核版本号开关状态
@@ -1062,6 +1073,14 @@ fun MoreSettingsScreen(
                     summary = stringResource(R.string.simple_mode_summary),
                     checked = isSimpleMode,
                     onChange = onSimpleModeChange
+                )
+
+                SwitchSettingItem(
+                    icon = Icons.Filled.Brush,
+                    title = stringResource(R.string.kernel_simple_kernel),
+                    summary = stringResource(R.string.kernel_simple_kernel_summary),
+                    checked = isKernelSimpleMode,
+                    onChange = onKernelSimpleModeChange
                 )
 
                 // 隐藏内核部分版本号

@@ -10,6 +10,8 @@
 
 bool become_manager(const char *);
 
+void get_full_version(char* buff);
+
 int get_version();
 
 bool get_allow_list(int *uids, int *size);

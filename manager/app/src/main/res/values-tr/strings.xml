@@ -4,17 +4,12 @@
     <string name="home_not_installed">Yüklü değil</string>
     <string name="home_click_to_install">Yüklemek için tıklayın</string>
     <string name="home_working">Çalışıyor</string>
-    <string name="home_working_version">Sürüm: %d</string>
-    <string name="home_superuser_count">SüperKullanıcılar: %d</string>
-    <string name="home_module_count">Modüller: %d</string>
+    <string name="home_working_version">Sürüm: %s</string>
     <string name="home_unsupported">Desteklenmiyor</string>
     <string name="home_unsupported_reason">Kernel\'inizde KernelSU sürücüsü algılanmadı, yanlış çekirdek mi?</string>
     <string name="home_kernel">Kernel sürümü</string>
-    <string name="home_susfs">SuSFS: %s</string>
     <string name="home_susfs_version">SuSFS Sürümü</string>
-    <string name="home_susfs_sus_su">SuS SU</string>
     <string name="home_manager_version">Yönetici sürümü</string>
-    <string name="home_fingerprint">Parmak izi</string>
     <string name="home_selinux_status">SELinux durumu</string>
     <string name="selinux_status_disabled">Devre dışı</string>
     <string name="selinux_status_enforcing">Enfocing(Etkin)</string>
@@ -28,7 +23,6 @@
     <string name="module_sort_action_first">Sırala (Action önce)</string>
     <string name="module_sort_enabled_first">Sırala (Etkin önce)</string>
     <string name="uninstall">Kaldır</string>
-    <string name="restore">Geri yükle</string>
     <string name="module_install">Yükle</string>
     <string name="install">Yükle</string>
     <string name="reboot">Yeniden başlat</string>
@@ -61,16 +55,12 @@
     <string name="profile_template">Şablon</string>
     <string name="profile_custom">Özel</string>
     <string name="profile_name">Profil adı</string>
-    <string name="profile_namespace">Bağlama adı alanı</string>
-    <string name="profile_namespace_inherited">Miras alınan</string>
-    <string name="profile_namespace_global">Global</string>
-    <string name="profile_namespace_individual">Bireysel</string>
     <string name="profile_groups">Gruplar</string>
     <string name="profile_capabilities">Yetenekler</string>
     <string name="profile_selinux_context">SELinux bağlamı</string>
     <string name="profile_umount_modules">Modülleri bağlamayı kaldır</string>
     <string name="failed_to_update_app_profile">%s için Uygulama Profili güncellenemedi</string>
-    <string name="require_kernel_version" formatted="false">Mevcut KernelSU sürümü %d, yöneticinin düzgün çalışması için çok düşük. Lütfen sürüm %d veya daha yüksek bir sürüme yükseltin!</string>
+    <string name="require_kernel_version" formatted="false">Mevcut KernelSU sürümü %s, yöneticinin düzgün çalışması için çok düşük. Lütfen sürüm %s veya daha yüksek bir sürüme yükseltin!</string>
     <string name="settings_umount_modules_default">Modülleri varsayılan olarak bağlamayı kaldır</string>
     <string name="settings_umount_modules_default_summary">Uygulama Profilindeki \"Modülleri bağlamayı kaldır\" için küresel varsayılan değer. Etkinleştirilirse, profil ayarlanmamış uygulamalar için sistemdeki tüm modül değişikliklerini kaldırır.</string>
     <string name="settings_susfs_toggle">Kprobe kancalarını devre dışı bırak</string>
@@ -112,7 +102,6 @@
     <string name="settings_check_update_summary">Uygulama açıldığında otomatik olarak güncellemeleri kontrol et</string>
     <string name="grant_root_failed">Root yetkisi verilemedi!</string>
     <string name="action">Action</string>
-    <string name="open">Aç</string>
     <string name="close">Kapat</string>
     <string name="enable_web_debugging">WebView hata ayıklama etkinleştir</string>
     <string name="enable_web_debugging_summary">WebUI\'yi hata ayıklamak için kullanılabilir. Sadece ihtiyaç duyulduğunda etkinleştirin.</string>
@@ -136,9 +125,6 @@
     <string name="selected_lkm">Seçilen LKM: %s</string>
     <string name="save_log">Günlükleri kaydet</string>
     <string name="log_saved">Günlükler kaydedildi</string>
-    <string name="status_supported">Destekleniyor</string>
-    <string name="status_not_supported">Desteklenmiyor</string>
-    <string name="status_unknown">Bilinmiyor</string>
     <string name="sus_su_mode">SuS SU modu:</string>
     <!-- Module related -->
     <string name="module_install_confirm">%1$s modülünü yüklemek istediğinizden emin misiniz?</string>
@@ -172,14 +158,11 @@
     <string name="settings_custom_background">Özel Uygulama Arka Planı</string>
     <string name="settings_custom_background_summary">Bir görüntü seçin ve arka plan olarak ayarlayın</string>
     <string name="settings_card_alpha">Geçiş çubuğu şeffaflığı</string>
-    <string name="settings_restore_default">Varsayılana geri dön</string>
     <string name="home_android_version">Android sürümü</string>
     <string name="home_device_model">Cihaz modeli</string>
     <string name="su_not_allowed">%s için süper kullanıcı yetkisi verilemiyor</string>
     <string name="settings_disable_su">Su uyumluluğunu devre dışı bırak</string>
     <string name="settings_disable_su_summary">Geçici olarak herhangi bir uygulamanın su komutu aracılığıyla root ayrıcalıkları elde etmesini devre dışı bırakır (mevcut root işlemleri etkilenmez).</string>
-    <string name="using_mksu_manager">SukiSU Beta yöneticisini kullanıyorsunuz</string>
-    <string name="module_install_multiple_confirm">Seçilen %d modülü yüklemek istediğinizden emin misiniz?</string>
     <string name="module_install_multiple_confirm_with_names">Aşağıdaki %1$d modülü yüklemek istediğinizden emin misiniz? \n\n%2$s</string>
     <string name="more_settings">Daha fazla ayar</string>
     <string name="selinux">SELinux</string>
@@ -212,20 +195,14 @@
     <string name="color_pink">Pembe</string>
     <string name="color_gray">Gri</string>
     <string name="color_yellow">Sarı</string>
-    <string name="flash_option">Fırça Seçenekleri</string>
-    <string name="flash_option_tip">Yazılacak dosyayı seçin</string>
     <string name="horizon_kernel">Anykernel3 yükle</string>
     <string name="horizon_kernel_summary">AnyKernel3 çekirdek dosyasını yaz</string>
     <string name="root_required">Root ayrıcalıkları gerektirir</string>
-    <string name="copy_failed">Dosya Kopyalama Başarısız</string>
     <string name="reboot_complete_title">Temizleme tamamlandı</string>
     <string name="reboot_complete_msg">Hemen yeniden başlatmak istiyor musunuz?</string>
     <string name="yes">Evet</string>
     <string name="no">Hayır</string>
     <string name="failed_reboot">Yeniden başlatma başarısız</string>
-    <string name="batch_authorization">yetkilendir</string>
-    <string name="batch_cancel_authorization">geri al</string>
-    <string name="backup">Yedekle</string>
     <string name="kpm_title">KPM</string>
     <string name="kpm_empty">Şu anda yüklü çekirdek modülü yok</string>
     <string name="kpm_version">Sürüm</string>
@@ -233,7 +210,6 @@
     <string name="kpm_uninstall">Kaldır</string>
     <string name="kpm_uninstall_success">Başarıyla kaldırıldı</string>
     <string name="kpm_uninstall_failed">Kaldırılamadı</string>
-    <string name="kpm_install">Yükle</string>
     <string name="kpm_install_success">Kpm modülü yükleme başarılı</string>
     <string name="kpm_install_failed">Kpm modülü yükleme başarısız</string>
     <string name="kpm_args">Parametreler</string>
@@ -247,8 +223,6 @@
     <string name="home_click_to_ContributionCard_kernelsu">SukiSU Ultra, gelecekte KSU\'nun nispeten bağımsız bir dalı olacak, ancak yine de resmi KernelSU ve MKSU gibi katkılarından dolayı teşekkür ederiz!</string>
     <string name="not_supported">Desteklenmiyor</string>
     <string name="supported">Destekleniyor</string>
-    <string name="home_kpm_module">"KPM modül sayısı: %d "</string>
-    <string name="kpm_invalid_file">Geçersiz KPM dosyası</string>
     <string name="kernel_patched">Çekirdek yamalanmadı</string>
     <string name="kernel_not_enabled">Çekirdek yapılandırılmadı</string>
     <string name="custom_settings">Özel ayarlar</string>
@@ -256,19 +230,13 @@
     <string name="kpm_install_mode_load">Yükle</string>
     <string name="kpm_install_mode_embed">Göm</string>
     <string name="kpm_install_mode_description">Lütfen seçin: %1$s Modül Yükleme Modu \n\nYükle: Modülü geçici olarak yükle \nGömülü: Kalıcı olarak sisteme yükle</string>
-    <string name="log_failed_to_check_module_file">Modül dosyasının varlığını kontrol etme başarısız</string>
     <string name="snackbar_failed_to_check_module_file">Modül dosyasının varlığını kontrol edilemiyor</string>
-    <string name="confirm_uninstall_title">Kaldırmayı onayla</string>
-    <string name="confirm_uninstall_confirm">Kaldır</string>
-    <string name="confirm_uninstall_dismiss">İptal</string>
     <string name="theme_color">Tema Rengi</string>
     <string name="invalid_file_type">Yanlış dosya türü! Lütfen .kpm dosyasını seçin.</string>
     <string name="confirm_uninstall_title_with_filename">Kaldır</string>
     <string name="confirm_uninstall_content">Aşağıdaki KPM kaldırılacak: %s</string>
     <string name="settings_susfs_toggle_summary">KernelSU tarafından oluşturulan kprobe kancalarını devre dışı bırakın, bunun yerine inline kancalar kullanın, bu da Non-GKI çekirdek kanca yöntemine benzer.</string>
-    <string name="image_editor_title">Arka plan görüntüsünü ayarla</string>
     <string name="image_editor_hint">Görüntüyü yaklaştırmak için iki parmağınızı kullanın ve bir parmağınızla sürükleyerek konumu ayarlayın</string>
-    <string name="background_image_error">Görüntü yüklenemedi</string>
     <string name="reprovision">Yeniden sağla</string>
     <!-- Kernel Flash Progress Related -->
     <string name="horizon_flash_title">Çekirdek Flash\'lama</string>
@@ -305,7 +273,6 @@
     <string name="app_settings">Uygulama Ayarları</string>
     <string name="tools">Araçlar</string>
     <!--  String resources used in SuperUser -->
-    <string name="clear">Kaldır</string>
     <string name="no_apps_found">Uygulama bulunamadı</string>
     <string name="selinux_enabled_toast">SELinux Etkin</string>
     <string name="selinux_disabled_toast">SELinux Devre Dışı</string>
@@ -313,8 +280,6 @@
     <string name="advanced_settings">Gelişmiş Ayarlar</string>
     <string name="appearance_settings">Araç çubuğunu özelleştir</string>
     <string name="back">Geri</string>
-    <string name="expand">Tamamen aç</string>
-    <string name="collapse">Kaldır</string>
     <string name="susfs_enabled">SuSFS etkin</string>
     <string name="susfs_disabled">SuSFS devre dışı</string>
     <string name="background_set_success">Arka plan başarıyla ayarlandı</string>
@@ -322,7 +287,6 @@
     <string name="icon_switch_title">Alternatif simge</string>
     <string name="icon_switch_summary">Başlatıcı simgesini KernelSU simgesiyle değiştir.</string>
     <string name="icon_switched">Simge değiştirildi</string>
-    <string name="root_require_for_install">Root ayrıcalıkları gerektirir</string>
     <!-- KPM display settings -->
     <string name="show_kpm_info">KPM İşlevini Gizle</string>
     <string name="show_kpm_info_summary">Ana sayfa ve alt çubuktaki KPM bilgilerini ve işlevini gizler</string>
@@ -334,7 +298,6 @@
     <string name="use_webuix_eruda">WebUI X\'e Eruda enjekte et</string>
     <string name="use_webuix_eruda_summary">WebUI X\'e bir hata ayıklama konsolu enjekte edin, böylece hata ayıklama daha kolay olur. Web hata ayıklamanın açık olması gerekir.</string>
     <!-- DPI setting related strings -->
-    <string name="dpi_settings">DPI ayarı</string>
     <string name="app_dpi_title">Uygulanan DPI</string>
     <string name="app_dpi_summary">Sadece geçerli uygulama için ekran görüntüleme yoğunluğunu ayarlayın</string>
     <string name="dpi_size_small">Küçük</string>
@@ -375,9 +338,6 @@
     <!-- 状态相关 -->
     <string name="no_apps_in_category">Bu kategoride uygulama yok</string>
     <!-- 标签相关 -->
-    <string name="label_root">Root</string>
-    <string name="label_unmount">Çıkart</string>
-    <string name="label_custom">Özel</string>
     <!-- FAB菜单相关 -->
     <string name="deny_authorization">Yetkilendirme reddedildi</string>
     <string name="grant_authorization">Yetki verildi</string>
@@ -387,13 +347,8 @@
     <string name="collapse_menu">Menüyü gizle</string>
     <string name="scroll_to_top">Üst</string>
     <string name="scroll_to_bottom">Alt</string>
-    <string name="scroll_to_top_description">En üste kaydır</string>
-    <string name="scroll_to_bottom_description">En alta kaydır</string>
-    <string name="authorized">yetkilendirildi</string>
-    <string name="unauthorized">yetkilendirilmedi</string>
     <string name="selected">Seçildi</string>
     <string name="select">seçenek</string>
-    <string name="profile_umount_modules_disable">Özel kaldırma modülünü devre dışı bırak</string>
     <!-- BottomSheet相关 -->
     <string name="menu_options">Menü Seçenekleri</string>
     <string name="sort_options">Sıralama Seçenekleri</string>
@@ -410,10 +365,8 @@
     <string name="susfs_current_build_time">Mevcut build time: %s</string>
     <string name="susfs_reset_to_default">Varsayılana Sıfırla</string>
     <string name="susfs_apply">Uygula</string>
-    <string name="susfs_done">Tamam</string>
     <!-- SuSFS Reset Confirmation -->
     <string name="susfs_reset_confirm_title">Sıfırlamayı Onayla</string>
-    <string name="susfs_reset_confirm">Sıfırlamayı Onayla</string>
     <!-- SuSFS Toast Messages -->
     <string name="susfs_binary_not_found">ksu_susfs dosyası bulunamadı</string>
     <string name="susfs_command_failed">SuSFS komut çalıştırma başarısız</string>
@@ -421,18 +374,14 @@
     <string name="susfs_uname_set_success" formatted="false">SuSFS uname ve build time başarıyla ayarlandı: %s, %s</string>
     <!-- SuSFS Settings Item -->
     <string name="susfs_config_setting_title">SuSFS Yapılandırması</string>
-    <string name="susfs_config_setting_summary">SuSFS için Uname ve Build Time Artifact\'larını ve daha fazlasını yapılandırma (Mevcut: %s)</string>
     <!-- 开机自启动相关 -->
     <string name="susfs_autostart_title">Otomatik Başlat</string>
     <string name="susfs_autostart_description">Yeniden başlatma sırasında tüm varsayılan olmayan yapılandırmaları otomatik olarak uygula</string>
     <string name="susfs_autostart_requirement">Etkinleştirmek için yapılandırma eklenmesi gerekiyor</string>
-    <string name="susfs_autostart_enabled">Otomatik Başlat etkin</string>
-    <string name="susfs_autostart_disabled">Otomatik Başlat devre dışı</string>
     <string name="susfs_autostart_enable_failed">Otomatik başlatma etkinleştirilemedi</string>
     <string name="susfs_autostart_disable_failed">Otomatik başlatma devre dışı bırakılamadı</string>
     <string name="susfs_autostart_error">Otomatik başlatma yapılandırma hatası: %s</string>
     <string name="susfs_no_config_to_autostart">Otomatik başlatma için kullanılabilir yapılandırma yok</string>
-    <string name="susfs_autostart_tis">Otomatik başlatmayı etkinleştirmek için varsayılan olmayan bir değer girmeniz gerekiyor</string>
     <!-- SuSFS Tab Titles -->
     <string name="susfs_tab_basic_settings">Temel Ayarlar</string>
     <string name="susfs_tab_sus_paths">SUS Yolları</string>
@@ -441,11 +390,6 @@
     <string name="susfs_tab_path_settings">Yol Ayarları</string>
     <string name="susfs_tab_enabled_features">Etkinleştirilen Özellikler Durumu</string>
     <!-- SuSFS Dialog Actions -->
-    <string name="susfs_add">Ekle</string>
-    <string name="susfs_delete">Sil</string>
-    <string name="susfs_reset">Sıfırla</string>
-    <string name="susfs_run">Çalıştır</string>
-    <string name="susfs_refresh">Yenile</string>
     <!-- SuSFS Path Management -->
     <string name="susfs_add_sus_path">SUS Yolu Ekle</string>
     <string name="susfs_add_sus_mount">SUS Bağlama Noktası Ekle</string>
@@ -453,9 +397,6 @@
     <string name="susfs_path_label">Yol</string>
     <string name="susfs_mount_path_label">Bağlama Yolu</string>
     <string name="susfs_path_placeholder">örn.: /system/addon.d</string>
-    <string name="susfs_sus_paths_management">SUS Yolları Yönetimi</string>
-    <string name="susfs_sus_mounts_management">SUS Bağlama Noktaları Yönetimi</string>
-    <string name="susfs_try_umount_management">Bağlamayı Kaldırmayı Dene Yönetimi</string>
     <string name="susfs_no_paths_configured">Yapılandırılmış SUS yolu yok</string>
     <string name="susfs_no_mounts_configured">Yapılandırılmış SUS bağlama noktası yok</string>
     <string name="susfs_no_umounts_configured">Yapılandırılmış bağlamayı kaldırmayı dene yok</string>
@@ -479,13 +420,11 @@
     <string name="susfs_reset_umounts_title">Bağlamayı Kaldırmayı Dene Sıfırla</string>
     <string name="susfs_reset_umounts_message">Bu, tüm bağlamayı kaldırmayı dene yapılandırmalarını temizleyecektir. Devam etmek istiyor musunuz?</string>
     <!-- SuSFS Path Settings -->
-    <string name="susfs_path_settings">Yol Ayarları</string>
     <string name="susfs_android_data_path_label">Android Veri Yolu</string>
     <string name="susfs_sdcard_path_label">SD Kart Yolu</string>
     <string name="susfs_set_android_data_path">Android Veri Yolunu Ayarlayın</string>
     <string name="susfs_set_sdcard_path">SD Kart Yolunu Ayarlayın</string>
     <!-- SuSFS Enabled Features -->
-    <string name="susfs_enabled_features_title">Etkinleştirilen Özellikler Durumu</string>
     <string name="susfs_enabled_features_description">Mevcut SuSFS etkinleştirilen özellikler durumunu göster</string>
     <string name="susfs_no_features_found">Özellik durumu bilgisi bulunamadı</string>
     <string name="susfs_feature_enabled">Etkinleştirildi</string>
@@ -503,11 +442,9 @@
     <string name="auto_try_umount_bind_feature_label">Otomatik Bağlamayı Kaldırmayı Dene Bağlama</string>
     <string name="hide_symbols_feature_label">KSU SUSFS Sembollerini Gizle</string>
     <string name="magic_mount_feature_label">Magic Mount Desteği</string>
-    <string name="overlayfs_auto_kstat_feature_label">OverlayFS Otomatik Kernel İstatistik Desteği</string>
     <string name="sus_kstat_feature_label">SUS Kstat Desteği</string>
     <string name="sus_su_feature_label">SUS SU mod değiştirme işlevi</string>
     <!-- 可切换状态 -->
-    <string name="susfs_configure">SuSFS Yapılandırması</string>
     <string name="susfs_feature_configurable">Yapılandırılabilir SuSFS Özellikleri</string>
     <string name="susfs_enable_log_label">SuSFS Günlük Kaydını Etkinleştir</string>
     <string name="susfs_log_config_description">SuSFS için günlük kaydını etkinleştir veya devre dışı bırak</string>
@@ -516,10 +453,7 @@
     <string name="susfs_log_disabled">SuSFS günlük kaydını kapat</string>
     <string name="module_update_json">Güncelleme JSON</string>
     <string name="module_update_json_copied">Güncelleme JSON URL\'si panoya kopyalandı</string>
-    <string name="module_update_json_not_available">Güncelleme JSON mevcut değil</string>
     <!-- Settings related strings -->
-    <string name="show_module_update_json">Modül Güncelleme JSON\'ını Göster</string>
-    <string name="show_module_update_json_summary">Modül ayrıntılarında güncelleme JSON URL\'sini göster</string>
     <string name="show_more_module_info">Daha Fazla Modül Bilgisi Göster</string>
     <string name="show_more_module_info_summary">Güncelleme JSON URL\'leri gibi ek modül bilgilerini göster</string>
 </resources>

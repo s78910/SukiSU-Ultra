@@ -308,13 +308,28 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		if (copy_to_user(arg3, &version, sizeof(version))) {
 			pr_err("prctl reply error, cmd: %lu\n", arg2);
 		}
-		u32 version_flags = 0;
+		u32 version_flags = 2;
 #ifdef MODULE
 		version_flags |= 0x1;
 #endif
 		if (arg4 &&
 		    copy_to_user(arg4, &version_flags, sizeof(version_flags))) {
 			pr_err("prctl reply error, cmd: %lu\n", arg2);
+		}
+		return 0;
+	}
+
+	// Allow root manager to get full version strings
+	if (arg2 == CMD_GET_FULL_VERSION) {
+		char ksu_version_full[KSU_FULL_VERSION_STRING] = {0};
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
+		strscpy(ksu_version_full, KSU_VERSION_FULL, KSU_FULL_VERSION_STRING);
+#else
+		strlcpy(ksu_version_full, KSU_VERSION_FULL, KSU_FULL_VERSION_STRING);
+#endif
+		if (copy_to_user((void __user *)arg3, ksu_version_full, KSU_FULL_VERSION_STRING)) {
+			pr_err("prctl reply error, cmd: %lu\n", arg2);
+			return -EFAULT;
 		}
 		return 0;
 	}

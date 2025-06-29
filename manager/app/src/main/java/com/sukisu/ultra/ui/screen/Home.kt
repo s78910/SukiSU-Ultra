@@ -170,8 +170,8 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                 if (viewModel.systemStatus.requireNewKernel) {
                     WarningCard(
                         stringResource(id = R.string.require_kernel_version).format(
-                            viewModel.systemStatus.ksuVersion,
-                            Natives.MINIMAL_SUPPORTED_KERNEL
+                            Natives.getSimpleVersionFull(),
+                            Natives.MINIMAL_SUPPORTED_KERNEL_FULL
                         )
                     )
                 }
@@ -438,11 +438,13 @@ private fun StatusCard(
 
                         if (!isHideVersion) {
                             Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.home_working_version, systemStatus.ksuVersion),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
+                            systemStatus.ksuFullVersion?.let {
+                                Text(
+                                    text = stringResource(R.string.home_working_version, it),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                )
+                            }
                         }
                     }
                 }
@@ -725,7 +727,7 @@ private fun InfoCard(
 
             if (!isSimpleMode) {
                 // 根据showKpmInfo决定是否显示KPM信息
-                if (lkmMode != true && !showKpmInfo && Natives.version >= Natives.MINIMAL_SUPPORTED_KPM) {
+                if (lkmMode != true && !showKpmInfo) {
                     val displayVersion = if (systemInfo.kpmVersion.isEmpty() || systemInfo.kpmVersion.startsWith("Error")) {
                         val statusText = if (Natives.isKPMEnabled()) {
                             stringResource(R.string.kernel_patched)

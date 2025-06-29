@@ -186,7 +186,7 @@ fun InstallScreen(navigator: DestinationsNavigator) {
     }
 
     val onClickNext = {
-        if (isGKI && lkmSelection == LkmSelection.KmiNone && currentKmi.isBlank()) {
+        if (isGKI && lkmSelection == LkmSelection.KmiNone && currentKmi.isBlank() && installMethod !is InstallMethod.HorizonKernel) {
             selectKmiDialog.show()
         } else {
             onInstall()
@@ -373,7 +373,11 @@ private fun SelectInstallMethod(
     val horizonKernelSummary = stringResource(R.string.horizon_kernel_summary)
     val selectFileTip = stringResource(
         id = R.string.select_file_tip,
-        if (isInitBoot()) "init_boot" else "boot"
+        if (isInitBoot()) {
+    "init_boot / vendor_boot ${stringResource(R.string.select_file_tip_vendor)}"
+} else {
+    "boot"
+        }
     )
 
     val radioOptions = mutableListOf<InstallMethod>(
@@ -688,11 +692,10 @@ fun rememberSelectKmiDialog(onSelected: (String?) -> Unit): DialogHandle {
         }
 
         var selection by remember { mutableStateOf<String?>(null) }
-        val backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme.copy(
-                surface = backgroundColor
+                surface = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
             ListDialog(state = rememberUseCaseState(visible = true, onFinishedRequest = {

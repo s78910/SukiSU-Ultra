@@ -11,22 +11,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,35 +47,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.util.SuSFSManager
 import kotlinx.coroutines.launch
 
-/**
- * 统一的按钮布局组件
- */
-@Composable
-fun UnifiedButtonRow(
-    primaryButton: @Composable () -> Unit,
-    secondaryButtons: @Composable () -> Unit = {},
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            secondaryButtons()
-        }
-        primaryButton()
-    }
-}
 
 /**
  * 空状态显示组件
@@ -118,6 +92,7 @@ fun PathItemCard(
     path: String,
     icon: ImageVector,
     onDelete: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     isLoading: Boolean = false,
     additionalInfo: String? = null
 ) {
@@ -161,17 +136,35 @@ fun PathItemCard(
                     }
                 }
             }
-            IconButton(
-                onClick = onDelete,
-                enabled = !isLoading,
-                modifier = Modifier.size(32.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(16.dp)
-                )
+                if (onEdit != null) {
+                    IconButton(
+                        onClick = onEdit,
+                        enabled = !isLoading,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit),
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = onDelete,
+                    enabled = !isLoading,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
@@ -184,6 +177,7 @@ fun PathItemCard(
 fun KstatConfigItemCard(
     config: String,
     onDelete: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     isLoading: Boolean = false
 ) {
     Card(
@@ -221,7 +215,7 @@ fun KstatConfigItemCard(
                         )
                         if (parts.size > 1) {
                             Text(
-                                text = "参数: ${parts.drop(1).joinToString(" ")}",
+                                text = "${parts.drop(1).joinToString(" ")}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -235,17 +229,35 @@ fun KstatConfigItemCard(
                     }
                 }
             }
-            IconButton(
-                onClick = onDelete,
-                enabled = !isLoading,
-                modifier = Modifier.size(32.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(16.dp)
-                )
+                if (onEdit != null) {
+                    IconButton(
+                        onClick = onEdit,
+                        enabled = !isLoading,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit),
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = onDelete,
+                    enabled = !isLoading,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
@@ -258,6 +270,7 @@ fun KstatConfigItemCard(
 fun AddKstatPathItemCard(
     path: String,
     onDelete: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     onUpdate: () -> Unit,
     onUpdateFullClone: () -> Unit,
     isLoading: Boolean = false
@@ -296,6 +309,20 @@ fun AddKstatPathItemCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                if (onEdit != null) {
+                    IconButton(
+                        onClick = onEdit,
+                        enabled = !isLoading,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit),
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
                 IconButton(
                     onClick = onUpdate,
                     enabled = !isLoading,
@@ -303,7 +330,7 @@ fun AddKstatPathItemCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Update,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.update),
                         tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(16.dp)
                     )
@@ -315,7 +342,7 @@ fun AddKstatPathItemCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.susfs_update_full_clone),
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp)
                     )
@@ -327,7 +354,7 @@ fun AddKstatPathItemCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.delete),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(16.dp)
                     )
@@ -492,364 +519,117 @@ fun FeatureStatusCard(
 }
 
 /**
- * SUS路径内容组件
+ * SUS挂载隐藏控制卡片组件
  */
 @Composable
-fun SusPathsContent(
-    susPaths: Set<String>,
+fun SusMountHidingControlCard(
+    hideSusMountsForAllProcs: Boolean,
     isLoading: Boolean,
-    onAddPath: () -> Unit,
-    onRemovePath: (String) -> Unit
+    onToggleHiding: (Boolean) -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        UnifiedButtonRow(
-            primaryButton = {
-                FloatingActionButton(
-                    onClick = onAddPath,
-                    modifier = Modifier.size(48.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            secondaryButtons = {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 标题行
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (hideSusMountsForAllProcs) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stringResource(R.string.susfs_sus_paths_management),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    text = stringResource(R.string.susfs_hide_mounts_control_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
-        )
 
-        if (susPaths.isEmpty()) {
-            EmptyStateCard(
-                message = stringResource(R.string.susfs_no_paths_configured)
+            // 描述文本
+            Text(
+                text = stringResource(R.string.susfs_hide_mounts_control_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 16.sp
             )
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+
+            // 控制开关行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(susPaths.toList()) { path ->
-                    PathItemCard(
-                        path = path,
-                        icon = Icons.Default.Folder,
-                        onDelete = { onRemovePath(path) },
-                        isLoading = isLoading
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * SUS挂载内容组件
- */
-@Composable
-fun SusMountsContent(
-    susMounts: Set<String>,
-    isLoading: Boolean,
-    onAddMount: () -> Unit,
-    onRemoveMount: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        UnifiedButtonRow(
-            primaryButton = {
-                FloatingActionButton(
-                    onClick = onAddMount,
-                    modifier = Modifier.size(48.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            secondaryButtons = {
-                Text(
-                    text = stringResource(R.string.susfs_sus_mounts_management),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        )
-
-        if (susMounts.isEmpty()) {
-            EmptyStateCard(
-                message = stringResource(R.string.susfs_no_mounts_configured)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(susMounts.toList()) { mount ->
-                    PathItemCard(
-                        path = mount,
-                        icon = Icons.Default.Storage,
-                        onDelete = { onRemoveMount(mount) },
-                        isLoading = isLoading
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 尝试卸载内容组件
- */
-@Composable
-fun TryUmountContent(
-    tryUmounts: Set<String>,
-    isLoading: Boolean,
-    onAddUmount: () -> Unit,
-    onRunUmount: () -> Unit,
-    onRemoveUmount: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        UnifiedButtonRow(
-            primaryButton = {
-                FloatingActionButton(
-                    onClick = onAddUmount,
-                    modifier = Modifier.size(48.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            secondaryButtons = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = stringResource(R.string.susfs_try_umount_management),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        text = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    if (tryUmounts.isNotEmpty()) {
-                        FloatingActionButton(
-                            onClick = onRunUmount,
-                            modifier = Modifier.size(40.dp),
-                            containerColor = MaterialTheme.colorScheme.secondary,
-                            contentColor = MaterialTheme.colorScheme.onSecondary
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        )
-
-        if (tryUmounts.isEmpty()) {
-            EmptyStateCard(
-                message = stringResource(R.string.susfs_no_umounts_configured)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(tryUmounts.toList()) { umountEntry ->
-                    val parts = umountEntry.split("|")
-                    val path = if (parts.isNotEmpty()) parts[0] else umountEntry
-                    val mode = if (parts.size > 1) parts[1] else "0"
-                    val modeText = if (mode == "0")
-                        stringResource(R.string.susfs_umount_mode_normal_short)
-                    else
-                        stringResource(R.string.susfs_umount_mode_detach_short)
-
-                    PathItemCard(
-                        path = path,
-                        icon = Icons.Default.Storage,
-                        additionalInfo = stringResource(R.string.susfs_umount_mode_display, modeText, mode),
-                        onDelete = { onRemoveUmount(umountEntry) },
-                        isLoading = isLoading
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (hideSusMountsForAllProcs) {
+                            stringResource(R.string.susfs_hide_mounts_for_all_procs_enabled_description)
+                        } else {
+                            stringResource(R.string.susfs_hide_mounts_for_all_procs_disabled_description)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 14.sp
                     )
                 }
-            }
-        }
-    }
-}
-
-/**
- * Kstat配置内容组件
- */
-@Composable
-fun KstatConfigContent(
-    kstatConfigs: Set<String>,
-    addKstatPaths: Set<String>,
-    isLoading: Boolean,
-    onAddKstatStatically: () -> Unit,
-    onAddKstat: () -> Unit,
-    onRemoveKstatConfig: (String) -> Unit,
-    onRemoveAddKstat: (String) -> Unit,
-    onUpdateKstat: (String) -> Unit,
-    onUpdateKstatFullClone: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // 标题和添加按钮
-        UnifiedButtonRow(
-            primaryButton = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FloatingActionButton(
-                        onClick = onAddKstatStatically,
-                        modifier = Modifier.size(48.dp),
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    FloatingActionButton(
-                        onClick = onAddKstat,
-                        modifier = Modifier.size(48.dp),
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.onSecondary
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            },
-            secondaryButtons = {
-                Text(
-                    text = stringResource(R.string.kstat_config_management),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                Switch(
+                    checked = hideSusMountsForAllProcs,
+                    onCheckedChange = onToggleHiding,
+                    enabled = !isLoading
                 )
             }
-        )
 
-        // 说明卡片
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.kstat_config_description_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.kstat_config_description_add_statically),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.kstat_config_description_add),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.kstat_config_description_update),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.kstat_config_description_update_full_clone),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-// 静态Kstat配置列表
-        if (kstatConfigs.isNotEmpty()) {
+            // 当前设置显示
             Text(
-                text = stringResource(R.string.static_kstat_config),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                text = stringResource(
+                    R.string.susfs_hide_mounts_current_setting,
+                    if (hideSusMountsForAllProcs) {
+                        stringResource(R.string.susfs_hide_mounts_setting_all)
+                    } else {
+                        stringResource(R.string.susfs_hide_mounts_setting_non_ksu)
+                    }
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
             )
-            LazyColumn(
-                modifier = Modifier.weight(0.5f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(kstatConfigs.toList()) { config ->
-                    KstatConfigItemCard(
-                        config = config,
-                        onDelete = { onRemoveKstatConfig(config) },
-                        isLoading = isLoading
-                    )
-                }
-            }
-        }
 
-// Add Kstat路径列表
-        if (addKstatPaths.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.kstat_path_management),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            LazyColumn(
-                modifier = Modifier.weight(0.5f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            // 建议文本
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(8.dp)
             ) {
-                items(addKstatPaths.toList()) { path ->
-                    AddKstatPathItemCard(
-                        path = path,
-                        onDelete = { onRemoveAddKstat(path) },
-                        onUpdate = { onUpdateKstat(path) },
-                        onUpdateFullClone = { onUpdateKstatFullClone(path) },
-                        isLoading = isLoading
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.susfs_hide_mounts_recommendation),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 14.sp,
+                    modifier = Modifier.padding(12.dp)
+                )
             }
-        }
-
-// 空状态显示
-        if (kstatConfigs.isEmpty() && addKstatPaths.isEmpty()) {
-            EmptyStateCard(
-                message = stringResource(R.string.no_kstat_config_message)
-            )
         }
     }
 }

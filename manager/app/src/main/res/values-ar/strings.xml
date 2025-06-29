@@ -4,17 +4,12 @@
     <string name="home_not_installed">غير مثبت</string>
     <string name="home_click_to_install">إضغط للتثبيت</string>
     <string name="home_working">يعمل</string>
-    <string name="home_working_version">الإصدار: %d</string>
-    <string name="home_superuser_count">مستخدمين الجذر: %d</string>
-    <string name="home_module_count">الإضافات: %d</string>
+    <string name="home_working_version">الإصدار: %s</string>
     <string name="home_unsupported">غير مدعوم</string>
     <string name="home_unsupported_reason">KernelSU يدعم GKI kernels فقط</string>
     <string name="home_kernel">إصدار النواة</string>
-    <string name="home_susfs">SuSFS: %s</string>
     <string name="home_susfs_version">إصدار SuSFS</string>
-    <string name="home_susfs_sus_su">SuS SU</string>
     <string name="home_manager_version">إصدار المدير</string>
-    <string name="home_fingerprint">البصمة</string>
     <string name="home_selinux_status">وضع SELinux</string>
     <string name="selinux_status_disabled">معطل</string>
     <string name="selinux_status_enforcing">مفروض</string>
@@ -28,7 +23,6 @@
     <string name="module_sort_action_first">فرز (الإجراء أولاً)</string>
     <string name="module_sort_enabled_first">فرز (الممكن أولاً)</string>
     <string name="uninstall">إلغاء التثبيت</string>
-    <string name="restore">إسترجاع</string>
     <string name="module_install">تثبيت الوحدة</string>
     <string name="install">تثبيت</string>
     <string name="reboot">إعادة تشغيل</string>
@@ -61,16 +55,12 @@
     <string name="profile_template">نموذج</string>
     <string name="profile_custom">مُخصّص</string>
     <string name="profile_name">اسم الملف الشخصي</string>
-    <string name="profile_namespace">تركيب مساحة الاسم</string>
-    <string name="profile_namespace_inherited">موروث</string>
-    <string name="profile_namespace_global">عالمي</string>
-    <string name="profile_namespace_individual">فردي</string>
     <string name="profile_groups">مجموعات</string>
     <string name="profile_capabilities">القدرات</string>
     <string name="profile_selinux_context">سياق SELinux</string>
     <string name="profile_umount_modules">الغاء تحميل الإضافات</string>
     <string name="failed_to_update_app_profile">فشل تحديث ملف تعريف التطبيق لـ %s</string>
-    <string name="require_kernel_version" formatted="false">إصدار KernelSU الحالي %d منخفض جدًا بحيث لا يعمل المدير بشكل صحيح. الرجاء الترقية إلى الإصدار %d أو أعلى!</string>
+    <string name="require_kernel_version" formatted="false">إصدار KernelSU الحالي %s منخفض جدًا بحيث لا يعمل المدير بشكل صحيح. الرجاء الترقية إلى الإصدار %s أو أعلى!</string>
     <string name="settings_umount_modules_default">الغاء تحميل الإضافات بشكل افتراضي</string>
     <string name="settings_umount_modules_default_summary">القيمة الافتراضية العامة لـ\"إلغاء تحميل الإضافات\" في ملفات تعريف التطبيقات. إذا تم تمكينه، إزالة جميع تعديلات الإضافات على النظام للتطبيقات التي لا تحتوي على مجموعة ملف تعريف.</string>
     <string name="settings_susfs_toggle">تعطيل روابط kprobe</string>
@@ -112,7 +102,6 @@
     <string name="settings_check_update_summary">التحقق تلقائيًا من وجود تحديثات عند فتح التطبيق</string>
     <string name="grant_root_failed">فشل في منح صلاحية الجذر!</string>
     <string name="action">إجراء</string>
-    <string name="open">فتح</string>
     <string name="close">إغلاق</string>
     <string name="enable_web_debugging">تمكين تصحيح أخطاء WebView</string>
     <string name="enable_web_debugging_summary">يمكن استخدامه لتصحيح أخطاء WebUI، يرجى تمكينه فقط عند الحاجة.</string>
@@ -138,9 +127,6 @@
     <string name="selected_lkm">LKM المحددة: %s</string>
     <string name="save_log">حفظ السجلات</string>
     <string name="log_saved">السجلات محفوظة</string>
-    <string name="status_supported">إدعمنا</string>
-    <string name="status_not_supported">غير مدعوم</string>
-    <string name="status_unknown">غير معروف</string>
     <string name="sus_su_mode">وضع SuS SU</string>
     <!-- Module related -->
     <string name="module_install_confirm">تأكيد وحدة التثبيت %1$s؟</string>
@@ -174,14 +160,11 @@
     <string name="settings_custom_background">خلفية التطبيق المخصصة</string>
     <string name="settings_custom_background_summary">حدد صورة كخلفية</string>
     <string name="settings_card_alpha">شفافية شريط التنقل</string>
-    <string name="settings_restore_default">استعادة الإعدادات الافتراضية</string>
     <string name="home_android_version">‏إصدار Android</string>
     <string name="home_device_model">نوع الجهاز</string>
     <string name="su_not_allowed">لا يسمح بمنح المستخدم المتميز ل %s</string>
     <string name="settings_disable_su">تعطيل توافق su</string>
     <string name="settings_disable_su_summary">تعطيل أي تطبيقات مؤقتًا من الحصول على امتيازات الجذر عن طريق الأمر &lt;unk&gt; su (لن تتأثر عمليات الجذر الحالية).</string>
-    <string name="using_mksu_manager">أنت تستخدم مدير Beta SukiSU</string>
-    <string name="module_install_multiple_confirm">هل أنت متأكد من أنك تريد تثبيت وحدات %d المحددة؟</string>
     <string name="module_install_multiple_confirm_with_names">هل أنت متأكد من أنك تريد تثبيت وحدات %1$d التالية؟ \n\n%2$s</string>
     <string name="more_settings">المزيد من الإعدادات</string>
     <string name="selinux">SELinux</string>
@@ -212,20 +195,14 @@
     <string name="color_pink">وردي</string>
     <string name="color_gray">رمادي</string>
     <string name="color_yellow">الأصفر</string>
-    <string name="flash_option">خيارات الفرشاة</string>
-    <string name="flash_option_tip">حدد الملف المراد إلفاؤه</string>
     <string name="horizon_kernel">Anykernel3 yükle</string>
     <string name="horizon_kernel_summary">فلاش AnyKernel3 ملف kernel</string>
     <string name="root_required">يتطلب امتيازات الجذر</string>
-    <string name="copy_failed">فشل نسخ الملف</string>
     <string name="reboot_complete_title">اكتمل التشويش</string>
     <string name="reboot_complete_msg">هل تريد إعادة التشغيل فوراً؟</string>
     <string name="yes">نعم</string>
     <string name="no">لايوجد</string>
     <string name="failed_reboot">فشل إعادة التشغيل</string>
-    <string name="batch_authorization">التمكين</string>
-    <string name="batch_cancel_authorization">السحب</string>
-    <string name="backup">النسخ الاحتياطية</string>
     <string name="kpm_title">KPM</string>
     <string name="kpm_empty">لا توجد وحدات نواة مثبتة في هذا الوقت</string>
     <string name="kpm_version">الإصدار</string>
@@ -233,7 +210,6 @@
     <string name="kpm_uninstall">إلغاء التثبيت</string>
     <string name="kpm_uninstall_success">تم إلغاء التثبيت بنجاح</string>
     <string name="kpm_uninstall_failed">فشل في إلغاء التثبيت</string>
-    <string name="kpm_install">تثبيت</string>
     <string name="kpm_install_success">تم تحميل وحدة كيلو جزء بنجاح</string>
     <string name="kpm_install_failed">فشل تحميل وحدة كيلو بايم</string>
     <string name="kpm_args">العوامل المتغيرة</string>
@@ -247,8 +223,6 @@
     <string name="home_click_to_ContributionCard_kernelsu">وستشكل سوكيسو أولترا في المستقبل فرعا مستقلا نسبيا من فروع الوحدة، ولكننا لا نزال نقدر كيرنيل سو وموكسو الرسميين وما إلى ذلك. لإسهاماتهم!</string>
     <string name="not_supported">غير مدعوم</string>
     <string name="supported">إدعمنا</string>
-    <string name="home_kpm_module">"عدد وحدات KPM: %d "</string>
-    <string name="kpm_invalid_file">ملف KPM غير صحيح</string>
     <string name="kernel_patched">النواة غير مصحوبة</string>
     <string name="kernel_not_enabled">لم يتم تكوين النواة</string>
     <string name="custom_settings">الإعدادات المُخصصة</string>
@@ -256,19 +230,13 @@
     <string name="kpm_install_mode_load">التحميل</string>
     <string name="kpm_install_mode_embed">فسيفساء</string>
     <string name="kpm_install_mode_description">الرجاء التحديد: %1\$s وضع تثبيت الوحدة \n\nالتحميل: قم بتحميل الوحدة \nمؤقتا: تثبيت دائم في النظام</string>
-    <string name="log_failed_to_check_module_file">فشل التحقق من وجود ملف الوحدة</string>
     <string name="snackbar_failed_to_check_module_file">غير قادر على التحقق من وجود ملف الوحدة</string>
-    <string name="confirm_uninstall_title">تأكيد إلغاء التثبيت</string>
-    <string name="confirm_uninstall_confirm">إلغاء التثبيت</string>
-    <string name="confirm_uninstall_dismiss">إلغاء</string>
     <string name="theme_color">ألوان المظهر</string>
     <string name="invalid_file_type">نوع الملف غير صحيح! الرجاء تحديد ملف .kpm.</string>
     <string name="confirm_uninstall_title_with_filename">إلغاء التثبيت</string>
     <string name="confirm_uninstall_content">سيتم إلغاء تثبيت KPM التالية: %s</string>
     <string name="settings_susfs_toggle_summary">تعطيل روابط kprobe التي أنشأتها KernelSU، باستخدام الروابط الواردة بدلاً من ذلك، والتي تشبه طريقة الربط غير GKI غير GKI.</string>
-    <string name="image_editor_title">ضبط صورة الخلفية</string>
     <string name="image_editor_hint">استخدم إصبعين لتكبير الصورة، وأصبع واحد لسحبها لضبط الموضع</string>
-    <string name="background_image_error">تعذر تحميل الصورة</string>
     <string name="reprovision">إعادة</string>
     <!-- Kernel Flash Progress Related -->
     <string name="horizon_flash_title">ضرب النواة</string>
@@ -305,7 +273,6 @@
     <string name="app_settings">إعدادات التطبيق </string>
     <string name="tools">ادوات</string>
     <!--  String resources used in SuperUser -->
-    <string name="clear">إزالة</string>
     <string name="no_apps_found">التطبيق غير موجود</string>
     <string name="selinux_enabled_toast">تم تمكين SELinux</string>
     <string name="selinux_disabled_toast">تم تعطيل SELinux</string>
@@ -313,8 +280,6 @@
     <string name="advanced_settings">إعدادات متقدمة</string>
     <string name="appearance_settings">تخصيص شريط الأدوات</string>
     <string name="back">عد مرة أخرى</string>
-    <string name="expand">كن في طريقه كامل</string>
-    <string name="collapse">وضع بعيدا</string>
     <string name="susfs_enabled">تم تمكين SuSFS</string>
     <string name="susfs_disabled">تم تعطيل SuSFS</string>
     <string name="background_set_success">تم تعيين الخلفية بنجاح</string>
@@ -322,7 +287,6 @@
     <string name="icon_switch_title">Alternate icon</string>
     <string name="icon_switch_summary">Change the launcher icon to KernelSU\'s icon.</string>
     <string name="icon_switched">Icon switched</string>
-    <string name="root_require_for_install">يتطلب امتيازات الجذر</string>
     <!-- KPM display settings -->
     <string name="show_kpm_info">عرض وظيفة KPM</string>
     <string name="show_kpm_info_summary">إخفاء معلومات KPM ووظيفتها في الشريط المنزلي والأسفل</string>
@@ -334,7 +298,6 @@
     <string name="use_webuix_eruda">حقن Eruda في WebUI X</string>
     <string name="use_webuix_eruda_summary">حقن وحدة التصحيح في WebUI X لجعل تصحيح الأخطاء أسهل. يتطلب تصحيح أخطاء الويب لتكون قيد التشغيل.</string>
     <!-- DPI setting related strings -->
-    <string name="dpi_settings">إعداد DPI</string>
     <string name="app_dpi_title">تم تطبيق DPI</string>
     <string name="app_dpi_summary">ضبط كثافة عرض الشاشة للتطبيق الحالي فقط</string>
     <string name="dpi_size_small">صغير </string>
@@ -375,9 +338,6 @@
     <!-- 状态相关 -->
     <string name="no_apps_in_category">No application in this category</string>
     <!-- 标签相关 -->
-    <string name="label_root">Root</string>
-    <string name="label_unmount">Unmount</string>
-    <string name="label_custom">Custom</string>
     <!-- FAB菜单相关 -->
     <string name="deny_authorization">Delegation of authority</string>
     <string name="grant_authorization">Authorizations</string>
@@ -387,13 +347,8 @@
     <string name="collapse_menu">Put away the menu</string>
     <string name="scroll_to_top">في الأعلى</string>
     <string name="scroll_to_bottom">أسفل</string>
-    <string name="scroll_to_top_description">التمرير لأعلى</string>
-    <string name="scroll_to_bottom_description">التمرير إلى الأسفل</string>
-    <string name="authorized">مصرح</string>
-    <string name="unauthorized">غير مصرح</string>
     <string name="selected">محدد</string>
     <string name="select">خيار</string>
-    <string name="profile_umount_modules_disable">تعطيل وحدة إلغاء التثبيت المخصصة</string>
     <!-- BottomSheet相关 -->
     <string name="menu_options">Menu Options</string>
     <string name="sort_options">Sort by</string>

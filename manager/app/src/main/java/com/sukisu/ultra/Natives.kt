@@ -17,6 +17,7 @@ object Natives {
     // 10977: change groups_count and groups to avoid overflow write
     // 11071: Fix the issue of failing to set a custom SELinux type.
     const val MINIMAL_SUPPORTED_KERNEL = 11071
+    const val MINIMAL_SUPPORTED_KERNEL_FULL = "v3.1.5"
 
     // 11640: Support query working mode, LKM or GKI
     // when MINIMAL_SUPPORTED_KERNEL > 11640, we can remove this constant.
@@ -30,6 +31,23 @@ object Natives {
 
     const val ROOT_UID = 0
     const val ROOT_GID = 0
+
+    external fun getFullVersion(): String
+
+    fun getSimpleVersionFull(): String {
+        val fullVersion = getFullVersion()
+        val startIndex = fullVersion.indexOf('v')
+        if (startIndex < 0) {
+            return fullVersion
+        }
+        val endIndex = fullVersion.indexOf('-', startIndex)
+        val versionStr = if (endIndex > startIndex) {
+            fullVersion.substring(startIndex, endIndex)
+        } else {
+            fullVersion.substring(startIndex)
+        }
+        return "v" + (Regex("""\d+(\.\d+)*""").find(versionStr)?.value ?: versionStr)
+    }
 
     init {
         System.loadLibrary("zako")
@@ -98,7 +116,14 @@ object Natives {
     }
 
     fun requireNewKernel(): Boolean {
-        return version < MINIMAL_SUPPORTED_KERNEL
+        if (version < MINIMAL_SUPPORTED_KERNEL) {
+            return true
+        }
+        val simpleVersionFull = getSimpleVersionFull()
+        if (simpleVersionFull.isEmpty()) {
+            return false
+        }
+        return simpleVersionFull < MINIMAL_SUPPORTED_KERNEL_FULL
     }
 
     @Immutable
@@ -120,27 +145,7 @@ object Natives {
         val statusMagicMount: Boolean = false,
         val statusOverlayfsAutoKstat: Boolean = false,
         val statusSusSu: Boolean = false
-    ) : Parcelable {
-        fun toMap(): Map<String, Boolean> {
-            return mapOf(
-                "CONFIG_KSU_SUSFS_SUS_PATH" to statusSusPath,
-                "CONFIG_KSU_SUSFS_SUS_MOUNT" to statusSusMount,
-                "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT" to statusAutoDefaultMount,
-                "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT" to statusAutoBindMount,
-                "CONFIG_KSU_SUSFS_SUS_KSTAT" to statusSusKstat,
-                "CONFIG_KSU_SUSFS_TRY_UMOUNT" to statusTryUmount,
-                "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT" to statusAutoTryUmountBind,
-                "CONFIG_KSU_SUSFS_SPOOF_UNAME" to statusSpoofUname,
-                "CONFIG_KSU_SUSFS_ENABLE_LOG" to statusEnableLog,
-                "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" to statusHideSymbols,
-                "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" to statusSpoofCmdline,
-                "CONFIG_KSU_SUSFS_OPEN_REDIRECT" to statusOpenRedirect,
-                "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT" to statusMagicMount,
-                "CONFIG_KSU_SUSFS_SUS_OVERLAYFS" to statusOverlayfsAutoKstat,
-                "CONFIG_KSU_SUSFS_SUS_SU" to statusSusSu
-            )
-        }
-    }
+    ) : Parcelable
 
 
     @Immutable
