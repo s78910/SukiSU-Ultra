@@ -15,11 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.sukisu.ultra.ui.util.HanziToPinyin
 import com.sukisu.ultra.ui.util.listModules
+import com.sukisu.ultra.ui.util.getRootShell
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.text.Collator
 import java.text.DecimalFormat
 import java.util.Locale
@@ -405,14 +404,12 @@ class ModuleSizeCache(context: Context) {
      */
     private fun calculateModuleFolderSize(dirId: String): Long {
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "du -sb /data/adb/modules/$dirId"))
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            val output = reader.readLine()
-            process.waitFor()
-            reader.close()
+            val shell = getRootShell()
+            val command = "du -sb /data/adb/modules/$dirId"
+            val result = shell.newJob().add(command).to(ArrayList(), null).exec()
 
-            if (output != null) {
-                val sizeStr = output.split("\t").firstOrNull()
+            if (result.isSuccess && result.out.isNotEmpty()) {
+                val sizeStr = result.out.firstOrNull()?.split("\t")?.firstOrNull()
                 sizeStr?.toLongOrNull() ?: 0L
             } else {
                 0L

@@ -30,9 +30,18 @@
 #define CMD_IS_UID_SHOULD_UMOUNT 13
 #define CMD_IS_SU_ENABLED 14
 #define CMD_ENABLE_SU 15
+
+#define CMD_GET_VERSION_FULL 0xC0FFEE1A
+
 #define CMD_ENABLE_KPM 100
 #define CMD_HOOK_TYPE 101
 #define CMD_GET_SUSFS_FEATURE_STATUS 102
+#define CMD_DYNAMIC_SIGN 103
+#define CMD_GET_MANAGERS 104
+
+#define DYNAMIC_SIGN_OP_SET 0
+#define DYNAMIC_SIGN_OP_GET 1
+#define DYNAMIC_SIGN_OP_CLEAR 2
 
 static bool ksuctl(int cmd, void* arg1, void* arg2) {
     int32_t result = 0;
@@ -58,12 +67,16 @@ bool become_manager(const char* pkg) {
 static bool is_lkm;
 int get_version() {
     int32_t version = -1;
-    int32_t lkm = 0;
-    ksuctl(CMD_GET_VERSION, &version, &lkm);
-    if (!is_lkm && lkm != 0) {
+    int32_t flags = 0;
+    ksuctl(CMD_GET_VERSION, &version, &flags);
+    if (!is_lkm && (flags & 0x1)) {
         is_lkm = true;
     }
     return version;
+}
+
+void get_full_version(char* buff) {
+    ksuctl(CMD_GET_VERSION_FULL, buff, NULL);
 }
 
 bool get_allow_list(int *uids, int *size) {
@@ -132,4 +145,41 @@ bool get_susfs_feature_status(struct susfs_feature_status* status) {
     }
 
     return ksuctl(CMD_GET_SUSFS_FEATURE_STATUS, status, NULL);
+}
+
+bool set_dynamic_sign(unsigned int size, const char* hash) {
+    if (hash == NULL) {
+        return false;
+    }
+
+    struct dynamic_sign_user_config config;
+    config.operation = DYNAMIC_SIGN_OP_SET;
+    config.size = size;
+    strncpy(config.hash, hash, sizeof(config.hash) - 1);
+    config.hash[sizeof(config.hash) - 1] = '\0';
+
+    return ksuctl(CMD_DYNAMIC_SIGN, &config, NULL);
+}
+
+bool get_dynamic_sign(struct dynamic_sign_user_config* config) {
+    if (config == NULL) {
+        return false;
+    }
+
+    config->operation = DYNAMIC_SIGN_OP_GET;
+    return ksuctl(CMD_DYNAMIC_SIGN, config, NULL);
+}
+
+bool clear_dynamic_sign() {
+    struct dynamic_sign_user_config config;
+    config.operation = DYNAMIC_SIGN_OP_CLEAR;
+    return ksuctl(CMD_DYNAMIC_SIGN, &config, NULL);
+}
+
+bool get_managers_list(struct manager_list_info* info) {
+    if (info == NULL) {
+        return false;
+    }
+
+    return ksuctl(CMD_GET_MANAGERS, info, NULL);
 }

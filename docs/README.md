@@ -6,7 +6,7 @@
 
 **实验性! 使用风险自负!**
 
-> 这是非官方分支，保留所有权利 [@tiann](https://github.com/tiann)
+> 这是非官方分支，[@tiann](https://github.com/tiann) 有权保留所有权利
 >
 > 但是，我们将会在未来成为一个单独维护的 KSU 分支
 
@@ -30,6 +30,12 @@ curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kern
 
 1. 直接使用 susfs-main 或者其他 susfs-\* 分支，不需要再集成 susfs (支持非 GKI 设备构建)
 
+> [!Note]
+>
+> - 因 SuSFS 版本的变化和不可测问题
+> - 本 susfs-main 分支只在完整更新后再合并最新新版本
+> - 请随时留意 susfs 分支的变化情况以免导致构建失败以及各种版本导致的不兼容问题
+
 ```
 curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
 ```
@@ -46,7 +52,9 @@ curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kern
 
 2. **手动钩子：**
    - 标准的 KernelSU 钩子：https://kernelsu.org/guide/how-to-integrate-for-non-gki.html#manually-modify-the-kernel-source
-   - backslashxx 的 syscall 手动钩子：https://github.com/backslashxx/KernelSU/issues/5
+
+   - backslashxx 的 syscall 手动钩子：https://github.com/backslashxx/KernelSU/issues/5 (v1.5 版本暂不可用，如要使用请使用 v1.4 版本，或者标准 KernelSU 钩子)
+
    - 非 GKI 内核的默认挂钩方法
    - 需要 `CONFIG_KSU_MANUAL_HOOK=y`
 
@@ -120,6 +128,7 @@ KPM 模板地址: https://github.com/udochina/KPM-Build-Anywhere
 4. 恢复对非 GKI 2.0 内核的支持
 5. 更多自定义功能
 6. 对 KPM 内核模块的支持
+7. 引入SuSFS配置的管理器以及进阶功能
 
 ## 疑难解答
 

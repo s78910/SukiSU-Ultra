@@ -308,13 +308,79 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		if (copy_to_user(arg3, &version, sizeof(version))) {
 			pr_err("prctl reply error, cmd: %lu\n", arg2);
 		}
-		u32 version_flags = 0;
+		u32 version_flags = 2;
 #ifdef MODULE
 		version_flags |= 0x1;
 #endif
 		if (arg4 &&
 		    copy_to_user(arg4, &version_flags, sizeof(version_flags))) {
 			pr_err("prctl reply error, cmd: %lu\n", arg2);
+		}
+		return 0;
+	}
+
+	// Allow root manager to get full version strings
+	if (arg2 == CMD_GET_FULL_VERSION) {
+		char ksu_version_full[KSU_FULL_VERSION_STRING] = {0};
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
+		strscpy(ksu_version_full, KSU_VERSION_FULL, KSU_FULL_VERSION_STRING);
+#else
+		strlcpy(ksu_version_full, KSU_VERSION_FULL, KSU_FULL_VERSION_STRING);
+#endif
+		if (copy_to_user((void __user *)arg3, ksu_version_full, KSU_FULL_VERSION_STRING)) {
+			pr_err("prctl reply error, cmd: %lu\n", arg2);
+			return -EFAULT;
+		}
+		return 0;
+	}
+
+	// Allow the root manager to configure dynamic signatures
+	if (arg2 == CMD_DYNAMIC_SIGN) {
+    	if (!from_root && !from_manager) {
+        	return 0;
+    	}
+    
+    	struct dynamic_sign_user_config config;
+    
+    	if (copy_from_user(&config, (void __user *)arg3, sizeof(config))) {
+        	pr_err("copy dynamic sign config failed\n");
+        	return 0;
+    	}
+    
+    	int ret = ksu_handle_dynamic_sign(&config);
+    	
+    	if (ret == 0 && config.operation == DYNAMIC_SIGN_OP_GET) {
+        	if (copy_to_user((void __user *)arg3, &config, sizeof(config))) {
+            	pr_err("copy dynamic sign config back failed\n");
+            	return 0;
+        	}
+    	}
+    	
+    	if (ret == 0) {
+        	if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+            	pr_err("dynamic_sign: prctl reply error\n");
+        	}
+    	}
+    	return 0;
+	}
+
+	// Allow root manager to get active managers
+	if (arg2 == CMD_GET_MANAGERS) {
+		if (!from_root && !from_manager) {
+			return 0;
+		}
+		
+		struct manager_list_info manager_info;
+		int ret = ksu_get_active_managers(&manager_info);
+		
+		if (ret == 0) {
+			if (copy_to_user((void __user *)arg3, &manager_info, sizeof(manager_info))) {
+				pr_err("copy manager list failed\n");
+				return 0;
+			}
+			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+				pr_err("get_managers: prctl reply error\n");
+			}
 		}
 		return 0;
 	}
@@ -330,6 +396,10 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 				post_fs_data_lock = true;
 				pr_info("post-fs-data triggered\n");
 				on_post_fs_data();
+				// Initializing Dynamic Signatures
+        		ksu_dynamic_sign_init();
+        		ksu_load_dynamic_sign();
+        		pr_info("Dynamic sign config loaded during post-fs-data\n");
 			}
 			break;
 		}

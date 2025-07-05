@@ -159,4 +159,6 @@ dependencies {
     implementation(libs.mmrl.webui)
     implementation(libs.mmrl.ui)
 
+    implementation(libs.accompanist.drawablepainter)
+
 }

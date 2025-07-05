@@ -4,17 +4,12 @@
     <string name="home_not_installed">Não instalado</string>
     <string name="home_click_to_install">Clique para instalar</string>
     <string name="home_working">Funcionando</string>
-    <string name="home_working_version">Versão: %d</string>
-    <string name="home_superuser_count">Super Usuário: %d</string>
-    <string name="home_module_count">Módulos: %d</string>
+    <string name="home_working_version">Versão: %s</string>
     <string name="home_unsupported">Sem suporte</string>
     <string name="home_unsupported_reason">KernelSU suporta apenas kernels GKI agora</string>
     <string name="home_kernel">Kernel</string>
-    <string name="home_susfs">SuSFS: %s</string>
     <string name="home_susfs_version">Versão SuSFS</string>
-    <string name="home_susfs_sus_su">SuS SU</string>
     <string name="home_manager_version">Versão do aplicativo</string>
-    <string name="home_fingerprint">Impressão digital</string>
     <string name="home_selinux_status">Status do SELinux</string>
     <string name="selinux_status_disabled">Desabilitado</string>
     <string name="selinux_status_enforcing">Impondo</string>
@@ -28,7 +23,6 @@
     <string name="module_sort_action_first">Ordenar (exceto primeiro)</string>
     <string name="module_sort_enabled_first">Ordenar (Habilitado primeiro)</string>
     <string name="uninstall">Desinstalar</string>
-    <string name="restore">Restaurar</string>
     <string name="module_install">Instalar</string>
     <string name="install">Instalar</string>
     <string name="reboot">Reiniciar</string>
@@ -61,16 +55,12 @@
     <string name="profile_template">Modelo</string>
     <string name="profile_custom">Personalizado</string>
     <string name="profile_name">Nome do perfil</string>
-    <string name="profile_namespace">Montar namespace</string>
-    <string name="profile_namespace_inherited">Herdado</string>
-    <string name="profile_namespace_global">Global</string>
-    <string name="profile_namespace_individual">Individual</string>
     <string name="profile_groups">Grupos</string>
     <string name="profile_capabilities">Capacidades</string>
     <string name="profile_selinux_context">contexto SELinux</string>
     <string name="profile_umount_modules">Desativar modulos</string>
     <string name="failed_to_update_app_profile">Falha ao atualizar o perfil do aplicativo para %s</string>
-    <string name="require_kernel_version" formatted="false">A versão atual do KernelSU %d é muito baixa para o gerenciador funcionar corretamente. Atualize para a versão %d ou superior!</string>
+    <string name="require_kernel_version" formatted="false">A versão atual do KernelSU %s é muito baixa para o gerenciador funcionar corretamente. Atualize para a versão %s ou superior!</string>
     <string name="settings_umount_modules_default">Módulos desativados por padrão</string>
     <string name="settings_umount_modules_default_summary">O valor padrão global para \"Módulos Umount\" em Perfis de Aplicativos. Se ativado, removerá todas as modificações de módulo do sistema para aplicativos que não possuem um Perfil definido.</string>
     <string name="settings_susfs_toggle">Desabilitar ganchos de \"Kprobe\"</string>
@@ -112,7 +102,6 @@
     <string name="settings_check_update_summary">Verifique automaticamente se há atualizações ao abrir o app</string>
     <string name="grant_root_failed">Falha ao conceder acesso root!</string>
     <string name="action">Ações</string>
-    <string name="open">Abrir</string>
     <string name="close">Fechar</string>
     <string name="enable_web_debugging">Ativar depuração do WebView</string>
     <string name="enable_web_debugging_summary">Pode ser usado para depurar o WebUI. Por favor, ative somente quando necessário.</string>
@@ -136,9 +125,6 @@
     <string name="selected_lkm">LKM selecionado: %s</string>
     <string name="save_log">Salvar Registros</string>
     <string name="log_saved">Registros salvos</string>
-    <string name="status_supported">Apoie-nos</string>
-    <string name="status_not_supported">Não Suportado</string>
-    <string name="status_unknown">Desconhecido</string>
     <string name="sus_su_mode">Modo SU SuSU:</string>
     <!-- Module related -->
     <string name="module_install_confirm">¿confirmar la instalación del módulo %1$s?</string>
@@ -172,14 +158,11 @@
     <string name="settings_custom_background">Fundo personalizado do App</string>
     <string name="settings_custom_background_summary">Selecione uma imagem como plano de fundo</string>
     <string name="settings_card_alpha">Transparência da barra de navegação</string>
-    <string name="settings_restore_default">Restaurar padrões</string>
     <string name="home_android_version">Android Version： </string>
     <string name="home_device_model">Modelo do aparelho</string>
     <string name="su_not_allowed">Conceder superusuário à %s não é permitido</string>
     <string name="settings_disable_su">Desativar compatibilidade com su</string>
     <string name="settings_disable_su_summary">Temporariamente desativar qualquer aplicativo de obter privilégios de superusuário através do comando Wait su (os processos raiz existentes não serão afetados).</string>
-    <string name="using_mksu_manager">Você está usando o gerenciador do SukiSU Beta</string>
-    <string name="module_install_multiple_confirm">Você tem certeza que deseja instalar os módulos %d selecionados?</string>
     <string name="module_install_multiple_confirm_with_names">Tem certeza que deseja instalar os seguintes módulos %1$d ? \n\n%2$s</string>
     <string name="more_settings">More settings</string>
     <string name="selinux">SELinux</string>
@@ -210,20 +193,14 @@
     <string name="color_pink">Rosa</string>
     <string name="color_gray">Cinza</string>
     <string name="color_yellow">Amarelo</string>
-    <string name="flash_option">Opções do pincel</string>
-    <string name="flash_option_tip">Selecione o arquivo a ser instalado</string>
     <string name="horizon_kernel">Install Anykernel3</string>
     <string name="horizon_kernel_summary">Instalar o arquivo kernel AnyKernel3</string>
     <string name="root_required">Requer privilégios de superusuário</string>
-    <string name="copy_failed">Falha ao copiar arquivo</string>
     <string name="reboot_complete_title">Esboço completo</string>
     <string name="reboot_complete_msg">Reiniciar imediatamente?</string>
     <string name="yes">Sim</string>
     <string name="no">Não</string>
     <string name="failed_reboot">Reinicialização falhou</string>
-    <string name="batch_authorization">empoderar</string>
-    <string name="batch_cancel_authorization">retirar</string>
-    <string name="backup">Backup</string>
     <string name="kpm_title">KPM</string>
     <string name="kpm_empty">Não há módulos do kernel instalados neste momento</string>
     <string name="kpm_version">Versão</string>
@@ -231,7 +208,6 @@
     <string name="kpm_uninstall">Desinstalar</string>
     <string name="kpm_uninstall_success">Desinstalado com sucesso</string>
     <string name="kpm_uninstall_failed">Falha ao desinstalar</string>
-    <string name="kpm_install">Instalar</string>
     <string name="kpm_install_success">Carregamento do módulo kpm com sucesso</string>
     <string name="kpm_install_failed">Falha ao carregar o módulo kpm</string>
     <string name="kpm_args">Parâmetros</string>
@@ -245,8 +221,6 @@
     <string name="home_click_to_ContributionCard_kernelsu">SukiSU Ultra será uma ramificação relativamente independente da KSU no futuro, mas ainda apreciamos o KernelSU e o MKSU, etc. para suas contribuições!</string>
     <string name="not_supported">Sem suporte</string>
     <string name="supported">Apoie-nos</string>
-    <string name="home_kpm_module">"Número de módulos KPM: %d "</string>
-    <string name="kpm_invalid_file">Arquivo KPM inválido</string>
     <string name="kernel_patched">Kernel não corrigido</string>
     <string name="kernel_not_enabled">Kernel não configurado</string>
     <string name="custom_settings">Configurações personalizadas</string>
@@ -254,19 +228,13 @@
     <string name="kpm_install_mode_load">Carga</string>
     <string name="kpm_install_mode_embed">Embutir</string>
     <string name="kpm_install_mode_description">Por favor seleccione: %1\$s Modo de instalación del Módulo \n\nCarga: Cargar temporalmente el módulo \nInsertar: Instalar permanentemente en el sistema</string>
-    <string name="log_failed_to_check_module_file">Falha ao verificar a existência do arquivo do módulo</string>
     <string name="snackbar_failed_to_check_module_file">Não foi possível verificar se o arquivo do módulo existe</string>
-    <string name="confirm_uninstall_title">Confirmar Desinstalação</string>
-    <string name="confirm_uninstall_confirm">Desinstalar</string>
-    <string name="confirm_uninstall_dismiss">Cancelar</string>
     <string name="theme_color">Cor do tema</string>
     <string name="invalid_file_type">Tipo de arquivo incorreto! Selecione o arquivo .kpm.</string>
     <string name="confirm_uninstall_title_with_filename">Desinstalar</string>
     <string name="confirm_uninstall_content">O seguinte KPM será desinstalado: %s</string>
     <string name="settings_susfs_toggle_summary">Desative os hooks kprobe criados pelo KernelSU, usando ganchos embutidos em vez disso, o que é semelhante ao método de gancho do kernel GKI.</string>
-    <string name="image_editor_title">Ajustar imagem de fundo</string>
     <string name="image_editor_hint">Use dois dedos para ampliar a imagem e um dedo para arrastá-la para ajustar a posição</string>
-    <string name="background_image_error">Não foi possível carregar a imagem</string>
     <string name="reprovision">Restituição</string>
     <!-- Kernel Flash Progress Related -->
     <string name="horizon_flash_title">Kernel Flashing</string>
@@ -303,7 +271,6 @@
     <string name="app_settings">Configurações Do Aplicativo</string>
     <string name="tools">Ferramentas</string>
     <!--  String resources used in SuperUser -->
-    <string name="clear">Remoções</string>
     <string name="no_apps_found">Aplicativo não encontrado</string>
     <string name="selinux_enabled_toast">SELinux habilitado</string>
     <string name="selinux_disabled_toast">SELinux Desativado</string>
@@ -311,8 +278,6 @@
     <string name="advanced_settings">Configurações Avançadas</string>
     <string name="appearance_settings">Personaliza a barra de ferramentas.</string>
     <string name="back">Retorno</string>
-    <string name="expand">Esteja em pleno balanço</string>
-    <string name="collapse">jogou fora</string>
     <string name="susfs_enabled">SuSFS habilitado</string>
     <string name="susfs_disabled">SuSFS desativado</string>
     <string name="background_set_success">Fundo definido com sucesso</string>
@@ -320,7 +285,6 @@
     <string name="icon_switch_title">Ícone alternativo</string>
     <string name="icon_switch_summary">Alterar o ícone do launcher para o ícone do KernelSU.</string>
     <string name="icon_switched">Ícone alterado</string>
-    <string name="root_require_for_install">Requer privilégios de superusuário</string>
     <!-- KPM display settings -->
     <string name="show_kpm_info">Exibir função KPM</string>
     <string name="show_kpm_info_summary">Oculta as informações e funções do KPM na barra inicial e inferior</string>
@@ -332,7 +296,6 @@
     <string name="use_webuix_eruda">Injetar Eruda na WebUI X</string>
     <string name="use_webuix_eruda_summary">Injetar um console de depuração na WebUI X para facilitar a depuração. Requer depuração da web para estar ligada.</string>
     <!-- DPI setting related strings -->
-    <string name="dpi_settings">Configuração de DPI</string>
     <string name="app_dpi_title">DPI aplicado</string>
     <string name="app_dpi_summary">Ajustar a densidade de exibição da tela apenas para o aplicativo atual</string>
     <string name="dpi_size_small">Pequeno </string>
@@ -373,9 +336,6 @@
     <!-- 状态相关 -->
     <string name="no_apps_in_category">No application in this category</string>
     <!-- 标签相关 -->
-    <string name="label_root">Root</string>
-    <string name="label_unmount">Unmount</string>
-    <string name="label_custom">Custom</string>
     <!-- FAB菜单相关 -->
     <string name="deny_authorization">Delegation of authority</string>
     <string name="grant_authorization">Authorizations</string>
@@ -385,13 +345,8 @@
     <string name="collapse_menu">Put away the menu</string>
     <string name="scroll_to_top">Mais votados</string>
     <string name="scroll_to_bottom">Parte Inferior</string>
-    <string name="scroll_to_top_description">Rolar para o topo</string>
-    <string name="scroll_to_bottom_description">Role até o final</string>
-    <string name="authorized">autorizado</string>
-    <string name="unauthorized">Não autorizado</string>
     <string name="selected">Selecionado</string>
     <string name="select">opção</string>
-    <string name="profile_umount_modules_disable">Desativar o módulo personalizado de desinstalação</string>
     <!-- BottomSheet相关 -->
     <string name="menu_options">Menu Options</string>
     <string name="sort_options">Sort by</string>
