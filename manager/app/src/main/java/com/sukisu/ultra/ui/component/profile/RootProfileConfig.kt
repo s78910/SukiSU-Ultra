@@ -209,11 +209,10 @@ fun GroupsPanel(selected: List<Groups>, closeSelection: (selection: Set<Groups>)
         }
 
         val selection = HashSet(selected)
-        val backgroundColor = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh
 
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme.copy(
-                surface = backgroundColor
+                surface = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
             ListDialog(
@@ -289,11 +288,10 @@ fun CapsPanel(
         }
 
         val selection = HashSet(selected)
-        val backgroundColor = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh
 
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme.copy(
-                surface = backgroundColor
+                surface = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
             ListDialog(
@@ -444,11 +442,10 @@ private fun SELinuxPanel(
             )
         )
 
-        val backgroundColor = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh
 
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme.copy(
-                surface = backgroundColor
+                surface = MaterialTheme.colorScheme.surfaceContainerHigh
             )
         ) {
             InputDialog(

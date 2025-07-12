@@ -7,8 +7,11 @@
 
 #include "prelude.h"
 #include <linux/capability.h>
+#include <sys/types.h>
 
 bool become_manager(const char *);
+
+void get_full_version(char* buff);
 
 int get_version();
 
@@ -25,6 +28,16 @@ bool is_lkm_mode();
 // NGROUPS_MAX for Linux is 65535 generally, but we only supports 32 groups.
 #define KSU_MAX_GROUPS 32
 #define KSU_SELINUX_DOMAIN 64
+
+#define DYNAMIC_SIGN_OP_SET 0
+#define DYNAMIC_SIGN_OP_GET 1
+#define DYNAMIC_SIGN_OP_CLEAR 2
+
+struct dynamic_sign_user_config {
+    unsigned int operation;
+    unsigned int size;
+    char hash[65];
+};
 
 // SUSFS Functional State Structures
 struct susfs_feature_status {
@@ -93,6 +106,14 @@ struct app_profile {
     };
 };
 
+struct manager_list_info {
+    int count;
+    struct {
+        uid_t uid;
+        int signature_index;
+    } managers[2];
+};
+
 bool set_app_profile(const struct app_profile* profile);
 
 bool get_app_profile(char* key, struct app_profile* profile);
@@ -106,5 +127,13 @@ bool is_KPM_enable();
 bool get_hook_type(char* hook_type, size_t size);
 
 bool get_susfs_feature_status(struct susfs_feature_status* status);
+
+bool set_dynamic_sign(unsigned int size, const char* hash);
+
+bool get_dynamic_sign(struct dynamic_sign_user_config* config);
+
+bool clear_dynamic_sign();
+
+bool get_managers_list(struct manager_list_info* info);
 
 #endif //KERNELSU_KSU_H

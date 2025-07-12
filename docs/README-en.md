@@ -26,6 +26,12 @@ curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kern
 
 ## How to use integrated susfs
 
+> [!Note]
+>
+> - Due to SuSFS version changes and unpredictability issues
+> - This susfs-main branch will only merge the latest new version after a full update
+> - Please keep an eye on the susfs branch to avoid build failures and incompatibilities caused by the various versions
+
 1. Use susfs-main or other susfs-\* branches directly, no need to integrate susfs again (supports non-GKI device builds)
 
 ```
@@ -44,7 +50,9 @@ curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kern
 
 2. **Manual hook:**
    - Standard KernelSU hook: https://kernelsu.org/guide/how-to-integrate-for-non-gki.html#manually-modify-the-kernel-source
-   - backslashxx's syscall manual hook: https://github.com/backslashxx/KernelSU/issues/5
+
+   - backslashxx's syscall manual hook: https://github.com/backslashxx/KernelSU/issues/5 (v1.5 version is not available at the moment, if you want to use it, please use v1.4 version, or standard KernelSU hooks)
+
    - Default hook method on Non-GKI kernels.
    - Need `CONFIG_KSU_MANUAL_HOOK=y`
   
@@ -118,6 +126,7 @@ Please **all** refer to https://kernelsu.org/zh_CN/guide/installation.html
 4. Bringing back non-GKI/GKI 1.0 support
 5. More customization
 6. Support for KPM kernel modules
+7. Introducing the Manager for SuSFS Configuration and Advanced Features
 
 ## Troubleshooting
 

@@ -73,11 +73,13 @@ import kotlin.math.roundToInt
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.NavigateNext
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -86,6 +88,7 @@ import com.sukisu.ultra.ui.theme.getCardElevation
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.sp
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.ksuApp
@@ -144,6 +147,13 @@ fun MoreSettingsScreen(
     var showThemeColorDialog by remember { mutableStateOf(false) }
     var showDpiConfirmDialog by remember { mutableStateOf(false) }
     var showImageEditor by remember { mutableStateOf(false) }
+
+    // 动态签名配置状态
+    var dynamicSignConfig by remember { mutableStateOf<Natives.DynamicSignConfig?>(null) }
+    var isDynamicSignEnabled by remember { mutableStateOf(false) }
+    var dynamicSignSize by remember { mutableStateOf("") }
+    var dynamicSignHash by remember { mutableStateOf("") }
+    var showDynamicSignDialog by remember { mutableStateOf(false) }
 
     // 主题模式选项
     val themeOptions = listOf(
@@ -237,6 +247,11 @@ fun MoreSettingsScreen(
         mutableStateOf(prefs.getBoolean("is_hide_tag_row", false))
     }
 
+    // 内核版本简洁模式开关状态
+    var isKernelSimpleMode by remember {
+        mutableStateOf(prefs.getBoolean("is_kernel_simple_mode", false))
+    }
+
     // 显示更多模块信息开关状态
     var showMoreModuleInfo by remember {
         mutableStateOf(prefs.getBoolean("show_more_module_info", false))
@@ -292,6 +307,12 @@ fun MoreSettingsScreen(
     val onSimpleModeChange = { newValue: Boolean ->
         prefs.edit { putBoolean("is_simple_mode", newValue) }
         isSimpleMode = newValue
+    }
+
+    // 内核版本简洁模式开关状态
+    val onKernelSimpleModeChange = { newValue: Boolean ->
+        prefs.edit { putBoolean("is_kernel_simple_mode", newValue) }
+        isKernelSimpleMode = newValue
     }
 
     // 隐藏内核版本号开关状态
@@ -635,6 +656,167 @@ fun MoreSettingsScreen(
                 Button(
                     onClick = { showThemeColorDialog = false }
                 ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        // 初始化动态签名配置
+        dynamicSignConfig = Natives.getDynamicSign()
+        dynamicSignConfig?.let { config ->
+            if (config.isValid()) {
+                isDynamicSignEnabled = true
+                dynamicSignSize = config.size.toString()
+                dynamicSignHash = config.hash
+            }
+        }
+    }
+
+    fun parseDynamicSignSize(input: String): Int? {
+        return try {
+            when {
+                input.startsWith("0x", true) -> input.substring(2).toInt(16)
+                else -> input.toInt()
+            }
+        } catch (_: NumberFormatException) {
+            null
+        }
+    }
+
+    // 动态签名配置对话框
+    if (showDynamicSignDialog) {
+        AlertDialog(
+            onDismissRequest = { showDynamicSignDialog = false },
+            title = { Text(stringResource(R.string.dynamic_sign_title)) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
+                    // 启用开关
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isDynamicSignEnabled = !isDynamicSignEnabled }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Switch(
+                            checked = isDynamicSignEnabled,
+                            onCheckedChange = { isDynamicSignEnabled = it }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(stringResource(R.string.enable_dynamic_sign))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 签名大小输入
+                    OutlinedTextField(
+                        value = dynamicSignSize,
+                        onValueChange = { input ->
+                            val isValid = when {
+                                input.isEmpty() -> true
+                                input.matches(Regex("^\\d+$")) -> true
+                                input.matches(Regex("^0[xX][0-9a-fA-F]*$")) -> true
+                                else -> false
+                            }
+                            if (isValid) {
+                                dynamicSignSize = input
+                            }
+                        },
+                        label = { Text(stringResource(R.string.signature_size)) },
+                        enabled = isDynamicSignEnabled,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 签名哈希输入
+                    OutlinedTextField(
+                        value = dynamicSignHash,
+                        onValueChange = { hash ->
+                            if (hash.all { it in '0'..'9' || it in 'a'..'f' || it in 'A'..'F' }) {
+                                dynamicSignHash = hash
+                            }
+                        },
+                        label = { Text(stringResource(R.string.signature_hash)) },
+                        enabled = isDynamicSignEnabled,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        supportingText = {
+                            Text(stringResource(R.string.hash_must_be_64_chars))
+                        },
+                        isError = isDynamicSignEnabled && dynamicSignHash.isNotEmpty() && dynamicSignHash.length != 64
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (isDynamicSignEnabled) {
+                            val size = parseDynamicSignSize(dynamicSignSize)
+                            if (size != null && size > 0 && dynamicSignHash.length == 64) {
+                                val success = Natives.setDynamicSign(size, dynamicSignHash)
+                                if (success) {
+                                    dynamicSignConfig = Natives.DynamicSignConfig(size, dynamicSignHash)
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.dynamic_sign_set_success),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.dynamic_sign_set_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.invalid_sign_config),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button
+                            }
+                        } else {
+                            val success = Natives.clearDynamicSign()
+                            if (success) {
+                                dynamicSignConfig = null
+                                dynamicSignSize = ""
+                                dynamicSignHash = ""
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.dynamic_sign_disabled_success),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.dynamic_sign_clear_failed),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button
+                            }
+                        }
+                        showDynamicSignDialog = false
+                    },
+                    enabled = if (isDynamicSignEnabled) {
+                        parseDynamicSignSize(dynamicSignSize)?.let { it > 0 } == true &&
+                                dynamicSignHash.length == 64
+                    } else true
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDynamicSignDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
@@ -1064,6 +1246,14 @@ fun MoreSettingsScreen(
                     onChange = onSimpleModeChange
                 )
 
+                SwitchSettingItem(
+                    icon = Icons.Filled.Brush,
+                    title = stringResource(R.string.kernel_simple_kernel),
+                    summary = stringResource(R.string.kernel_simple_kernel_summary),
+                    checked = isKernelSimpleMode,
+                    onChange = onKernelSimpleModeChange
+                )
+
                 // 隐藏内核部分版本号
                 SwitchSettingItem(
                     icon = Icons.Filled.VisibilityOff,
@@ -1205,6 +1395,22 @@ fun MoreSettingsScreen(
                                 }
                                 isEnabled = it
                             }
+                        )
+                    }
+                    // 动态签名设置
+                    if (Natives.version >= Natives.MINIMAL_SUPPORTED_DYNAMIC_SIGN) {
+                        SettingItem(
+                            icon = Icons.Filled.Security,
+                            title = stringResource(R.string.dynamic_sign_title),
+                            subtitle = if (isDynamicSignEnabled) {
+                                stringResource(
+                                    R.string.dynamic_sign_enabled_summary,
+                                    dynamicSignSize
+                                )
+                            } else {
+                                stringResource(R.string.dynamic_sign_disabled)
+                            },
+                            onClick = { showDynamicSignDialog = true }
                         )
                     }
                 }

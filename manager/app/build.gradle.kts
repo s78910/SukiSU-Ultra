@@ -1,6 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-import com.android.build.api.dsl.ApkSigningConfig
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import com.android.build.gradle.tasks.PackageAndroidArtifact
 
@@ -158,5 +157,7 @@ dependencies {
     compileOnly(libs.mmrl.hidden.api)
     implementation(libs.mmrl.webui)
     implementation(libs.mmrl.ui)
+
+    implementation(libs.accompanist.drawablepainter)
 
 }
