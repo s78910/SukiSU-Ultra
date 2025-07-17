@@ -17,6 +17,7 @@ object Natives {
     // 10977: change groups_count and groups to avoid overflow write
     // 11071: Fix the issue of failing to set a custom SELinux type.
     const val MINIMAL_SUPPORTED_KERNEL = 11071
+    const val MINIMAL_SUPPORTED_KERNEL_FULL = "v3.1.5"
 
     // 11640: Support query working mode, LKM or GKI
     // when MINIMAL_SUPPORTED_KERNEL > 11640, we can remove this constant.
@@ -28,8 +29,27 @@ object Natives {
 
     const val MINIMAL_SUPPORTED_KPM = 12800
 
+    const val MINIMAL_SUPPORTED_DYNAMIC_SIGN = 13215
+
     const val ROOT_UID = 0
     const val ROOT_GID = 0
+
+    external fun getFullVersion(): String
+
+    fun getSimpleVersionFull(): String {
+        val fullVersion = getFullVersion()
+        val startIndex = fullVersion.indexOf('v')
+        if (startIndex < 0) {
+            return fullVersion
+        }
+        val endIndex = fullVersion.indexOf('-', startIndex)
+        val versionStr = if (endIndex > startIndex) {
+            fullVersion.substring(startIndex, endIndex)
+        } else {
+            fullVersion.substring(startIndex)
+        }
+        return "v" + (Regex("""\d+(\.\d+)*""").find(versionStr)?.value ?: versionStr)
+    }
 
     init {
         System.loadLibrary("zako")
@@ -77,6 +97,33 @@ object Natives {
      */
     external fun getSusfsFeatureStatus(): SusfsFeatureStatus?
 
+    /**
+     * Set dynamic signature configuration
+     * @param size APK signature size
+     * @param hash APK signature hash (64 character hex string)
+     * @return true if successful, false otherwise
+     */
+    external fun setDynamicSign(size: Int, hash: String): Boolean
+
+
+    /**
+     * Get current dynamic signature configuration
+     * @return DynamicSignConfig object containing current configuration, or null if not set
+     */
+    external fun getDynamicSign(): DynamicSignConfig?
+
+    /**
+     * Clear dynamic signature configuration
+     * @return true if successful, false otherwise
+     */
+    external fun clearDynamicSign(): Boolean
+
+    /**
+     * Get active managers list when dynamic sign is enabled
+     * @return ManagersList object containing active managers, or null if failed or not enabled
+     */
+    external fun getManagersList(): ManagersList?
+
     private const val NON_ROOT_DEFAULT_PROFILE_KEY = "$"
     private const val NOBODY_UID = 9999
 
@@ -98,7 +145,14 @@ object Natives {
     }
 
     fun requireNewKernel(): Boolean {
-        return version < MINIMAL_SUPPORTED_KERNEL
+        if (version < MINIMAL_SUPPORTED_KERNEL) {
+            return true
+        }
+        val simpleVersionFull = getSimpleVersionFull()
+        if (simpleVersionFull.isEmpty()) {
+            return false
+        }
+        return simpleVersionFull < MINIMAL_SUPPORTED_KERNEL_FULL
     }
 
     @Immutable
@@ -120,28 +174,38 @@ object Natives {
         val statusMagicMount: Boolean = false,
         val statusOverlayfsAutoKstat: Boolean = false,
         val statusSusSu: Boolean = false
+    ) : Parcelable
+
+    @Immutable
+    @Parcelize
+    @Keep
+    data class DynamicSignConfig(
+        val size: Int = 0,
+        val hash: String = ""
     ) : Parcelable {
-        fun toMap(): Map<String, Boolean> {
-            return mapOf(
-                "CONFIG_KSU_SUSFS_SUS_PATH" to statusSusPath,
-                "CONFIG_KSU_SUSFS_SUS_MOUNT" to statusSusMount,
-                "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT" to statusAutoDefaultMount,
-                "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT" to statusAutoBindMount,
-                "CONFIG_KSU_SUSFS_SUS_KSTAT" to statusSusKstat,
-                "CONFIG_KSU_SUSFS_TRY_UMOUNT" to statusTryUmount,
-                "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT" to statusAutoTryUmountBind,
-                "CONFIG_KSU_SUSFS_SPOOF_UNAME" to statusSpoofUname,
-                "CONFIG_KSU_SUSFS_ENABLE_LOG" to statusEnableLog,
-                "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" to statusHideSymbols,
-                "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" to statusSpoofCmdline,
-                "CONFIG_KSU_SUSFS_OPEN_REDIRECT" to statusOpenRedirect,
-                "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT" to statusMagicMount,
-                "CONFIG_KSU_SUSFS_SUS_OVERLAYFS" to statusOverlayfsAutoKstat,
-                "CONFIG_KSU_SUSFS_SUS_SU" to statusSusSu
-            )
+
+        fun isValid(): Boolean {
+            return size > 0 && hash.length == 64 && hash.all {
+                it in '0'..'9' || it in 'a'..'f' || it in 'A'..'F'
+            }
         }
     }
 
+    @Immutable
+    @Parcelize
+    @Keep
+    data class ManagersList(
+        val count: Int = 0,
+        val managers: List<ManagerInfo> = emptyList()
+    ) : Parcelable
+
+    @Immutable
+    @Parcelize
+    @Keep
+    data class ManagerInfo(
+        val uid: Int = 0,
+        val signatureIndex: Int = 0
+    ) : Parcelable
 
     @Immutable
     @Parcelize

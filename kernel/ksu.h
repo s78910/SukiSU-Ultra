@@ -23,7 +23,12 @@
 #define CMD_UID_SHOULD_UMOUNT 13
 #define CMD_IS_SU_ENABLED 14
 #define CMD_ENABLE_SU 15
+
+#define CMD_GET_FULL_VERSION 0xC0FFEE1A
+
 #define CMD_ENABLE_KPM 100
+#define CMD_DYNAMIC_SIGN 103
+#define CMD_GET_MANAGERS 104
 
 #define EVENT_POST_FS_DATA 1
 #define EVENT_BOOT_COMPLETED 2
@@ -34,6 +39,30 @@
 // NGROUPS_MAX for Linux is 65535 generally, but we only supports 32 groups.
 #define KSU_MAX_GROUPS 32
 #define KSU_SELINUX_DOMAIN 64
+
+// SukiSU Ultra kernel su version full strings
+#ifndef KSU_VERSION_FULL 
+#define KSU_VERSION_FULL "v3.x-00000000@unknown"
+#endif
+#define KSU_FULL_VERSION_STRING 255
+
+#define DYNAMIC_SIGN_OP_SET 0
+#define DYNAMIC_SIGN_OP_GET 1
+#define DYNAMIC_SIGN_OP_CLEAR 2
+
+struct dynamic_sign_user_config {
+    unsigned int operation;
+    unsigned int size;
+    char hash[65];
+};
+
+struct manager_list_info {
+    int count;
+    struct {
+        uid_t uid;
+        int signature_index;
+    } managers[2];
+};
 
 struct root_profile {
 	int32_t uid;
