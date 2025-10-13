@@ -863,30 +863,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		return 0;
 	}
 
-	// Get SUSFS function status
-	if (arg2 == CMD_GET_SUSFS_FEATURE_STATUS) {
-    	struct susfs_feature_status status;
-    
-    	if (!ksu_access_ok((void __user*)arg3, sizeof(status))) {
-        	pr_err("susfs_feature_status: arg3 is not accessible\n");
-        	return 0;
-    	}
-    
-    	init_susfs_feature_status(&status);
-    
-    	if (copy_to_user((void __user*)arg3, &status, sizeof(status))) {
-        	pr_err("susfs_feature_status: copy_to_user failed\n");
-        	return 0;
-    	}
-    
-    	if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
-        	pr_err("susfs_feature_status: prctl reply error\n");
-    	}
-    
-    	pr_info("susfs_feature_status: successfully returned feature status\n");
-    	return 0;
-	}
-
 #ifdef CONFIG_KSU_MANUAL_SU
 	if (arg2 == CMD_SU_ESCALATION_REQUEST) {
 		uid_t target_uid = (uid_t)arg3;
