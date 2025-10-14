@@ -39,6 +39,7 @@
 
 #ifdef CONFIG_KSU_SUSFS
 #include <linux/susfs.h>
+#include <linux/susfs_def.h>
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 #include "allowlist.h"
@@ -524,20 +525,16 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 #endif
 
 #ifdef CONFIG_KSU_SUSFS
+	bool saved_umount_flag = false;
+#ifdef CONFIG_KSU_MANUAL_SU
+    if (is_manual_su_cmd || is_system_uid()) {
+        saved_umount_flag = test_and_clear_ti_thread_flag(&current->thread_info, TIF_PROC_UMOUNTED);
+    }
+#endif
 	// - We straight up check if process is supposed to be umounted, return 0 if so
 	// - This is to prevent side channel attack as much as possible
-#ifdef CONFIG_KSU_MANUAL_SU
-	if (is_manual_su_cmd) {
-		if (!is_system_uid())
-			return 0;
-	} else {
-		if (likely(susfs_is_current_proc_umounted()))
-			return 0;
-	}
-#else
-	if (likely(susfs_is_current_proc_umounted()))
-		return 0;
-#endif
+    if (likely(!saved_umount_flag && susfs_is_current_proc_umounted()))
+        return 0;
 #endif
 
 	// if success, we modify the arg5 as result!
@@ -1377,6 +1374,10 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		}
 		return 0;
 	}
+#if defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KSU_MANUAL_SU)
+    if (unlikely(saved_umount_flag))
+        set_ti_thread_flag(&current->thread_info, TIF_PROC_UMOUNTED);
+#endif
 
 	return 0;
 }
