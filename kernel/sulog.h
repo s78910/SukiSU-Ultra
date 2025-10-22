@@ -16,6 +16,10 @@ void ksu_sulog_report_syscall(uid_t uid, const char *comm, const char *syscall, 
 void ksu_sulog_set_enabled(bool enabled);
 bool ksu_sulog_is_enabled(void);
 
+void uid_blacklist_add(uid_t uid);
+bool uid_blacklist_contains(uid_t uid);
+void uid_blacklist_clear(void);
+
 int ksu_sulog_init(void);
 void ksu_sulog_exit(void);
 
