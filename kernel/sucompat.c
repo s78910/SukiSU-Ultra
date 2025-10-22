@@ -81,6 +81,7 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 	ksu_strncpy_from_user_nofault(path, *filename_user, sizeof(path));
 
 	if (unlikely(!memcmp(path, su, sizeof(su)))) {
+		ksu_sulog_report_syscall(current_uid().val, NULL, "faccessat", path);
 		pr_info("faccessat su->sh!\n");
 		*filename_user = sh_user_path();
 	}
@@ -101,6 +102,7 @@ struct filename* susfs_ksu_handle_stat(int *dfd, const char __user **filename_us
 	}
 
 	const char sh[] = SH_PATH;
+	ksu_sulog_report_syscall(current_uid().val, NULL, "vfs_fstatat", sh);
 	pr_info("vfs_fstatat su->sh!\n");
 	memcpy((void *)name->name, sh, sizeof(sh));
 	return name;
@@ -149,6 +151,7 @@ int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 	ksu_strncpy_from_user_nofault(path, *filename_user, sizeof(path));
 
 	if (unlikely(!memcmp(path, su, sizeof(su)))) {
+		ksu_sulog_report_syscall(current_uid().val, NULL, "newfstatat", path);
 		pr_info("newfstatat su->sh!\n");
 		*filename_user = sh_user_path();
 	}
@@ -181,6 +184,8 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 
 	if (likely(memcmp(filename->name, su, sizeof(su))))
 		return 0;
+
+	ksu_sulog_report_syscall(current_uid_val, NULL, "execve", filename->name);
 
 	bool is_allowed = ksu_is_allow_uid(current_uid_val);
 
@@ -241,6 +246,8 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 
 	if (likely(memcmp(path, su, sizeof(su))))
 		return 0;
+
+	ksu_sulog_report_syscall(current_uid_val, NULL, "execve", path);
 
 	bool is_allowed = ksu_is_allow_uid(current_uid_val);
 	
