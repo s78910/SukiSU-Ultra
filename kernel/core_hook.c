@@ -54,6 +54,7 @@
 #include "throne_comm.h"
 #include "kernel_compat.h"
 #include "dynamic_manager.h"
+#include "sulog.h"
 
 #ifdef CONFIG_KSU_MANUAL_SU
 #include "manual_su.h"
@@ -253,6 +254,7 @@ static void disable_seccomp(struct task_struct *tsk)
 void escape_to_root(void)
 {
 	struct cred *newcreds;
+	uid_t original_uid = current_euid().val;
 
 	if (current_euid().val == 0) {
 		pr_warn("Already root, don't escape!\n");
@@ -262,6 +264,7 @@ void escape_to_root(void)
 	newcreds = prepare_creds();
 	if (newcreds == NULL) {
 		pr_err("%s: failed to allocate new cred.\n", __func__);
+		ksu_sulog_report_su_grant(original_uid, NULL, "escape_to_root_failed");
 		return;
 	}
 
@@ -302,6 +305,8 @@ void escape_to_root(void)
 	spin_unlock_irq(&current->sighand->siglock);
 
 	setup_selinux(profile->selinux_domain);
+
+	ksu_sulog_report_su_grant(original_uid, NULL, "escape_to_root");
 }
 
 #ifdef CONFIG_KSU_MANUAL_SU
@@ -341,6 +346,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 	if (!target_task) {
 		rcu_read_unlock(); 
 		pr_err("cmd_su: target task not found for PID: %d\n", target_pid);
+		ksu_sulog_report_su_grant(target_uid, "cmd_su", "target_not_found");
 		return;
 	}
 	get_task_struct(target_task);
@@ -355,6 +361,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 	newcreds = prepare_kernel_cred(target_task);
 	if (newcreds == NULL) {
 		pr_err("cmd_su: failed to allocate new cred for PID: %d\n", target_pid);
+		ksu_sulog_report_su_grant(target_uid, "cmd_su", "cred_alloc_failed");
 		put_task_struct(target_task);
 		return;
 	}
@@ -405,6 +412,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 
 	put_task_struct(target_task);
 
+	ksu_sulog_report_su_grant(target_uid, "cmd_su", "manual_escalation");
 	pr_info("cmd_su: privilege escalation completed for UID: %d, PID: %d\n", target_uid, target_pid);
 }
 #endif
@@ -579,7 +587,10 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 	}
 
 	if (arg2 == CMD_GRANT_ROOT) {
-		if (is_allow_su()) {
+		bool is_allowed = is_allow_su();
+		ksu_sulog_report_permission_check(current_uid().val, current->comm, is_allowed);
+		
+		if (is_allowed) {
 			pr_info("allow root for: %d\n", current_uid().val);
 			escape_to_root();
 			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
@@ -686,6 +697,7 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 				susfs_on_post_fs_data();
 #endif
 				on_post_fs_data();
+				ksu_sulog_init();
 				// Initialize UID scanner if enabled
 				init_uid_scanner();
 				// Initializing Dynamic Signatures
@@ -1149,6 +1161,9 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 
 		// todo: validate the params
 		if (ksu_set_app_profile(&profile, true)) {
+			ksu_sulog_report_manager_operation("SET_APP_PROFILE", 
+				current_uid().val, profile.current_uid);
+			
 			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
 				pr_err("prctl reply error, cmd: %lu\n", arg2);
 			}
@@ -1873,6 +1888,7 @@ void ksu_core_exit(void)
 {
 	ksu_uid_exit();
 	ksu_throne_comm_exit();
+	ksu_sulog_exit();
 	
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	pr_info("ksu_core_kprobe_exit\n");
