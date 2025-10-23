@@ -415,7 +415,7 @@ cleanup:
 
 int ksu_sulog_init(void)
 {
-	sulog_workqueue = create_singlethread_workqueue("ksu_sulog");
+	sulog_workqueue = alloc_workqueue("ksu_sulog", WQ_UNBOUND | WQ_HIGHPRI, 1);
 	if (!sulog_workqueue) {
 		pr_err("sulog: failed to create workqueue\n");
 		return -ENOMEM;
