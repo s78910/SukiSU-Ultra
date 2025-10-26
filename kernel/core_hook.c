@@ -605,8 +605,7 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 
 	bool is_manual_su_cmd = false;
 #ifdef CONFIG_KSU_MANUAL_SU
-	is_manual_su_cmd = (arg2 == CMD_SU_ESCALATION_REQUEST ||
-	                    arg2 == CMD_ADD_PENDING_ROOT);
+	is_manual_su_cmd = (arg2 == CMD_SU_ESCALATION_REQUEST || arg2 == CMD_ADD_PENDING_ROOT || arg2 == CMD_GENERATE_AUTH_TOKEN );
 #endif
 
 #ifdef CONFIG_KSU_SUSFS
