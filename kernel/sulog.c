@@ -14,6 +14,25 @@
 #include <linux/spinlock.h>
 #include <linux/crc32.h>
 
+#if __has_include(<linux/rtc.h>)
+#include <linux/rtc.h>
+#endif
+
+#ifndef time64_to_tm
+static inline void time64_to_tm(time64_t totalsecs, int offset, struct tm *result)
+{
+    struct rtc_time rtc_tm;
+    rtc_time64_to_tm(totalsecs, &rtc_tm);
+
+    result->tm_sec  = rtc_tm.tm_sec;
+    result->tm_min  = rtc_tm.tm_min;
+    result->tm_hour = rtc_tm.tm_hour;
+    result->tm_mday = rtc_tm.tm_mday;
+    result->tm_mon  = rtc_tm.tm_mon;
+    result->tm_year = rtc_tm.tm_year;
+}
+#endif
+
 #include "klog.h"
 #include "kernel_compat.h"
 #include "sulog.h"
