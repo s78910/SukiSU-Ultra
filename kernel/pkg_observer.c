@@ -116,7 +116,7 @@ static int add_mark_on_inode(struct inode *inode, u32 mask,
 	}
 #else /* TODO: Need more tests on k4.4 and k4.9! */
 	mutex_lock(&g->mark_mutex);
-	if (fsnotify_add_mark_locked(m, g, inode, NULL, 0)) {
+	if (fsnotify_add_inode_mark(m, g, inode, 0)) {
 		fsnotify_put_mark(m);
 		mutex_unlock(&g->mark_mutex);
 		return -EINVAL;
