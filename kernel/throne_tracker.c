@@ -437,7 +437,7 @@ void track_throne(void)
     __maybe_unused char buf[KSU_MAX_PACKAGE_NAME];
     static bool manager_exist = false;
     static bool dynamic_manager_exist = false;
-    static int current_manager_uid = ksu_get_manager_uid() % 100000;
+    int current_manager_uid = ksu_get_manager_uid() % 100000;
 
     // init uid list head
     INIT_LIST_HEAD(&uid_list);

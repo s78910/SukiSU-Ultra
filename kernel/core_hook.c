@@ -439,7 +439,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 #endif
 
 #ifdef CONFIG_EXT4_FS
-static void nuke_ext4_sysfs(void) 
+void nuke_ext4_sysfs(void) 
 {
     struct path path;
     int err = kern_path("/data/adb/modules", 0, &path);
@@ -460,7 +460,7 @@ static void nuke_ext4_sysfs(void)
      path_put(&path);
 }
 #else
-static inline void nuke_ext4_sysfs(void)
+inline void nuke_ext4_sysfs(void)
 {
 }
 #endif
@@ -493,9 +493,6 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
     const char *name = NULL;
 
     switch (cmd) {
-#ifdef CONFIG_KPM
-    case CMD_ENABLE_KPM:                    name = "prctl_enable_kpm"; break;
-#endif
 #ifdef CONFIG_KSU_MANUAL_SU
     case CMD_MANUAL_SU_REQUEST:             name = "prctl_manual_su_request"; break;
 #endif
@@ -1467,26 +1464,6 @@ void __init ksu_lsm_hook_init(void)
         KSU_LSM_HOOK_HACK_INIT(prctl_head, task_prctl, ksu_task_prctl);
     } else {
         pr_warn("Failed to find task_prctl!\n");
-    }
-
-    int inode_killpriv_index = -1;
-    void *cap_killpriv = GET_SYMBOL_ADDR(cap_inode_killpriv);
-    find_head_addr(cap_killpriv, &inode_killpriv_index);
-    if (inode_killpriv_index < 0) {
-        pr_warn("Failed to find inode_rename, use kprobe instead!\n");
-        register_kprobe(&renameat_kp);
-    } else {
-        int inode_rename_index = inode_killpriv_index +
-                     &security_hook_heads.inode_rename -
-                     &security_hook_heads.inode_killpriv;
-        struct hlist_head *head_start =
-            (struct hlist_head *)&security_hook_heads;
-        void *inode_rename_head = head_start + inode_rename_index;
-        if (inode_rename_head != &security_hook_heads.inode_rename) {
-            pr_warn("inode_rename's address has shifted!\n");
-        }
-        KSU_LSM_HOOK_HACK_INIT(inode_rename_head, inode_rename,
-                       ksu_inode_rename);
     }
     void *cap_setuid = GET_SYMBOL_ADDR(cap_task_fix_setuid);
     void *setuid_head = find_head_addr(cap_setuid, NULL);
