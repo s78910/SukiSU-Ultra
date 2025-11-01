@@ -435,6 +435,9 @@ void track_throne(void)
     __maybe_unused loff_t pos = 0;
     __maybe_unused loff_t line_start = 0;
     __maybe_unused char buf[KSU_MAX_PACKAGE_NAME];
+    static bool manager_exist = false;
+    static bool dynamic_manager_exist = false;
+    static int current_manager_uid = ksu_get_manager_uid() % 100000;
 
     // init uid list head
     INIT_LIST_HEAD(&uid_list);
@@ -501,9 +504,6 @@ void track_throne(void)
 
 uid_ready:
     // first, check if manager_uid exist!
-    bool manager_exist = false;
-    int current_manager_uid = ksu_get_manager_uid() % 100000;
-
     list_for_each_entry(np, &uid_list, list) {
         if (np->uid == current_manager_uid) {
             manager_exist = true;
@@ -519,7 +519,6 @@ uid_ready:
     }
 
     // Check if the Dynamic Manager exists (only check locked UIDs)
-    bool dynamic_manager_exist = false;
     if (ksu_is_dynamic_manager_enabled() &&
         locked_dynamic_manager_uid != KSU_INVALID_UID) {
         list_for_each_entry(np, &uid_list, list) {
