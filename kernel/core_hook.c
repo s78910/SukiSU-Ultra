@@ -438,9 +438,9 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 }
 #endif
 
-#ifdef CONFIG_EXT4_FS
 void nuke_ext4_sysfs(void) 
 {
+#ifdef CONFIG_EXT4_FS
     struct path path;
     int err = kern_path("/data/adb/modules", 0, &path);
     if (err) {
@@ -458,12 +458,8 @@ void nuke_ext4_sysfs(void)
 
     ext4_unregister_sysfs(sb);
      path_put(&path);
-}
-#else
-inline void nuke_ext4_sysfs(void)
-{
-}
 #endif
+}
 
 static bool is_system_bin_su()
 {

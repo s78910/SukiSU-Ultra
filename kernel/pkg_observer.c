@@ -24,129 +24,66 @@ struct watch_dir {
 
 static struct fsnotify_group *g;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
-static int ksu_handle_inode_event(struct fsnotify_mark *mark, u32 mask,
-                  struct inode *inode, struct inode *dir,
-                  const struct qstr *file_name, u32 cookie)
+#include "pkg_observer_defs.h" // KSU_DECL_FSNOTIFY_OPS
+static KSU_DECL_FSNOTIFY_OPS(ksu_handle_generic_event)
 {
-    if (!file_name)
+    if (!file_name || (mask & FS_ISDIR))
         return 0;
-    if (mask & FS_ISDIR)
-        return 0;
-    if (file_name->len == 13 &&
-        !memcmp(file_name->name, "packages.list", 13)) {
-        pr_info("packages.list detected: %d\n", mask);
-        if (ksu_uid_scanner_enabled) {
+
+    if (ksu_fname_len(file_name) == 13 &&
+        !memcmp(ksu_fname_arg(file_name), "packages.list", 13)) {
+            pr_info("packages.list detected: %d\n", mask);
+            if (ksu_uid_scanner_enabled) {
             ksu_request_userspace_scan();
         }
         track_throne();
     }
     return 0;
 }
-#else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
-static int ksu_handle_event(struct fsnotify_group *group,
-    struct inode *inode, u32 mask, const void *data, int data_type,
-    const struct qstr *file_name, u32 cookie,
-    struct fsnotify_iter_info *iter_info)
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
-static int ksu_handle_event(struct fsnotify_group *group,
-    struct inode *inode, u32 mask, const void *data, int data_type,
-    const unsigned char *file_name, u32 cookie,
-    struct fsnotify_iter_info *iter_info)
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
-static int ksu_handle_event(struct fsnotify_group *group,
-    struct inode *inode, struct fsnotify_mark *inode_mark,
-    struct fsnotify_mark *vfsmount_mark,
-    u32 mask, const void *data, int data_type,
-    const unsigned char *file_name, u32 cookie,
-    struct fsnotify_iter_info *iter_info)
-#else
-static int ksu_handle_event(struct fsnotify_group *group,
-    struct inode *inode,
-    struct fsnotify_mark *inode_mark,
-    struct fsnotify_mark *vfsmount_mark,
-    u32 mask, void *data, int data_type,
-    const unsigned char *file_name, u32 cookie)
-#endif
-{
-    if (!file_name)
-        return 0;
-    if (mask & FS_ISDIR)
-        return 0;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
-    if (file_name->len == 13 &&
-        !memcmp(file_name->name, "packages.list", 13)) {
-#else
-    if (strlen(file_name) == 13 &&
-        !memcmp(file_name, "packages.list", 13)) {
-#endif
-            pr_info("packages.list detected: %d\n", mask);
-            track_throne();
-    }
-    return 0;
-}
-#endif
 
 static const struct fsnotify_ops ksu_ops = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
-    .handle_inode_event = ksu_handle_inode_event,
+    .handle_inode_event = ksu_handle_generic_event,
 #else
-    .handle_event = ksu_handle_event,
+    .handle_event = ksu_handle_generic_event,
 #endif
 };
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+static void __maybe_unused m_free(struct fsnotify_mark *m)
+{
+    if (m) {
+        kfree(m);
+    }
+}
+
 static int add_mark_on_inode(struct inode *inode, u32 mask,
                  struct fsnotify_mark **out)
 {
     struct fsnotify_mark *m;
+    int ret;
 
     m = kzalloc(sizeof(*m), GFP_KERNEL);
     if (!m)
         return -ENOMEM;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
     fsnotify_init_mark(m, g);
     m->mask = mask;
+    ret = fsnotify_add_inode_mark(m, inode, 0);
+#else
+    fsnotify_init_mark(m, m_free);
+    m->mask = mask;
+    ret = fsnotify_add_mark(m, g, inode, NULL, 0);
+#endif
 
-    if (fsnotify_add_inode_mark(m, inode, 0)) {
+    if (ret < 0) {
         fsnotify_put_mark(m);
-        return -EINVAL;
+        return ret;
     }
 
     *out = m;
     return 0;
 }
-#else
-static void ksu_free_mark(struct fsnotify_mark *ksu_mark)
-{
-    if (ksu_mark)
-        kfree(ksu_mark);
-}
-static int add_mark_on_inode(struct inode *inode, u32 mask,
-                 struct fsnotify_mark **out)
-{
-    struct fsnotify_mark *ksu_mark;
-    int ret;
-
-    ksu_mark = kzalloc(sizeof(*ksu_mark), GFP_KERNEL);
-    if (!ksu_mark)
-        return -ENOMEM;
-
-    fsnotify_init_mark(ksu_mark, ksu_free_mark);
-    ksu_mark->mask = mask;
-
-    ret = fsnotify_add_mark(ksu_mark, g, inode, NULL, 0);
-    if (ret < 0) {
-        fsnotify_put_mark(ksu_mark);
-        return ret;
-    }
-
-    *out = ksu_mark;
-    return 0;
-}
-#endif /* LINUX_VERSION_CODE >= 4.12 */
 
 static int watch_one_dir(struct watch_dir *wd)
 {
