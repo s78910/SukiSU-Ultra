@@ -35,7 +35,7 @@ extern void ksu_sucompat_exit(void);
 // Forward declaration for anon_ksu_fops
 static const struct file_operations anon_ksu_fops;
 
-static bool ksu_su_compat_enabled = true;
+bool ksu_su_compat_enabled = true;
 bool ksu_uid_scanner_enabled = false;
 
 // Permission check functions
