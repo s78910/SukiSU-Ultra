@@ -8,6 +8,7 @@
 #include "allowlist.h"
 #include "arch.h"
 #include "core_hook.h"
+#include "feature.h"
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
 #include "throne_tracker.h"
@@ -59,6 +60,7 @@ extern void ksu_sucompat_init(void);
 extern void ksu_sucompat_exit(void);
 extern void ksu_ksud_init(void);
 extern void ksu_ksud_exit(void);
+extern void ksu_supercalls_init();
 #ifdef CONFIG_KSU_TRACEPOINT_HOOK
 extern void ksu_trace_register();
 extern void ksu_trace_unregister();
@@ -89,6 +91,10 @@ int __init kernelsu_init(void)
 #ifdef CONFIG_KSU_SUSFS
     susfs_init();
 #endif
+
+    ksu_feature_init();
+
+    ksu_supercalls_init();
 
     ksu_core_init();
 
@@ -144,6 +150,7 @@ void kernelsu_exit(void)
     ksu_sucompat_exit();
 
     ksu_core_exit();
+    ksu_feature_exit();
 }
 
 module_init(kernelsu_init);

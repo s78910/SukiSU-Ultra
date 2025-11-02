@@ -50,6 +50,7 @@
 #include "allowlist.h"
 #include "arch.h"
 #include "core_hook.h"
+#include "feature.h"
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
 #include "ksud.h"
@@ -176,6 +177,29 @@ static struct workqueue_struct *ksu_workqueue;
 struct ksu_umount_work {
     struct work_struct work;
     struct mnt_namespace *mnt_ns;
+};
+
+static bool ksu_kernel_umount_enabled = true;
+
+static int kernel_umount_feature_get(u64 *value)
+{
+    *value = ksu_kernel_umount_enabled ? 1 : 0;
+    return 0;
+}
+
+static int kernel_umount_feature_set(u64 value)
+{
+    bool enable = value != 0;
+    ksu_kernel_umount_enabled = enable;
+    pr_info("kernel_umount: set to %d\n", enable);
+    return 0;
+}
+
+static const struct ksu_feature_handler kernel_umount_handler = {
+    .feature_id = KSU_FEATURE_KERNEL_UMOUNT,
+    .name = "kernel_umount",
+    .get_handler = kernel_umount_feature_get,
+    .set_handler = kernel_umount_feature_set,
 };
 
 static inline bool is_allow_su(void)
@@ -1007,8 +1031,8 @@ static void do_umount_work(struct work_struct *work)
     try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
     try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
 
+    // fixme: dec refcount
     current->nsproxy->mnt_ns = old_mnt_ns;
-    put_mnt_ns(umount_work->mnt_ns);
 
     kfree(umount_work);
 }
@@ -1049,6 +1073,10 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 
     // this hook is used for umounting overlayfs for some uid, if there isn't any module mounted, just ignore it!
     if (!ksu_module_mounted) {
+        return 0;
+    }
+
+    if (!ksu_kernel_umount_enabled) {
         return 0;
     }
 
@@ -1165,6 +1193,10 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         return 0;
     }
 
+    if (!ksu_kernel_umount_enabled) {
+        return 0;
+    }
+
     if (!ksu_uid_should_umount(new_uid.val)) {
         return 0;
     } else {
@@ -1199,8 +1231,8 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         return 0;
     }
 
+    // fixme: inc refcount
     umount_work->mnt_ns = current->nsproxy->mnt_ns;
-    get_mnt_ns(umount_work->mnt_ns);
 
     INIT_WORK(&umount_work->work, do_umount_work);
 
