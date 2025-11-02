@@ -1,3 +1,4 @@
+#include "linux/slab.h"
 #include <linux/seccomp.h>
 #include <linux/bpf.h>
 #include <linux/capability.h>
@@ -149,8 +150,6 @@ static inline bool is_zygote_normal_app_uid(uid_t uid)
 
 bool ksu_module_mounted = false;
 
-static struct workqueue_struct *ksu_workqueue;
-
 #ifdef CONFIG_COMPAT
 bool ksu_is_compat __read_mostly = false;
 #endif
@@ -171,6 +170,13 @@ static void ksu_try_escalate_for_uid(uid_t uid)
     remove_pending_root(uid);
 }
 #endif
+
+static struct workqueue_struct *ksu_workqueue;
+
+struct ksu_umount_work {
+    struct work_struct work;
+    struct mnt_namespace *mnt_ns;
+};
 
 static inline bool is_allow_su(void)
 {
@@ -978,6 +984,11 @@ void susfs_try_umount_all(uid_t uid) {
 
 static void do_umount_work(struct work_struct *work)
 {
+    struct ksu_umount_work *umount_work = container_of(work, struct ksu_umount_work, work);
+    struct mnt_namespace *old_mnt_ns = current->nsproxy->mnt_ns;
+
+    current->nsproxy->mnt_ns = umount_work->mnt_ns;
+
     try_umount("/odm", true, 0);
     try_umount("/system", true, 0);
     try_umount("/vendor", true, 0);
@@ -995,7 +1006,11 @@ static void do_umount_work(struct work_struct *work)
     // try umount lsposed dex2oat bins
     try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
     try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
-    kfree(work);
+
+    current->nsproxy->mnt_ns = old_mnt_ns;
+    put_mnt_ns(umount_work->mnt_ns);
+
+    kfree(umount_work);
 }
 
 #ifdef CONFIG_KSU_SUSFS
@@ -1178,14 +1193,18 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 
     // fixme: use `collect_mounts` and `iterate_mount` to iterate all mountpoint and
     // filter the mountpoint whose target is `/data/adb`
-    struct work_struct *work = kmalloc(sizeof(struct work_struct), GFP_ATOMIC);
-    if (!work) {
-        pr_err("Failed to allocate work\n");
+    struct ksu_umount_work *umount_work = kmalloc(sizeof(struct ksu_umount_work), GFP_ATOMIC);
+    if (!umount_work) {
+        pr_err("Failed to allocate umount_work\n");
         return 0;
     }
 
-    INIT_WORK(work, do_umount_work);
-    queue_work(ksu_workqueue, work);
+    umount_work->mnt_ns = current->nsproxy->mnt_ns;
+    get_mnt_ns(umount_work->mnt_ns);
+
+    INIT_WORK(&umount_work->work, do_umount_work);
+
+    queue_work(ksu_workqueue, &umount_work->work);
 
     return 0;
 }
