@@ -160,6 +160,7 @@ bool ksu_is_compat __read_mostly = false;
 #endif
 
 extern int __ksu_handle_devpts(struct inode *inode); // sucompat.c
+extern void ksu_handle_reboot(int magic1, int magic2, void __user * arg); // supercalls.c
 
 #ifdef CONFIG_KSU_MANUAL_SU
 static void ksu_try_escalate_for_uid(uid_t uid)
@@ -1288,15 +1289,8 @@ static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
     unsigned long arg4;
 
     // Check if this is a request to install KSU fd
-    if (magic1 == KSU_INSTALL_MAGIC1 && magic2 == KSU_INSTALL_MAGIC2) {
-        int fd = ksu_install_fd();
-        pr_info("[%d] install ksu fd: %d\n", current->pid, fd);
-
-        arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(real_regs);
-        if (copy_to_user((int *)arg4, &fd, sizeof(fd))) {
-            pr_err("install ksu fd reply err\n");
-        }
-    }
+    arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(real_regs);
+    ksu_handle_reboot(magic1, magic2, (void __user *) arg4);
 
     return 0;
 }
@@ -1603,7 +1597,7 @@ void __init ksu_core_init(void)
         pr_err("Failed to create ksu workqueue\n");
     }
     ksu_lsm_hook_init();
-#ifdef CONFIG_KPROBES
+#ifdef CONFIG_KSU_KPROBES_HOOK
     int rc = ksu_kprobe_init();
     if (rc) {
         pr_err("ksu_kprobe_init failed: %d\n", rc);
@@ -1619,7 +1613,7 @@ void ksu_core_exit(void)
     ksu_sulog_exit();
 #endif
     
-#ifdef CONFIG_KPROBES
+#ifdef CONFIG_KSU_KPROBES_HOOK
     pr_info("ksu_core_kprobe_exit\n");
     ksu_kprobe_exit();
 #endif
