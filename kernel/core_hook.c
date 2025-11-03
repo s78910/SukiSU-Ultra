@@ -1006,6 +1006,41 @@ void susfs_try_umount_all(uid_t uid) {
 }
 #endif
 
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+static void do_umount_work(struct work_struct *work)
+{
+    struct ksu_umount_work *umount_work = container_of(work, struct ksu_umount_work, work);
+    struct mnt_namespace *old_mnt_ns = current->nsproxy->mnt_ns;
+
+    current->nsproxy->mnt_ns = umount_work->mnt_ns;
+
+    uid_t uid = current_uid().val;
+
+    try_umount("/odm", true, 0, uid);
+    try_umount("/system", true, 0, uid);
+    try_umount("/vendor", true, 0, uid);
+    try_umount("/product", true, 0, uid);
+    try_umount("/system_ext", true, 0, uid);
+    try_umount("/data/adb/modules", false, MNT_DETACH, uid);
+    try_umount("/data/adb/kpm", false, MNT_DETACH, uid);
+
+    // try umount ksu temp path
+    try_umount("/debug_ramdisk", false, MNT_DETACH, uid);
+    try_umount("/sbin", false, MNT_DETACH, uid);
+
+    // try umount lsposed dex2oat bins
+    try_umount("/system/etc/hosts", false, MNT_DETACH, uid);
+
+    // try umount lsposed dex2oat bins
+    try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
+    try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
+
+    // fixme: dec refcount
+    current->nsproxy->mnt_ns = old_mnt_ns;
+
+    kfree(umount_work);
+}
+#else
 static void do_umount_work(struct work_struct *work)
 {
     struct ksu_umount_work *umount_work = container_of(work, struct ksu_umount_work, work);
@@ -1019,23 +1054,22 @@ static void do_umount_work(struct work_struct *work)
     try_umount("/product", true, 0);
     try_umount("/system_ext", true, 0);
     try_umount("/data/adb/modules", false, MNT_DETACH);
-    try_umount("/data/adb/kpm", false, MNT_DETACH, uid);
-
+    try_umount("/data/adb/kpm", false, MNT_DETACH);
     // try umount ksu temp path
     try_umount("/debug_ramdisk", false, MNT_DETACH);
-    try_umount("/sbin", false, MNT_DETACH, uid);
+    try_umount("/sbin", false, MNT_DETACH);
 
-    try_umount("/system/etc/hosts", false, MNT_DETACH, uid);
-
+    try_umount("/system/etc/hosts", false, MNT_DETACH);
     // try umount lsposed dex2oat bins
-    try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
-    try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
+    try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH);
+    try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH);
 
     // fixme: dec refcount
     current->nsproxy->mnt_ns = old_mnt_ns;
 
     kfree(umount_work);
 }
+#endif
 
 #ifdef CONFIG_KSU_SUSFS
 int ksu_handle_setuid(struct cred *new, const struct cred *old)
@@ -1561,6 +1595,9 @@ __maybe_unused int ksu_kprobe_exit(void)
 
 void __init ksu_core_init(void)
 {
+    if (ksu_register_feature_handler(&kernel_umount_handler)) {
+        pr_err("Failed to register kernel_umount feature handler\n");
+    }
     ksu_workqueue = alloc_workqueue("ksu_umount", WQ_UNBOUND, 0);
     if (!ksu_workqueue) {
         pr_err("Failed to create ksu workqueue\n");
