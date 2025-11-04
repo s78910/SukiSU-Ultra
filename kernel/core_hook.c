@@ -972,11 +972,12 @@ void susfs_try_umount_all(uid_t uid) {
 }
 #endif
 
-#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 struct umount_tw {
     struct callback_head cb;
     const struct cred *old_cred;
 };
+
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 static void umount_tw_func(struct callback_head *cb)
 {
     struct umount_tw *tw = container_of(cb, struct umount_tw, cb);
@@ -1018,10 +1019,6 @@ static void umount_tw_func(struct callback_head *cb)
     kfree(tw);
 }
 #else
-struct umount_tw {
-    struct callback_head cb;
-    const struct cred *old_cred;
-};
 static void umount_tw_func(struct callback_head *cb)
 {
     struct umount_tw *tw = container_of(cb, struct umount_tw, cb);
@@ -1061,7 +1058,7 @@ static void umount_tw_func(struct callback_head *cb)
 #ifdef CONFIG_KSU_SUSFS
 int ksu_handle_setuid(struct cred *new, const struct cred *old)
 {
-    struct umount_tw *tw;
+    __maybe_unused struct umount_tw *tw;
     if (!new || !old) {
         return 0;
     }
@@ -1184,7 +1181,7 @@ do_umount:
 #else
 int ksu_handle_setuid(struct cred *new, const struct cred *old)
 {
-    struct umount_tw *tw;
+    __maybe_unused struct umount_tw *tw;
     if (!new || !old) {
         return 0;
     }
@@ -1617,9 +1614,6 @@ __maybe_unused int ksu_kprobe_exit(void)
 
 void __init ksu_core_init(void)
 {
-    if (ksu_register_feature_handler(&kernel_umount_handler)) {
-        pr_err("Failed to register kernel_umount feature handler\n");
-    }
     ksu_lsm_hook_init();
 #ifdef CONFIG_KSU_KPROBES_HOOK
     int rc = ksu_kprobe_init();
