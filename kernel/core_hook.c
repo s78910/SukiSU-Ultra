@@ -61,13 +61,6 @@
 #include "supercalls.h"
 #include "sulog.h"
 
-#ifdef CONFIG_KSU_MANUAL_SU
-#include "manual_su.h"
-#endif
-
-#ifdef CONFIG_KPM
-#include "kpm/kpm.h"
-#endif
 
 #ifdef CONFIG_KSU_SUSFS
 bool susfs_is_boot_completed_triggered = false;
@@ -516,9 +509,6 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
     const char *name = NULL;
 
     switch (cmd) {
-#ifdef CONFIG_KSU_MANUAL_SU
-    case CMD_MANUAL_SU_REQUEST:             name = "prctl_manual_su_request"; break;
-#endif
 
 #ifdef CONFIG_KSU_SUSFS
     case CMD_SUSFS_ADD_SUS_PATH:            name = "prctl_susfs_add_sus_path"; break;
@@ -559,21 +549,11 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
              unsigned long arg4, unsigned long arg5)
 {
 
-    bool is_manual_su_cmd = false;
-#ifdef CONFIG_KSU_MANUAL_SU
-    is_manual_su_cmd = (arg2 == CMD_MANUAL_SU_REQUEST);
-#endif
 
 #ifdef CONFIG_KSU_SUSFS
-    bool saved_umount_flag = false;
-#ifdef CONFIG_KSU_MANUAL_SU
-    if (is_manual_su_cmd || is_system_uid()) {
-        saved_umount_flag = test_and_clear_ti_thread_flag(&current->thread_info, TIF_PROC_UMOUNTED);
-    }
-#endif
     // - We straight up check if process is supposed to be umounted, return 0 if so
     // - This is to prevent side channel attack as much as possible
-    if (likely(!saved_umount_flag && susfs_is_current_proc_umounted()))
+    if (likely(susfs_is_current_proc_umounted()))
         return 0;
 #endif
 
@@ -602,18 +582,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 
 #ifdef CONFIG_KSU_DEBUG
     pr_info("option: 0x%x, cmd: %ld\n", option, arg2);
-#endif
-
-    #ifdef CONFIG_KPM
-    if(sukisu_is_kpm_control_code(arg2)) {
-        int res;
-
-        pr_info("KPM: calling before arg2=%d\n", (int) arg2);
-        
-        res = sukisu_handle_kpm(arg2, arg3, arg4, arg5);
-
-        return 0;
-    }
 #endif
 
 #ifdef CONFIG_KSU_MANUAL_SU
@@ -857,11 +825,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
         return 0;
     }
 #endif //#ifdef CONFIG_KSU_SUSFS
-
-#if defined(CONFIG_KSU_SUSFS) && defined(CONFIG_KSU_MANUAL_SU)
-    if (unlikely(saved_umount_flag))
-        set_ti_thread_flag(&current->thread_info, TIF_PROC_UMOUNTED);
-#endif
 
     return 0;
 }
@@ -1654,6 +1617,7 @@ void __init ksu_core_init(void)
     if (ksu_register_feature_handler(&kernel_umount_handler)) {
         pr_err("Failed to register umount feature handler\n");
     }
+    ksu_netlink_init();
 }
 
 void ksu_core_exit(void)
@@ -1669,4 +1633,5 @@ void ksu_core_exit(void)
     ksu_kprobe_exit();
 #endif
     ksu_unregister_feature_handler(KSU_FEATURE_KERNEL_UMOUNT);
+    ksu_netlink_exit();
 }

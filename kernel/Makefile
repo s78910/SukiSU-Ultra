@@ -12,6 +12,7 @@ kernelsu-objs += embed_ksud.o
 kernelsu-objs += kernel_compat.o
 kernelsu-objs += throne_comm.o
 kernelsu-objs += sulog.o
+kernelsu-objs += ksu_netlink.o
 
 ifeq ($(CONFIG_KSU_MANUAL_SU), y)
 ccflags-y += -DCONFIG_KSU_MANUAL_SU
@@ -199,7 +200,7 @@ endif
 $(info -- Supported Unofficial Manager: 5ec1cff (GKI) rsuntk (Non-GKI) ShirkNeko udochina (GKI and non-GKI and KPM))
 
 ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat
-ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
+ccflags-y += -Wno-declaration-after-statement -Wno-unused-function -Wno-unused-variable
 
 ## For susfs stuff ##
 ifeq ($(shell test -e $(srctree)/fs/susfs.c; echo $$?),0)
