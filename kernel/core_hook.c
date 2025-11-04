@@ -1,4 +1,6 @@
-#include "linux/slab.h"
+#include <linux/slab.h>
+#include <linux/task_work.h>
+#include <linux/thread_info.h>
 #include <linux/seccomp.h>
 #include <linux/bpf.h>
 #include <linux/capability.h>
@@ -25,7 +27,6 @@
 #include <linux/uaccess.h>
 #include <linux/uidgid.h>
 #include <linux/version.h>
-#include <linux/workqueue.h>
 #include <linux/lsm_hooks.h>
 #include <linux/binfmts.h>
 #include <linux/tty.h>
@@ -162,13 +163,6 @@ static void ksu_try_escalate_for_uid(uid_t uid)
     pr_info("pending_root: UID=%d temporarily allowed\n", uid);
     remove_pending_root(uid);
 }
-
-static struct workqueue_struct *ksu_workqueue;
-
-struct ksu_umount_work {
-    struct work_struct work;
-    struct mnt_namespace *mnt_ns;
-};
 
 static bool ksu_kernel_umount_enabled = true;
 
@@ -979,15 +973,23 @@ void susfs_try_umount_all(uid_t uid) {
 #endif
 
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-static void do_umount_work(struct work_struct *work)
+struct umount_tw {
+    struct callback_head cb;
+    const struct cred *old_cred;
+};
+static void umount_tw_func(struct callback_head *cb)
 {
-    struct ksu_umount_work *umount_work = container_of(work, struct ksu_umount_work, work);
-    struct mnt_namespace *old_mnt_ns = current->nsproxy->mnt_ns;
-
-    current->nsproxy->mnt_ns = umount_work->mnt_ns;
+    struct umount_tw *tw = container_of(cb, struct umount_tw, cb);
+    const struct cred *saved = NULL;
+    if (tw->old_cred) {
+        saved = override_creds(tw->old_cred);
+    }
 
     uid_t uid = current_uid().val;
 
+
+    // fixme: use `collect_mounts` and `iterate_mount` to iterate all mountpoint and
+    // filter the mountpoint whose target is `/data/adb`
     try_umount("/odm", true, 0, uid);
     try_umount("/system", true, 0, uid);
     try_umount("/vendor", true, 0, uid);
@@ -1007,19 +1009,29 @@ static void do_umount_work(struct work_struct *work)
     try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
     try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
 
-    // fixme: dec refcount
-    current->nsproxy->mnt_ns = old_mnt_ns;
+    if (saved)
+        revert_creds(saved);
 
-    kfree(umount_work);
+    if (tw->old_cred)
+        put_cred(tw->old_cred);
+
+    kfree(tw);
 }
 #else
-static void do_umount_work(struct work_struct *work)
+struct umount_tw {
+    struct callback_head cb;
+    const struct cred *old_cred;
+};
+static void umount_tw_func(struct callback_head *cb)
 {
-    struct ksu_umount_work *umount_work = container_of(work, struct ksu_umount_work, work);
-    struct mnt_namespace *old_mnt_ns = current->nsproxy->mnt_ns;
+    struct umount_tw *tw = container_of(cb, struct umount_tw, cb);
+    const struct cred *saved = NULL;
+    if (tw->old_cred) {
+        saved = override_creds(tw->old_cred);
+    }
 
-    current->nsproxy->mnt_ns = umount_work->mnt_ns;
-
+    // fixme: use `collect_mounts` and `iterate_mount` to iterate all mountpoint and
+    // filter the mountpoint whose target is `/data/adb`
     try_umount("/odm", true, 0);
     try_umount("/system", true, 0);
     try_umount("/vendor", true, 0);
@@ -1036,16 +1048,20 @@ static void do_umount_work(struct work_struct *work)
     try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH);
     try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH);
 
-    // fixme: dec refcount
-    current->nsproxy->mnt_ns = old_mnt_ns;
+    if (saved)
+        revert_creds(saved);
 
-    kfree(umount_work);
+    if (tw->old_cred)
+        put_cred(tw->old_cred);
+
+    kfree(tw);
 }
 #endif
 
 #ifdef CONFIG_KSU_SUSFS
 int ksu_handle_setuid(struct cred *new, const struct cred *old)
 {
+    struct umount_tw *tw;
     if (!new || !old) {
         return 0;
     }
@@ -1130,16 +1146,21 @@ do_umount:
     // susfs come first, and lastly umount by ksu, make sure umount in reversed order
     susfs_try_umount_all(new_uid.val);
 #else
-    // fixme: use `collect_mounts` and `iterate_mount` to iterate all mountpoint and
-    // filter the mountpoint whose target is `/data/adb`
-    struct work_struct *work = kmalloc(sizeof(struct work_struct), GFP_ATOMIC);
-    if (!work) {
-        pr_err("Failed to allocate work\n");
+    tw = kmalloc(sizeof(*tw), GFP_ATOMIC);
+    if (!tw)
         return 0;
-    }
 
-    INIT_WORK(work, do_umount_work);
-    queue_work(ksu_workqueue, work);
+    tw->old_cred = get_current_cred();
+    tw->cb.func = umount_tw_func;
+
+    int err = task_work_add(current, &tw->cb, TWA_RESUME);
+    if (err) {
+        if (tw->old_cred) {
+            put_cred(tw->old_cred);
+        }
+        kfree(tw);
+        pr_warn("unmount add task_work failed\n");
+    }
 
 #endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
@@ -1163,6 +1184,7 @@ do_umount:
 #else
 int ksu_handle_setuid(struct cred *new, const struct cred *old)
 {
+    struct umount_tw *tw;
     if (!new || !old) {
         return 0;
     }
@@ -1239,20 +1261,21 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         current->pid);
 #endif
 
-    // fixme: use `collect_mounts` and `iterate_mount` to iterate all mountpoint and
-    // filter the mountpoint whose target is `/data/adb`
-    struct ksu_umount_work *umount_work = kmalloc(sizeof(struct ksu_umount_work), GFP_ATOMIC);
-    if (!umount_work) {
-        pr_err("Failed to allocate umount_work\n");
+    tw = kmalloc(sizeof(*tw), GFP_ATOMIC);
+    if (!tw)
         return 0;
+
+    tw->old_cred = get_current_cred();
+    tw->cb.func = umount_tw_func;
+
+    int err = task_work_add(current, &tw->cb, TWA_RESUME);
+    if (err) {
+        if (tw->old_cred) {
+            put_cred(tw->old_cred);
+        }
+        kfree(tw);
+        pr_warn("unmount add task_work failed\n");
     }
-
-    // fixme: inc refcount
-    umount_work->mnt_ns = current->nsproxy->mnt_ns;
-
-    INIT_WORK(&umount_work->work, do_umount_work);
-
-    queue_work(ksu_workqueue, &umount_work->work);
 
     return 0;
 }
@@ -1597,10 +1620,6 @@ void __init ksu_core_init(void)
     if (ksu_register_feature_handler(&kernel_umount_handler)) {
         pr_err("Failed to register kernel_umount feature handler\n");
     }
-    ksu_workqueue = alloc_workqueue("ksu_umount", WQ_UNBOUND, 0);
-    if (!ksu_workqueue) {
-        pr_err("Failed to create ksu workqueue\n");
-    }
     ksu_lsm_hook_init();
 #ifdef CONFIG_KSU_KPROBES_HOOK
     int rc = ksu_kprobe_init();
@@ -1622,8 +1641,4 @@ void ksu_core_exit(void)
     pr_info("ksu_core_kprobe_exit\n");
     ksu_kprobe_exit();
 #endif
-    if (ksu_workqueue) {
-        flush_workqueue(ksu_workqueue);
-        destroy_workqueue(ksu_workqueue);
-    }
 }
