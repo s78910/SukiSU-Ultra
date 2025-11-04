@@ -12,7 +12,11 @@ kernelsu-objs += embed_ksud.o
 kernelsu-objs += kernel_compat.o
 kernelsu-objs += throne_comm.o
 kernelsu-objs += sulog.o
+
+ifeq ($(CONFIG_KSU_MANUAL_SU), y)
+ccflags-y += -DCONFIG_KSU_MANUAL_SU
 kernelsu-objs += manual_su.o
+endif
 
 ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
 kernelsu-objs += ksu_trace.o
@@ -97,10 +101,13 @@ ccflags-y += -DKSU_VERSION_FULL=\"$(KSU_VERSION_FULL)\"
 
 ifeq ($(CONFIG_KSU_KPROBES_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_KPROBES_HOOK)
+ccflags-y += -DCONFIG_KSU_KPROBES_HOOK
 else ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_TRACEPOINT_HOOK)
+ccflags-y += -DCONFIG_KSU_TRACEPOINT_HOOK
 else ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
+ccflags-y += -DCONFIG_KSU_MANUAL_HOOK
 endif
 
 KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)
