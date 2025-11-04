@@ -59,14 +59,7 @@
 #include "kernel_compat.h"
 #include "supercalls.h"
 #include "sulog.h"
-
-#ifdef CONFIG_KSU_MANUAL_SU
 #include "manual_su.h"
-#endif
-
-#ifdef CONFIG_KPM
-#include "kpm/kpm.h"
-#endif
 
 #ifdef CONFIG_KSU_SUSFS
 bool susfs_is_boot_completed_triggered = false;
@@ -161,7 +154,6 @@ bool ksu_is_compat __read_mostly = false;
 
 extern int __ksu_handle_devpts(struct inode *inode); // sucompat.c
 
-#ifdef CONFIG_KSU_MANUAL_SU
 static void ksu_try_escalate_for_uid(uid_t uid)
 {
     if (!is_pending_root(uid))
@@ -170,7 +162,6 @@ static void ksu_try_escalate_for_uid(uid_t uid)
     pr_info("pending_root: UID=%d temporarily allowed\n", uid);
     remove_pending_root(uid);
 }
-#endif
 
 static struct workqueue_struct *ksu_workqueue;
 
@@ -358,8 +349,6 @@ void escape_to_root(void)
 #endif
 }
 
-#ifdef CONFIG_KSU_MANUAL_SU
-
 static void disable_seccomp_for_task(struct task_struct *tsk)
 {
     if (!tsk->seccomp.filter && tsk->seccomp.mode == SECCOMP_MODE_DISABLED)
@@ -379,7 +368,6 @@ static void disable_seccomp_for_task(struct task_struct *tsk)
         tsk->seccomp.filter = NULL;
 #endif
     }
-#endif
 }
 
 void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
@@ -522,9 +510,7 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
     const char *name = NULL;
 
     switch (cmd) {
-#ifdef CONFIG_KSU_MANUAL_SU
     case CMD_MANUAL_SU_REQUEST:             name = "prctl_manual_su_request"; break;
-#endif
 
 #ifdef CONFIG_KSU_SUSFS
     case CMD_SUSFS_ADD_SUS_PATH:            name = "prctl_susfs_add_sus_path"; break;
@@ -610,19 +596,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
     pr_info("option: 0x%x, cmd: %ld\n", option, arg2);
 #endif
 
-    #ifdef CONFIG_KPM
-    if(sukisu_is_kpm_control_code(arg2)) {
-        int res;
-
-        pr_info("KPM: calling before arg2=%d\n", (int) arg2);
-        
-        res = sukisu_handle_kpm(arg2, arg3, arg4, arg5);
-
-        return 0;
-    }
-#endif
-
-#ifdef CONFIG_KSU_MANUAL_SU
     if (arg2 == CMD_MANUAL_SU_REQUEST) {
         struct manual_su_request request;
         int su_option = (int)arg3;
@@ -649,7 +622,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
         }
         return 0;
     }
-#endif
 
 #ifdef CONFIG_KSU_SUSFS
     int susfs_cmd_err = 0;
@@ -1392,9 +1364,7 @@ int ksu_bprm_check(struct linux_binprm *bprm)
 
     ksu_handle_pre_ksud(filename);
 
-#ifdef CONFIG_KSU_MANUAL_SU
     ksu_try_escalate_for_uid(current_uid().val);
-#endif
 
     return 0;
 
