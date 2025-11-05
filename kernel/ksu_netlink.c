@@ -37,7 +37,7 @@ static bool system_uid(uid_t uid)
 // Manual SU
 static int handle_manual_su(struct sk_buff *skb, struct nlmsghdr *nlh, void *msg_data)
 {
-    struct ksu_netlink_manual_su *msg = (struct ksu_netlink_manual_su *)msg_data;
+    struct netlink_manual_su *msg = (struct netlink_manual_su *)msg_data;
     struct manual_su_request request;
     int res;
 
@@ -68,7 +68,7 @@ static int handle_manual_su(struct sk_buff *skb, struct nlmsghdr *nlh, void *msg
 static const struct ksu_netlink_cmd_handler ksu_netlink_handlers[] = {
 #ifdef CONFIG_KSU_MANUAL_SU
     { .cmd = KSU_NETLINK_CMD_MANUAL_SU,
-        .msg_size = sizeof(struct ksu_netlink_manual_su),
+        .msg_size = sizeof(struct netlink_manual_su),
         .name = "MANUAL_SU",
         .handler = handle_manual_su,
         .perm_check = system_uid

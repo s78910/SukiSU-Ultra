@@ -16,7 +16,7 @@ struct ksu_netlink_hdr {
 };
 
 #ifdef CONFIG_KSU_MANUAL_SU
-struct ksu_netlink_manual_su {
+struct netlink_manual_su {
     struct ksu_netlink_hdr hdr;
     int option;
     uid_t target_uid;
@@ -28,7 +28,7 @@ struct ksu_netlink_manual_su {
 union ksu_netlink_msg {
     struct ksu_netlink_hdr hdr;
 #ifdef CONFIG_KSU_MANUAL_SU
-    struct ksu_netlink_manual_su manual_su;
+    struct netlink_manual_su manual_su;
 #endif
 };
 
