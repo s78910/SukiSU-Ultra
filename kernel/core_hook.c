@@ -1586,7 +1586,6 @@ void __init ksu_core_init(void)
     if (ksu_register_feature_handler(&kernel_umount_handler)) {
         pr_err("Failed to register umount feature handler\n");
     }
-    ksu_netlink_init();
 }
 
 void ksu_core_exit(void)
@@ -1602,5 +1601,4 @@ void ksu_core_exit(void)
     ksu_kprobe_exit();
 #endif
     ksu_unregister_feature_handler(KSU_FEATURE_KERNEL_UMOUNT);
-    ksu_netlink_exit();
 }
