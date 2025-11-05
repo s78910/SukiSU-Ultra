@@ -58,13 +58,6 @@ struct dynamic_manager_user_config {
 	char hash[65];
 };
 
-struct manager_list_info {
-	int count;
-	struct {
-		uid_t uid;
-		int signature_index;
-	} managers[2];
-};
 
 struct root_profile {
 	int32_t uid;

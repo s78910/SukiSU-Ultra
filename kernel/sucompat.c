@@ -18,6 +18,7 @@
 #include "objsec.h"
 #include "allowlist.h"
 #include "arch.h"
+#include "feature.h"
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
 #include "kernel_compat.h"
@@ -29,8 +30,44 @@ static const char su[] = SU_PATH;
 static const char ksud_path[] = KSUD_PATH;
 
 extern void escape_to_root(void);
+void ksu_sucompat_enable(void);
+void ksu_sucompat_disable(void);
 
-bool ksu_sucompat_hook_state __read_mostly = true;
+static bool ksu_su_compat_enabled __read_mostly = true;
+
+static int su_compat_feature_get(u64 *value)
+{
+	*value = ksu_su_compat_enabled ? 1 : 0;
+	return 0;
+}
+
+static int su_compat_feature_set(u64 value)
+{
+	bool enable = value != 0;
+
+	if (enable == ksu_su_compat_enabled) {
+		pr_info("su_compat: no need to change\n");
+		return 0;
+	}
+
+	if (enable) {
+		ksu_sucompat_enable();
+	} else {
+		ksu_sucompat_disable();
+	}
+
+	ksu_su_compat_enabled = enable;
+	pr_info("su_compat: set to %d\n", enable);
+
+	return 0;
+}
+
+static const struct ksu_feature_handler su_compat_handler = {
+	.feature_id = KSU_FEATURE_SU_COMPAT,
+	.name = "su_compat",
+	.get_handler = su_compat_feature_get,
+	.set_handler = su_compat_feature_set,
+};
 
 static inline void __user *userspace_stack_buffer(const void *d, size_t len)
 {
@@ -55,7 +92,7 @@ static inline char __user *ksud_user_path(void)
 static inline bool __is_su_allowed(const void *ptr_to_check)
 {
 #ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_hook_state)
+	if (!ksu_su_compat_enabled)
 		return false;
 #endif
 	if (likely(!ksu_is_allow_uid(current_uid().val)))
@@ -174,6 +211,7 @@ int __ksu_handle_devpts(struct inode *inode)
 #else
 	struct inode_security_struct *sec = (struct inode_security_struct *)inode->i_security;
 #endif
+
 	if (ksu_devpts_sid && sec)
 		sec->sid = ksu_devpts_sid;
 
@@ -214,7 +252,6 @@ static int execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 					  NULL);
 }
 
-static struct kprobe *su_kps[6];
 static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 {
 	struct inode *inode;
@@ -227,6 +264,12 @@ static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 
 	return ksu_handle_devpts(inode);
 }
+
+#ifdef CONFIG_COMPAT
+static struct kprobe *su_kps[6];
+#else
+static struct kprobe *su_kps[4];
+#endif
 
 static struct kprobe *init_kprobe(const char *name,
 				  kprobe_pre_handler_t handler)
@@ -259,31 +302,55 @@ static void destroy_kprobe(struct kprobe **kp_ptr)
 }
 #endif
 
-// sucompat: permited process can execute 'su' to gain root access.
-void ksu_sucompat_init(void)
+void ksu_sucompat_enable(void)
 {
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	su_kps[0] = init_kprobe(SYS_EXECVE_SYMBOL, execve_handler_pre);
-	su_kps[1] = init_kprobe(SYS_EXECVE_COMPAT_SYMBOL, execve_handler_pre);
-	su_kps[2] = init_kprobe(SYS_FACCESSAT_SYMBOL, faccessat_handler_pre);
-	su_kps[3] = init_kprobe(SYS_NEWFSTATAT_SYMBOL, newfstatat_handler_pre);
-	su_kps[4] = init_kprobe(SYS_FSTATAT64_SYMBOL, newfstatat_handler_pre);
-	su_kps[5] = init_kprobe("pts_unix98_lookup", pts_unix98_lookup_pre);
-#else
-	ksu_sucompat_hook_state = true;
-	pr_info("ksu_sucompat init\n");
+	su_kps[1] = init_kprobe(SYS_FACCESSAT_SYMBOL, faccessat_handler_pre);
+	su_kps[2] = init_kprobe(SYS_NEWFSTATAT_SYMBOL, newfstatat_handler_pre);
+	su_kps[3] = init_kprobe("pts_unix98_lookup", pts_unix98_lookup_pre);
+#ifdef CONFIG_COMPAT
+	su_kps[4] = init_kprobe(SYS_EXECVE_COMPAT_SYMBOL, execve_handler_pre);
+	su_kps[5] = init_kprobe(SYS_FSTATAT64_SYMBOL, newfstatat_handler_pre);
+#endif
 #endif
 }
 
-void ksu_sucompat_exit(void)
+void ksu_sucompat_disable(void)
 {
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	int i;
 	for (i = 0; i < ARRAY_SIZE(su_kps); i++) {
 		destroy_kprobe(&su_kps[i]);
 	}
-#else
-	ksu_sucompat_hook_state = false;
-	pr_info("ksu_sucompat exit\n");
 #endif
+}
+
+// sucompat: permited process can execute 'su' to gain root access.
+void ksu_sucompat_init(void)
+{
+	if (ksu_register_feature_handler(&su_compat_handler)) {
+		pr_err("Failed to register su_compat feature handler\n");
+	}
+#ifdef CONFIG_KSU_KPROBES_HOOK
+	if (ksu_su_compat_enabled) {
+		ksu_sucompat_enable();
+	}
+#else
+	ksu_su_compat_enabled = true;
+	pr_info("init sucompat\n");
+#endif
+}
+
+void ksu_sucompat_exit(void)
+{
+#ifdef CONFIG_KSU_KPROBES_HOOK
+	if (ksu_su_compat_enabled) {
+		ksu_sucompat_disable();
+	}
+#else
+	ksu_su_compat_enabled = false;
+	pr_info("deinit sucompat\n");
+#endif
+	ksu_unregister_feature_handler(KSU_FEATURE_SU_COMPAT);
 }
