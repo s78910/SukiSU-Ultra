@@ -558,8 +558,8 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 #endif
 
     // if success, we modify the arg5 as result!
-    __maybe_unused u32 *result = (u32 *)arg5;
-    __maybe_unused u32 reply_ok = KERNEL_SU_OPTION;
+    u32 *result = (u32 *)arg5;
+    u32 reply_ok = KERNEL_SU_OPTION;
 
     if (KERNEL_SU_OPTION != option) {
         return 0;
@@ -573,44 +573,13 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 #endif
 
     DONT_GET_SMART();
-    if (!from_root && !from_manager 
-        && !(is_manual_su_cmd ? is_system_uid(): 
-        (is_allow_su() && is_system_bin_su()))) {
+    if (!from_root && !from_manager && !is_allow_su()) {
         // only root or manager can access this interface
         return 0;
     }
 
 #ifdef CONFIG_KSU_DEBUG
     pr_info("option: 0x%x, cmd: %ld\n", option, arg2);
-#endif
-
-#ifdef CONFIG_KSU_MANUAL_SU
-    if (arg2 == CMD_MANUAL_SU_REQUEST) {
-        struct manual_su_request request;
-        int su_option = (int)arg3;
-        
-        if (copy_from_user(&request, (void __user *)arg4, sizeof(request))) {
-            pr_err("manual_su: failed to copy request from user\n");
-            return 0;
-        }
-
-        int ret = ksu_handle_manual_su_request(su_option, &request);
-
-        // Copy back result for token generation
-        if (ret == 0 && su_option == MANUAL_SU_OP_GENERATE_TOKEN) {
-            if (copy_to_user((void __user *)arg4, &request, sizeof(request))) {
-                pr_err("manual_su: failed to copy request back to user\n");
-                return 0;
-            }
-        }
-        
-        if (ret == 0) {
-            if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
-                pr_err("manual_su: prctl reply error\n");
-            }
-        }
-        return 0;
-    }
 #endif
 
 #ifdef CONFIG_KSU_SUSFS

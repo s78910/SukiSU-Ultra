@@ -74,7 +74,7 @@ static const struct ksu_netlink_cmd_handler ksu_netlink_handlers[] = {
         .perm_check = system_uid
     },
 #endif
-    { .cmd = 0, msg_size = NULL, .name = NULL, .handler = NULL, .perm_check = NULL }
+    { .cmd = 0, .msg_size = NULL, .name = NULL, .handler = NULL, .perm_check = NULL }
 };
 
 static void ksu_netlink_recv_msg(struct sk_buff *skb)
