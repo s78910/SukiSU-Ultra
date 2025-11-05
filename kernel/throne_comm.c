@@ -8,6 +8,7 @@
 #include "klog.h"
 #include "throne_comm.h"
 #include "kernel_compat.h"
+#include "ksu.h"
 
 #define PROC_UID_SCANNER "ksu_uid_scanner"
 #define UID_SCANNER_STATE_FILE "/data/adb/ksu/.uid_scanner"
@@ -18,7 +19,6 @@ static struct work_struct scan_work;
 static struct work_struct ksu_state_save_work;
 static struct work_struct ksu_state_load_work;
 
-extern bool ksu_uid_scanner_enabled;
 
 // Signal userspace to rescan
 static bool need_rescan = false;
@@ -121,7 +121,7 @@ static int uid_scanner_open(struct inode *inode, struct file *file)
 }
 
 static ssize_t uid_scanner_write(struct file *file, const char __user *buffer, 
-                                 size_t count, loff_t *pos)
+								 size_t count, loff_t *pos)
 {
 	char cmd[16];
 	
