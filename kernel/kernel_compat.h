@@ -7,12 +7,6 @@
 #include "ss/policydb.h"
 #include "linux/key.h"
 
-#if defined(CONFIG_KPROBES) && !defined(KSU_MANUAL_HOOK)
-#define KSU_KPROBES_HOOK 1
-#else
-#define KSU_KPROBES_HOOK 0
-#endif
-
 /*
  * Linux 6.8+ does not have LKM support, due to numerous changes on LSM.
  * Let's fails if MODULE were defined.

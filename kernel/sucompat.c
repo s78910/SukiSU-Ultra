@@ -545,7 +545,7 @@ bool susfs_is_sus_su_hooks_enabled __read_mostly = false;
 int susfs_sus_su_working_mode = 0;
 
 static bool ksu_is_su_kps_enabled(void) {
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
     destroy_kprobe(&pts_kp);
 #endif
     return false;

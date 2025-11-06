@@ -20,6 +20,13 @@
 #include <linux/susfs.h>
 #endif
 
+static struct workqueue_struct *ksu_workqueue;
+
+bool ksu_queue_work(struct work_struct *work)
+{
+    return queue_work(ksu_workqueue, work);
+}
+
 int __init kernelsu_init(void)
 {
     pr_info("kernelsu.enabled=%d\n",
@@ -44,6 +51,8 @@ int __init kernelsu_init(void)
     ksu_supercalls_init();
 
     ksu_core_init();
+
+    ksu_workqueue = alloc_ordered_workqueue("kernelsu_work_queue", 0);
 
     ksu_allowlist_init();
 
@@ -71,6 +80,8 @@ void kernelsu_exit(void)
     ksu_observer_exit();
 
     ksu_throne_tracker_exit();
+
+    destroy_workqueue(ksu_workqueue);
 
 #ifdef KSU_KPROBES_HOOK
     ksu_ksud_exit();
