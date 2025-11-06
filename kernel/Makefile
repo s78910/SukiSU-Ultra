@@ -10,20 +10,13 @@ kernelsu-objs += feature.o
 kernelsu-objs += ksud.o
 kernelsu-objs += embed_ksud.o
 kernelsu-objs += kernel_compat.o
+kernelsu-objs += throne_tracker.o
 kernelsu-objs += throne_comm.o
 kernelsu-objs += sulog.o
 
 ifeq ($(CONFIG_KSU_MANUAL_SU), y)
 ccflags-y += -DCONFIG_KSU_MANUAL_SU
 kernelsu-objs += manual_su.o
-endif
-
-ifeq ($(CONFIG_KSU_THRONE_TRACKER_LEGACY),y)
-$(info -- KernelSU/compat: using legacy throne tracker)
-kernelsu-objs += throne_tracker_legacy.o
-else
-$(info -- KernelSU/compat: using new throne tracker)
-kernelsu-objs += throne_tracker.o
 endif
 
 kernelsu-objs += selinux/selinux.o
@@ -34,7 +27,6 @@ ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
 ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
 
 obj-$(CONFIG_KSU) += kernelsu.o
-obj-$(CONFIG_KSU_TRACEPOINT_HOOK) += ksu_trace_export.o
 
 obj-$(CONFIG_KPM) += kpm/
 
@@ -161,12 +153,6 @@ endif
 # Samsung SELinux Porting
 ifeq ($(shell grep -q "SEC_SELINUX_PORTING_COMMON" $(srctree)/security/selinux/avc.c; echo $$?),0)
 ccflags-y += -DSAMSUNG_SELINUX_PORTING
-endif
-
-# Check new vfs_getattr()
-ifeq ($(shell grep -A1 "^int vfs_getattr" $(srctree)/fs/stat.c | grep -q "query_flags" ; echo $$?),0)
-$(info -- KernelSU/compat: new vfs_getattr() found)
-ccflags-y += -DKSU_HAS_NEW_VFS_GETATTR
 endif
 
 # Function proc_ops check

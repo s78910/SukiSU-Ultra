@@ -602,7 +602,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
     sulog_prctl_cmd(current_uid().val, arg2);
 #endif
 
-    DONT_GET_SMART();
     if (!from_root && !from_manager && !is_allow_su()) {
         // only root or manager can access this interface
         return 0;
