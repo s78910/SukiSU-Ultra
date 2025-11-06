@@ -37,4 +37,6 @@ bool susfs_is_current_init_domain(void);
 
 u32 ksu_get_devpts_sid(void);
 
+int handle_sepolicy(unsigned long arg3, void __user *arg4);
+
 #endif

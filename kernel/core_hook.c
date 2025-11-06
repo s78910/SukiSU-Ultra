@@ -146,8 +146,7 @@ static inline bool is_zygote_normal_app_uid(uid_t uid)
 
 #endif // #ifdef CONFIG_KSU_SUSFS
 
-bool ksu_module_mounted = false;
-extern bool ksu_su_compat_enabled;
+bool ksu_module_mounted __read_mostly = false;
 
 #ifdef CONFIG_COMPAT
 bool ksu_is_compat __read_mostly = false;
