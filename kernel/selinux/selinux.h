@@ -35,7 +35,7 @@ void susfs_set_init_sid(void);
 bool susfs_is_current_init_domain(void);
 #endif
 
-u32 ksu_get_devpts_sid(void);
+u32 ksu_get_ksu_file_sid(void);
 
 int handle_sepolicy(unsigned long arg3, void __user *arg4);
 
