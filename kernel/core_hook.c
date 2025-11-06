@@ -1084,7 +1084,7 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 
     if (new_uid.val == 2000) {
         if (ksu_su_compat_enabled) {
-            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+            ksu_set_task_tracepoint_flag(current);
         }
     }
 
@@ -1100,7 +1100,7 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         spin_lock_irq(&current->sighand->siglock);
         ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
         if (ksu_su_compat_enabled) {
-            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+            ksu_set_task_tracepoint_flag(current);
         }
         spin_unlock_irq(&current->sighand->siglock);
         return 0;
@@ -1114,7 +1114,7 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
             spin_unlock_irq(&current->sighand->siglock);
         }
         if (ksu_su_compat_enabled) {
-            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+            ksu_set_task_tracepoint_flag(current);
         }
     } else {
         // Disable syscall tracepoint sucompat for non-allowed processes
