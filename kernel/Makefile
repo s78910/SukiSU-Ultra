@@ -18,10 +18,6 @@ ccflags-y += -DCONFIG_KSU_MANUAL_SU
 kernelsu-objs += manual_su.o
 endif
 
-ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
-kernelsu-objs += ksu_trace.o
-endif
-
 ifeq ($(CONFIG_KSU_THRONE_TRACKER_LEGACY),y)
 $(info -- KernelSU/compat: using legacy throne tracker)
 kernelsu-objs += throne_tracker_legacy.o
@@ -99,15 +95,12 @@ endif
 ccflags-y += -DKSU_VERSION=$(KSU_VERSION)
 ccflags-y += -DKSU_VERSION_FULL=\"$(KSU_VERSION_FULL)\"
 
-ifeq ($(CONFIG_KSU_KPROBES_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_KPROBES_HOOK)
-ccflags-y += -DCONFIG_KSU_KPROBES_HOOK
-else ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_TRACEPOINT_HOOK)
-ccflags-y += -DCONFIG_KSU_TRACEPOINT_HOOK
+ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
+$(info -- SukiSU: KSU_TRACEPOINT_HOOK)
+ccflags-y += -DKSU_HAVE_SYSCALL_TRACEPOINTS_HOOK
 else ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
-ccflags-y += -DCONFIG_KSU_MANUAL_HOOK
+$(info -- SukiSU: KSU_MANUAL_HOOK)
+ccflags-y += -DKSU_MANUAL_HOOK
 endif
 
 KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)

@@ -85,7 +85,7 @@
 #define TASK_ALLOC_SYMBOL "security_task_alloc"
 
 #else
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
 #error "Unsupported arch"
 #endif
 #endif

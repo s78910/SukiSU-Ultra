@@ -61,10 +61,6 @@ extern void ksu_sucompat_exit(void);
 extern void ksu_ksud_init(void);
 extern void ksu_ksud_exit(void);
 extern void ksu_supercalls_init();
-#ifdef CONFIG_KSU_TRACEPOINT_HOOK
-extern void ksu_trace_register();
-extern void ksu_trace_unregister();
-#endif
 
 int __init kernelsu_init(void)
 {
@@ -106,14 +102,10 @@ int __init kernelsu_init(void)
 
     ksu_sucompat_init();
 
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
     ksu_ksud_init();
 #else
     pr_debug("init ksu driver\n");
-#endif
-
-#ifdef CONFIG_KSU_TRACEPOINT_HOOK
-    ksu_trace_register();
 #endif
 
 #ifdef MODULE
@@ -139,13 +131,10 @@ void kernelsu_exit(void)
 
     destroy_workqueue(ksu_workqueue);
 
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
     ksu_ksud_exit();
 #endif
 
-#ifdef CONFIG_KSU_TRACEPOINT_HOOK
-    ksu_trace_unregister();
-#endif
 
     ksu_sucompat_exit();
 

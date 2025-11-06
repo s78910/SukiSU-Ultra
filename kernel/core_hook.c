@@ -1,3 +1,5 @@
+#include "linux/compiler.h"
+#include "linux/sched/signal.h"
 #include <linux/slab.h>
 #include <linux/task_work.h>
 #include <linux/thread_info.h>
@@ -144,6 +146,7 @@ static inline bool is_zygote_normal_app_uid(uid_t uid)
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 bool ksu_module_mounted = false;
+extern bool ksu_su_compat_enabled;
 
 #ifdef CONFIG_COMPAT
 bool ksu_is_compat __read_mostly = false;
@@ -255,10 +258,9 @@ static void setup_groups(struct root_profile *profile, struct cred *cred)
     put_group_info(group_info);
 }
 
-static void disable_seccomp(struct task_struct *tsk)
+static void disable_seccomp()
 {
-    assert_spin_locked(&tsk->sighand->siglock);
-
+    assert_spin_locked(&current->sighand->siglock);
     // disable seccomp
 #if defined(CONFIG_GENERIC_ENTRY) &&                                           \
     LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
@@ -268,54 +270,45 @@ static void disable_seccomp(struct task_struct *tsk)
 #endif
 
 #ifdef CONFIG_SECCOMP
-    tsk->seccomp.mode = 0;
-    if (tsk->seccomp.filter) {
-    // 5.9+ have filter_count and use seccomp_filter_release
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
-        seccomp_filter_release(tsk);
-        atomic_set(&tsk->seccomp.filter_count, 0);
+    current->seccomp.mode = 0;
+    current->seccomp.filter = NULL;
 #else
-    // for 6.11+ kernel support?
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
-        put_seccomp_filter(tsk);
-#endif
-        tsk->seccomp.filter = NULL;
-#endif
-    }
 #endif
 }
 
 void escape_to_root(void)
 {
-    struct cred *newcreds;
+    struct cred *cred;
+    struct task_struct *p = current;
+    struct task_struct *t;
 
-    if (current_euid().val == 0) {
-        pr_warn("Already root, don't escape!\n");
+    cred = prepare_creds();
+    if (!cred) {
+        pr_warn("prepare_creds failed!\n");
         return;
     }
-    
-    newcreds = prepare_creds();
-    if (newcreds == NULL) {
-        pr_err("%s: failed to allocate new cred.\n", __func__);
+
+    if (cred->euid.val == 0) {
+        pr_warn("Already root, don't escape!\n");
 #if __SULOG_GATE
         ksu_sulog_report_su_grant(current_euid().val, NULL, "escape_to_root_failed");
 #endif
+        abort_creds(cred);
         return;
     }
 
-    struct root_profile *profile =
-        ksu_get_root_profile(newcreds->uid.val);
+    struct root_profile *profile = ksu_get_root_profile(cred->uid.val);
 
-    newcreds->uid.val = profile->uid;
-    newcreds->suid.val = profile->uid;
-    newcreds->euid.val = profile->uid;
-    newcreds->fsuid.val = profile->uid;
+    cred->uid.val = profile->uid;
+    cred->suid.val = profile->uid;
+    cred->euid.val = profile->uid;
+    cred->fsuid.val = profile->uid;
 
-    newcreds->gid.val = profile->gid;
-    newcreds->fsgid.val = profile->gid;
-    newcreds->sgid.val = profile->gid;
-    newcreds->egid.val = profile->gid;
-    newcreds->securebits = 0;
+    cred->gid.val = profile->gid;
+    cred->fsgid.val = profile->gid;
+    cred->sgid.val = profile->gid;
+    cred->egid.val = profile->gid;
+    cred->securebits = 0;
 
     BUILD_BUG_ON(sizeof(profile->capabilities.effective) !=
              sizeof(kernel_cap_t));
@@ -325,24 +318,31 @@ void escape_to_root(void)
     // we add it here but don't add it to cap_inhertiable, it would be dropped automaticly after exec!
     u64 cap_for_ksud =
         profile->capabilities.effective | CAP_DAC_READ_SEARCH;
-    memcpy(&newcreds->cap_effective, &cap_for_ksud,
-           sizeof(newcreds->cap_effective));
-    memcpy(&newcreds->cap_permitted, &profile->capabilities.effective,
-           sizeof(newcreds->cap_permitted));
-    memcpy(&newcreds->cap_bset, &profile->capabilities.effective,
-           sizeof(newcreds->cap_bset));
+    memcpy(&cred->cap_effective, &cap_for_ksud,
+           sizeof(cred->cap_effective));
+    memcpy(&cred->cap_permitted, &profile->capabilities.effective,
+           sizeof(cred->cap_permitted));
+    memcpy(&cred->cap_bset, &profile->capabilities.effective,
+           sizeof(cred->cap_bset));
 
-    setup_groups(profile, newcreds);
-    commit_creds(newcreds);
+    setup_groups(profile, cred);
 
+    commit_creds(cred);
+
+    // Refer to kernel/seccomp.c: seccomp_set_mode_strict
+    // When disabling Seccomp, ensure that current->sighand->siglock is held during the operation.
     spin_lock_irq(&current->sighand->siglock);
-    disable_seccomp(current);
+    disable_seccomp();
     spin_unlock_irq(&current->sighand->siglock);
 
     setup_selinux(profile->selinux_domain);
 #if __SULOG_GATE
     ksu_sulog_report_su_grant(current_euid().val, NULL, "escape_to_root");
 #endif
+
+    for_each_thread (p, t) {
+        ksu_set_task_tracepoint_flag(t);
+    }
 }
 
 #ifdef CONFIG_KSU_MANUAL_SU
@@ -362,7 +362,10 @@ static void disable_seccomp_for_task(struct task_struct *tsk)
         seccomp_filter_release(tsk);
         atomic_set(&tsk->seccomp.filter_count, 0);
 #else
+    // for 6.11+ kernel support?
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
         put_seccomp_filter(tsk);
+#endif
         tsk->seccomp.filter = NULL;
 #endif
     }
@@ -373,6 +376,8 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 {
     struct cred *newcreds;
     struct task_struct *target_task;
+    struct task_struct *p = current;
+    struct task_struct *t;
 
     pr_info("cmd_su: escape_to_root_for_cmd_su called for UID: %d, PID: %d\n", target_uid, target_pid);
 
@@ -454,6 +459,9 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 #if __SULOG_GATE
     ksu_sulog_report_su_grant(target_uid, "cmd_su", "manual_escalation");
 #endif
+    for_each_thread (p, t) {
+        ksu_set_task_tracepoint_flag(t);
+    }
     pr_info("cmd_su: privilege escalation completed for UID: %d, PID: %d\n", target_uid, target_pid);
 }
 #endif
@@ -1031,6 +1039,12 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         return 0;
     }
 
+    if (new_uid.val == 2000) {
+        if (ksu_su_compat_enabled) {
+            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+        }
+    }
+
     // if on private space, see if its possibly the manager
     if (new_uid.val > 100000 && new_uid.val % 100000 == ksu_get_manager_uid()) {
         ksu_set_manager_uid(new_uid.val);
@@ -1042,16 +1056,27 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         ksu_install_fd();
         spin_lock_irq(&current->sighand->siglock);
         ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
+        if (ksu_su_compat_enabled) {
+            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+        }
         spin_unlock_irq(&current->sighand->siglock);
         return 0;
     }
 
-    if (ksu_is_allow_uid(new_uid.val)) {
+   if (ksu_is_allow_uid(new_uid.val)) {
         if (current->seccomp.mode == SECCOMP_MODE_FILTER &&
             current->seccomp.filter) {
             spin_lock_irq(&current->sighand->siglock);
             ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
             spin_unlock_irq(&current->sighand->siglock);
+        }
+        if (ksu_su_compat_enabled) {
+            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+        }
+    } else {
+        // Disable syscall tracepoint sucompat for non-allowed processes
+        if (ksu_su_compat_enabled) {
+            clear_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
         }
     }
 
@@ -1154,6 +1179,12 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         return 0;
     }
 
+    if (new_uid.val == 2000) {
+        if (ksu_su_compat_enabled) {
+            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+        }
+    }
+
     if (!is_appuid(new_uid) || is_unsupported_uid(new_uid.val)) {
         // pr_info("handle setuid ignore non application or isolated uid: %d\n", new_uid.val);
         return 0;
@@ -1170,6 +1201,9 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
         ksu_install_fd();
         spin_lock_irq(&current->sighand->siglock);
         ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
+        if (ksu_su_compat_enabled) {
+            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+        }
         spin_unlock_irq(&current->sighand->siglock);
         return 0;
     }
@@ -1180,6 +1214,14 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
             spin_lock_irq(&current->sighand->siglock);
             ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
             spin_unlock_irq(&current->sighand->siglock);
+        }
+        if (ksu_su_compat_enabled) {
+            set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
+        }
+    } else {
+        // Disable syscall tracepoint sucompat for non-allowed processes
+        if (ksu_su_compat_enabled) {
+            clear_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
         }
     }
 
@@ -1203,7 +1245,7 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
     // check old process's selinux context, if it is not zygote, ignore it!
     // because some su apps may setuid to untrusted_app but they are in global mount namespace
     // when we umount for such process, that is a disaster!
-    bool is_zygote_child = is_zygote(old->security);
+    bool is_zygote_child = is_zygote(old);
     if (!is_zygote_child) {
         pr_info("handle umount ignore non zygote child: %d\n",
             current->pid);
@@ -1375,7 +1417,7 @@ static struct security_hook_list ksu_hooks[] = {
 #if LINUX_VERSION_CODE > KERNEL_VERSION(4, 10, 0) && defined(CONFIG_KSU_MANUAL_SU)
     LSM_HOOK_INIT(task_alloc, ksu_task_alloc),
 #endif
-#ifndef CONFIG_KSU_KPROBES_HOOK
+#ifndef KSU_KPROBES_HOOK
     LSM_HOOK_INIT(bprm_check_security, ksu_bprm_check),
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || \
@@ -1577,7 +1619,7 @@ __maybe_unused int ksu_kprobe_exit(void)
 void __init ksu_core_init(void)
 {
     ksu_lsm_hook_init();
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
     int rc = ksu_kprobe_init();
     if (rc) {
         pr_err("ksu_kprobe_init failed: %d\n", rc);
@@ -1596,7 +1638,7 @@ void ksu_core_exit(void)
     ksu_sulog_exit();
 #endif
     
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
     pr_info("ksu_core_kprobe_exit\n");
     ksu_kprobe_exit();
 #endif
