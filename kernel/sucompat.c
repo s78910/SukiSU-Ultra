@@ -112,7 +112,7 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 #endif
 
 #ifndef CONFIG_KSU_SUSFS_SUS_SU
-    if (!ksu_is_allow_uid(current_uid().val)) {
+    if (!ksu_is_allow_uid_for_current(current_uid().val)) {
         return 0;
     }
 #endif
@@ -168,7 +168,7 @@ int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 #endif
 
 #ifndef CONFIG_KSU_SUSFS_SUS_SU
-    if (!ksu_is_allow_uid(current_uid().val)) {
+    if (!ksu_is_allow_uid_for_current(current_uid().val)) {
         return 0;
     }
 #endif
@@ -238,7 +238,7 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 #if __SULOG_GATE
     ksu_sulog_report_syscall(current_uid().val, NULL, "execve", filename->name);
 #ifndef CONFIG_KSU_SUSFS_SUS_SU
-    bool is_allowed = ksu_is_allow_uid(current_uid().val);
+    bool is_allowed = ksu_is_allow_uid_for_current(current_uid().val);
 #endif
 #endif
 
@@ -250,7 +250,7 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
     
     ksu_sulog_report_su_attempt(current_uid().val, NULL, filename->name, is_allowed);
 #else
-    if (!ksu_is_allow_uid(current_uid().val)) {
+    if (!ksu_is_allow_uid_for_current(current_uid().val)) {
         return 0;
     }
 #endif
@@ -304,13 +304,13 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 
 #if __SULOG_GATE
     ksu_sulog_report_syscall(current_uid().val, NULL, "execve", path);
-    bool is_allowed = ksu_is_allow_uid(current_uid().val);
+    bool is_allowed = ksu_is_allow_uid_for_current(current_uid().val);
     if (!is_allowed)
         return 0;
     
     ksu_sulog_report_su_attempt(current_uid().val, NULL, path, is_allowed);
 #else
-    if (!ksu_is_allow_uid(current_uid().val)) {
+    if (!ksu_is_allow_uid_for_current(current_uid().val)) {
         return 0;
     }
 #endif
@@ -347,7 +347,7 @@ int __ksu_handle_devpts(struct inode *inode)
         return 0;
     }
 
-    if (likely(!ksu_is_allow_uid(uid)))
+    if (likely(!ksu_is_allow_uid_for_current(uid)))
         return 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0) || defined(KSU_OPTIONAL_SELINUX_INODE)
