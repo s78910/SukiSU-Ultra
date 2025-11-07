@@ -313,6 +313,9 @@ void ksu_sucompat_enable(void)
 	su_kps[4] = init_kprobe(SYS_EXECVE_COMPAT_SYMBOL, execve_handler_pre);
 	su_kps[5] = init_kprobe(SYS_FSTATAT64_SYMBOL, newfstatat_handler_pre);
 #endif
+#else
+	ksu_su_compat_enabled = true;
+	pr_info("init sucompat\n");
 #endif
 }
 
@@ -323,6 +326,9 @@ void ksu_sucompat_disable(void)
 	for (i = 0; i < ARRAY_SIZE(su_kps); i++) {
 		destroy_kprobe(&su_kps[i]);
 	}
+#else
+	ksu_su_compat_enabled = false;
+	pr_info("deinit sucompat\n");
 #endif
 }
 
@@ -332,25 +338,15 @@ void ksu_sucompat_init(void)
 	if (ksu_register_feature_handler(&su_compat_handler)) {
 		pr_err("Failed to register su_compat feature handler\n");
 	}
-#ifdef CONFIG_KSU_KPROBES_HOOK
 	if (ksu_su_compat_enabled) {
 		ksu_sucompat_enable();
 	}
-#else
-	ksu_su_compat_enabled = true;
-	pr_info("init sucompat\n");
-#endif
 }
 
 void ksu_sucompat_exit(void)
 {
-#ifdef CONFIG_KSU_KPROBES_HOOK
 	if (ksu_su_compat_enabled) {
 		ksu_sucompat_disable();
 	}
-#else
-	ksu_su_compat_enabled = false;
-	pr_info("deinit sucompat\n");
-#endif
 	ksu_unregister_feature_handler(KSU_FEATURE_SU_COMPAT);
 }
