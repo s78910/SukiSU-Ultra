@@ -22,16 +22,14 @@
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
 #include "kernel_compat.h"
+#include "sucompat.h"
+#include "core_hook.h"
 
 #define SU_PATH "/system/bin/su"
 #define SH_PATH "/system/bin/sh"
 
 static const char su[] = SU_PATH;
 static const char ksud_path[] = KSUD_PATH;
-
-extern void escape_to_root(void);
-void ksu_sucompat_enable(void);
-void ksu_sucompat_disable(void);
 
 static bool ksu_su_compat_enabled __read_mostly = true;
 
@@ -91,7 +89,7 @@ static inline char __user *ksud_user_path(void)
 
 static inline bool __is_su_allowed(const void *ptr_to_check)
 {
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
 	if (!ksu_su_compat_enabled)
 		return false;
 #endif
@@ -180,15 +178,9 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 	return 0;
 }
 
-// dummified
-int ksu_handle_devpts(struct inode *inode)
-{
-	return 0;
-}
-
 int __ksu_handle_devpts(struct inode *inode)
 {
-#ifndef CONFIG_KSU_KPROBES_HOOK
+#ifndef KSU_KPROBES_HOOK
 	if (!ksu_su_compat_enabled)
 		return 0;
 #endif
@@ -212,13 +204,12 @@ int __ksu_handle_devpts(struct inode *inode)
 	struct inode_security_struct *sec = (struct inode_security_struct *)inode->i_security;
 #endif
 
-	if (ksu_devpts_sid && sec)
-		sec->sid = ksu_devpts_sid;
-
+	if (ksu_file_sid && sec)
+		sec->sid = ksu_file_sid;
 	return 0;
 }
 
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
 
 static int faccessat_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -252,23 +243,10 @@ static int execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 					  NULL);
 }
 
-static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
-{
-	struct inode *inode;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 6, 0)
-	struct file *file = (struct file *)PT_REGS_PARM2(regs);
-	inode = file->f_path.dentry->d_inode;
-#else
-	inode = (struct inode *)PT_REGS_PARM2(regs);
-#endif
-
-	return ksu_handle_devpts(inode);
-}
-
 #ifdef CONFIG_COMPAT
-static struct kprobe *su_kps[6];
+static struct kprobe *su_kps[5];
 #else
-static struct kprobe *su_kps[4];
+static struct kprobe *su_kps[3];
 #endif
 
 static struct kprobe *init_kprobe(const char *name,
@@ -304,14 +282,13 @@ static void destroy_kprobe(struct kprobe **kp_ptr)
 
 void ksu_sucompat_enable(void)
 {
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
 	su_kps[0] = init_kprobe(SYS_EXECVE_SYMBOL, execve_handler_pre);
 	su_kps[1] = init_kprobe(SYS_FACCESSAT_SYMBOL, faccessat_handler_pre);
 	su_kps[2] = init_kprobe(SYS_NEWFSTATAT_SYMBOL, newfstatat_handler_pre);
-	su_kps[3] = init_kprobe("pts_unix98_lookup", pts_unix98_lookup_pre);
 #ifdef CONFIG_COMPAT
-	su_kps[4] = init_kprobe(SYS_EXECVE_COMPAT_SYMBOL, execve_handler_pre);
-	su_kps[5] = init_kprobe(SYS_FSTATAT64_SYMBOL, newfstatat_handler_pre);
+	su_kps[3] = init_kprobe(SYS_EXECVE_COMPAT_SYMBOL, execve_handler_pre);
+	su_kps[4] = init_kprobe(SYS_FSTATAT64_SYMBOL, newfstatat_handler_pre);
 #endif
 #else
 	ksu_su_compat_enabled = true;
@@ -321,7 +298,7 @@ void ksu_sucompat_enable(void)
 
 void ksu_sucompat_disable(void)
 {
-#ifdef CONFIG_KSU_KPROBES_HOOK
+#ifdef KSU_KPROBES_HOOK
 	int i;
 	for (i = 0; i < ARRAY_SIZE(su_kps); i++) {
 		destroy_kprobe(&su_kps[i]);

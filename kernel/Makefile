@@ -12,12 +12,8 @@ kernelsu-objs += throne_tracker.o
 kernelsu-objs += ksud.o
 kernelsu-objs += embed_ksud.o
 kernelsu-objs += kernel_compat.o
+kernelsu-objs += file_wrapper.o
 kernelsu-objs += throne_comm.o
-
-ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
-kernelsu-objs += ksu_trace.o
-endif
-
 
 kernelsu-objs += selinux/selinux.o
 kernelsu-objs += selinux/sepolicy.o
@@ -89,12 +85,13 @@ ccflags-y += -DKSU_VERSION=$(KSU_VERSION)
 ccflags-y += -DKSU_VERSION_FULL=\"$(KSU_VERSION_FULL)\"
 
 # Checks hooks state
-ifeq ($(CONFIG_KSU_KPROBES_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_KPROBES_HOOK)
-else ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_TRACEPOINT_HOOK)
-else ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
+ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
+ccflags-y += -DKSU_MANUAL_HOOK
+$(info -- SukiSU: KSU_MANUAL_HOOK)
+else
+ccflags-y += -DKSU_HAVE_SYSCALL_TRACEPOINTS_HOOK
+ccflags-y += -DKSU_KPROBES_HOOK
+$(info -- SukiSU: KSU_TRACEPOINT_HOOK)
 endif
 
 # SELinux drivers check

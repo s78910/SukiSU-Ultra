@@ -17,6 +17,9 @@
 #include "manager.h"
 #include "sulog.h"
 #include "selinux/selinux.h"
+#include "core_hook.h"
+#include "objsec.h"
+#include "file_wrapper.h"
 #include "kernel_compat.h"
 #include "throne_comm.h"
 #include "dynamic_manager.h"
@@ -385,7 +388,7 @@ static int do_get_hook_type(void __user *arg)
 
 #if defined(CONFIG_KSU_TRACEPOINT_HOOK)
 	type = "Tracepoint";
-#elif defined(CONFIG_KSU_MANUAL_HOOK)
+#elif defined(KSU_MANUAL_HOOK)
 	type = "Manual";
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
@@ -516,6 +519,73 @@ static int do_enable_uid_scanner(void __user *arg)
 	return 0;
 }
 
+static int do_get_wrapper_fd(void __user *arg)
+{
+	if (!ksu_file_sid) {
+		return -1;
+	}
+
+	struct ksu_get_wrapper_fd_cmd cmd;
+	int ret;
+
+	if (copy_from_user(&cmd, arg, sizeof(cmd))) {
+		pr_err("get_wrapper_fd: copy_from_user failed\n");
+		return -EFAULT;
+	}
+
+	struct file *f = fget(cmd.fd);
+	if (!f) {
+		return -EBADF;
+	}
+
+	struct ksu_file_wrapper *data = mksu_create_file_wrapper(f);
+	if (data == NULL) {
+		ret = -ENOMEM;
+		goto put_orig_file;
+	}
+
+	struct file *pf = anon_inode_getfile("[mksu_fdwrapper]", &data->ops,
+					     data, f->f_flags);
+	if (IS_ERR(pf)) {
+		ret = PTR_ERR(pf);
+		pr_err("mksu_fdwrapper: anon_inode_getfile failed: %ld\n",
+		       PTR_ERR(pf));
+		goto put_wrapper_data;
+	}
+
+	struct inode *wrapper_inode = file_inode(pf);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0) ||                           \
+	defined(KSU_OPTIONAL_SELINUX_INODE)
+	struct inode_security_struct *sec = selinux_inode(wrapper_inode);
+#else
+	struct inode_security_struct *sec =
+		(struct inode_security_struct *)wrapper_inode->i_security;
+#endif
+	if (sec) {
+		sec->sid = ksu_file_sid;
+	}
+
+	ret = get_unused_fd_flags(cmd.flags);
+	if (ret < 0) {
+		pr_err("mksu_fdwrapper: get unused fd failed: %d\n", ret);
+		goto put_wrapper_file;
+	}
+
+	// pr_info("mksu_fdwrapper: installed wrapper fd for %p %d (flags=%d, mode=%d) to %p %d (flags=%d, mode=%d)", f, cmd.fd, f->f_flags, f->f_mode, pf, ret, pf->f_flags, pf->f_mode);
+	// pf->f_mode |= FMODE_READ | FMODE_CAN_READ | FMODE_WRITE | FMODE_CAN_WRITE;
+	fd_install(ret, pf);
+	goto put_orig_file;
+
+put_wrapper_file:
+	fput(pf);
+put_wrapper_data:
+	mksu_delete_file_wrapper(data);
+put_orig_file:
+	fput(f);
+
+	return ret;
+}
+
 // IOCTL handlers mapping table
 static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = KSU_IOCTL_GRANT_ROOT, .name = "GRANT_ROOT", .handler = do_grant_root, .perm_check = allowed_for_su },
@@ -532,6 +602,7 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = KSU_IOCTL_SET_APP_PROFILE, .name = "SET_APP_PROFILE", .handler = do_set_app_profile, .perm_check = only_manager },
 	{ .cmd = KSU_IOCTL_GET_FEATURE, .name = "GET_FEATURE", .handler = do_get_feature, .perm_check = manager_or_root },
 	{ .cmd = KSU_IOCTL_SET_FEATURE, .name = "SET_FEATURE", .handler = do_set_feature, .perm_check = manager_or_root },
+	{ .cmd = KSU_IOCTL_GET_WRAPPER_FD, .name = "GET_WRAPPER_FD", .handler = do_get_wrapper_fd, .perm_check = manager_or_root },
 	{ .cmd = KSU_IOCTL_GET_FULL_VERSION,.name = "GET_FULL_VERSION", .handler = do_get_full_version, .perm_check = always_allow},
 	{ .cmd = KSU_IOCTL_HOOK_TYPE,.name = "GET_HOOK_TYPE", .handler = do_get_hook_type, .perm_check = manager_or_root},
 	{ .cmd = KSU_IOCTL_ENABLE_KPM, .name = "GET_ENABLE_KPM", .handler = do_enable_kpm, .perm_check = manager_or_root},
@@ -542,7 +613,7 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = KSU_IOCTL_KPM, .name = "KPM_OPERATION", .handler = do_kpm, .perm_check = manager_or_root},
 #endif
 	{ .cmd = 0, .name = NULL, .handler = NULL, .perm_check = NULL} // Sentine
-};
+}
 
 void ksu_supercalls_init(void)
 {

@@ -43,7 +43,7 @@
 #include "kernel_compat.h"
 #include "supercalls.h"
 
-bool ksu_module_mounted = false;
+bool ksu_module_mounted __read_mostly = false;
 
 #ifndef DEVPTS_SUPER_MAGIC
 #define DEVPTS_SUPER_MAGIC	0x1cd1
@@ -54,8 +54,6 @@ extern int __ksu_handle_devpts(struct inode *inode); // sucompat.c
 #ifdef CONFIG_COMPAT
 bool ksu_is_compat __read_mostly = false;
 #endif
-
-extern int handle_sepolicy(unsigned long arg3, void __user *arg4);
 
 static bool ksu_kernel_umount_enabled = true;
 
@@ -360,7 +358,7 @@ static void ksu_do_umount_lists(void)
 	try_umount("/sbin", false, MNT_DETACH);
 }
 
-#if defined(MODULE) || defined(CONFIG_KSU_KPROBES_HOOK)
+#if defined(MODULE) || defined(KSU_KPROBES_HOOK)
 struct umount_tw {
 	struct callback_head cb;
 	const struct cred *old_cred;
@@ -438,7 +436,8 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 		spin_unlock_irq(&current->sighand->siglock);
 
 		if (ksu_get_manager_uid() == new_uid.val) {
-			pr_info("install fd for ksu manager(uid=%d)\n", new_uid.val);
+			pr_info("install fd for ksu manager(uid=%d)\n",
+				new_uid.val);
 			ksu_install_fd();
 		}
 
@@ -477,7 +476,7 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 		current->pid);
 #endif
 
-#if defined(MODULE) || defined(CONFIG_KSU_KPROBES_HOOK)
+#if defined(MODULE) || defined(KSU_KPROBES_HOOK)
 	struct umount_tw *tw;
 	tw = kmalloc(sizeof(*tw), GFP_ATOMIC);
 	if (!tw)
@@ -568,9 +567,9 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd,
 }
 
 // -- For old kernel compat?
-#if !defined(MODULE) && !defined(CONFIG_KSU_KPROBES_HOOK)
-static int ksu_task_fix_setuid(struct cred *new,
-					      const struct cred *old, int flags)
+#if !defined(MODULE) && !defined(KSU_KPROBE_HOOK)
+static int ksu_task_fix_setuid(struct cred *new, const struct cred *old,
+			       int flags)
 {
 	return ksu_handle_setuid(new, old);
 }
@@ -598,7 +597,7 @@ static int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 static struct security_hook_list ksu_hooks[] = {
 	LSM_HOOK_INIT(task_fix_setuid, ksu_task_fix_setuid),
 	LSM_HOOK_INIT(inode_permission, ksu_inode_permission),
-	#ifndef CONFIG_KSU_KPROBES_HOOK
+	#ifndef KSU_KPROBES_HOOK
 	LSM_HOOK_INIT(bprm_check_security, ksu_bprm_check),
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||                           \
@@ -633,7 +632,7 @@ static void ksu_lsm_hook_init(void)
 #endif
 
 // -- For KPROBE and LKM handler
-#if defined(MODULE) || defined(CONFIG_KSU_KPROBES_HOOK)
+#if defined(MODULE) || defined(KSU_KPROBES_HOOK)
 static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
 	struct pt_regs *real_regs = PT_REAL_REGS(regs);
