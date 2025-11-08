@@ -1,18 +1,22 @@
 kernelsu-objs := ksu.o
 kernelsu-objs += allowlist.o
+kernelsu-objs += app_profile.o
 kernelsu-objs += dynamic_manager.o
 kernelsu-objs += apk_sign.o
 kernelsu-objs += sucompat.o
+kernelsu-objs += syscall_hook_manager.o
+kernelsu-objs += throne_tracker.o
 kernelsu-objs += pkg_observer.o
-kernelsu-objs += core_hook.o
+kernelsu-objs += umount_manager.o
+kernelsu-objs += kprobe_hook_manager.o
+kernelsu-objs += setuid_hook.o
+kernelsu-objs += kernel_umount.o
 kernelsu-objs += supercalls.o
 kernelsu-objs += feature.o
 kernelsu-objs += ksud.o
 kernelsu-objs += embed_ksud.o
 kernelsu-objs += seccomp_cache.o
-kernelsu-objs += kernel_compat.o
 kernelsu-objs += file_wrapper.o
-kernelsu-objs += throne_tracker.o
 kernelsu-objs += throne_comm.o
 kernelsu-objs += sulog.o
 

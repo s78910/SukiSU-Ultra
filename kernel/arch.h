@@ -22,9 +22,6 @@
 #define PRCTL_SYMBOL "__arm64_sys_prctl"
 #define REBOOT_SYMBOL "__arm64_sys_reboot"
 #define SYS_READ_SYMBOL "__arm64_sys_read"
-#define SYS_NEWFSTATAT_SYMBOL "__arm64_sys_newfstatat"
-#define SYS_FSTATAT64_SYMBOL "__arm64_sys_fstatat64"
-#define SYS_FACCESSAT_SYMBOL "__arm64_sys_faccessat"
 #define SYS_EXECVE_SYMBOL "__arm64_sys_execve"
 #define SYS_EXECVE_COMPAT_SYMBOL "__arm64_compat_sys_execve"
 #else
@@ -62,9 +59,6 @@
 #define PRCTL_SYMBOL "__x64_sys_prctl"
 #define REBOOT_SYMBOL "__x64_sys_reboot"
 #define SYS_READ_SYMBOL "__x64_sys_read"
-#define SYS_NEWFSTATAT_SYMBOL "__x64_sys_newfstatat"
-#define SYS_FSTATAT64_SYMBOL "__x64_sys_fstatat64"
-#define SYS_FACCESSAT_SYMBOL "__x64_sys_faccessat"
 #define SYS_EXECVE_SYMBOL "__x64_sys_execve"
 #define SYS_EXECVE_COMPAT_SYMBOL "__x64_compat_sys_execve"
 #else
