@@ -15,7 +15,6 @@
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
 #include "manager.h"
-#include "sulog.h"
 #include "selinux/selinux.h"
 #include "core_hook.h"
 #include "objsec.h"
@@ -625,15 +624,6 @@ void ksu_supercalls_init(void)
 	}
 }
 
-static inline void ksu_ioctl_audit(unsigned int cmd, const char *cmd_name, uid_t uid, int ret)
-{
-#if __SULOG_GATE
-	const char *result = (ret == 0) ? "SUCCESS" :
-						 (ret == -EPERM) ? "DENIED" : "FAILED";
-	ksu_sulog_report_syscall(uid, NULL, cmd_name, result);
-#endif
-}
-
 // IOCTL dispatcher
 static long anon_ksu_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
@@ -651,14 +641,10 @@ static long anon_ksu_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
 				!ksu_ioctl_handlers[i].perm_check()) {
 				pr_warn("ksu ioctl: permission denied for cmd=0x%x uid=%d\n",
 						cmd, current_uid().val);
-				ksu_ioctl_audit(cmd, ksu_ioctl_handlers[i].name,
-								current_uid().val, -EPERM);
 				return -EPERM;
 			}
 			// Execute handler
 			int ret = ksu_ioctl_handlers[i].handler(argp);
-			ksu_ioctl_audit(cmd, ksu_ioctl_handlers[i].name,
-							current_uid().val, ret);
 			return ret;
 		}
 	}
