@@ -55,8 +55,9 @@ int __init kernelsu_init(void)
 
 	ksu_throne_tracker_init();
 
-#ifdef KSU_KPROBES_HOOK
     ksu_sucompat_init();
+
+#ifdef KSU_KPROBES_HOOK
     ksu_ksud_init();
 #else
     pr_debug("init ksu driver\n");
@@ -80,9 +81,10 @@ void kernelsu_exit(void)
 
 	destroy_workqueue(ksu_workqueue);
 
-#ifdef CONFIG_KSU_KPROBES_HOOK
-	ksu_ksud_exit();
     ksu_sucompat_exit();
+
+#ifdef KSU_KPROBES_HOOK
+    ksu_ksud_exit();
 #endif
 
 	ksu_core_exit();
