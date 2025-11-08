@@ -5,10 +5,10 @@
 typedef unsigned int __poll_t;
 #endif
 
-struct ksu_file_wrapper {
+struct ksu_file_proxy {
 	struct file* orig;
 	struct file_operations ops;
 };
 
-struct ksu_file_wrapper* mksu_create_file_wrapper(struct file* fp);
-void mksu_delete_file_wrapper(struct ksu_file_wrapper* data);
+struct ksu_file_proxy* ksu_create_file_proxy(struct file* fp);
+void ksu_delete_file_proxy(struct ksu_file_proxy* data);
