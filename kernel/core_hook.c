@@ -64,6 +64,7 @@
 #include "sucompat.h"
 #include "sulog.h"
 #include "seccomp_cache.h"
+#include "ksud.h"
 
 #include "throne_comm.h"
 #include "umount_manager.h"
