@@ -354,12 +354,13 @@ static int do_set_feature(void __user *arg)
     return 0;
 }
 
-static int __do_get_wrapper_fd(void __user *arg, const char *anon_name)
+static int do_get_wrapper_fd(void __user *arg)
 {
 	if (!ksu_file_sid) {
 		return -1;
 	}
 
+	const char *anon_name = "[ksu_fdwrapper]";
 	struct ksu_get_wrapper_fd_cmd cmd;
 	int ret;
 
@@ -373,7 +374,7 @@ static int __do_get_wrapper_fd(void __user *arg, const char *anon_name)
 		return -EBADF;
 	}
 
-	struct ksu_file_wrapper *data = mksu_create_file_wrapper(f);
+	struct ksu_file_wrapper *data = ksu_create_file_wrapper(f);
 	if (data == NULL) {
 		ret = -ENOMEM;
 		goto put_orig_file;
@@ -385,7 +386,7 @@ static int __do_get_wrapper_fd(void __user *arg, const char *anon_name)
 #define getfd_secure anon_inode_getfd_secure
 #endif
 
-#ifdef KSU_HAS_GETFD_SECURE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 12, 0) || defined(KSU_HAS_GETFD_SECURE)
 	ret = getfd_secure(anon_name, &data->ops, data, f->f_flags, NULL);
 #else
 	ret = anon_inode_getfd(anon_name, &data->ops, data, f->f_flags);
@@ -413,21 +414,11 @@ static int __do_get_wrapper_fd(void __user *arg, const char *anon_name)
 	goto put_orig_file;
 
 put_wrapper_data:
-	mksu_delete_file_wrapper(data);
+	ksu_delete_file_wrapper(data);
 put_orig_file:
 	fput(f);
 
 	return ret;
-}
-
-static int do_get_wrapper_fd_mksu(void __user *arg)
-{
-	return __do_get_wrapper_fd(arg, "[mksu_fdwrapper]");
-}
-
-static int do_get_wrapper_fd(void __user *arg)
-{
-	return __do_get_wrapper_fd(arg, "[ksu_fdwrapper]");
 }
 
 // 100. GET_FULL_VERSION - Get full version string
@@ -606,7 +597,6 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
     { .cmd = KSU_IOCTL_GET_FEATURE, .name = "GET_FEATURE", .handler = do_get_feature, .perm_check = manager_or_root },
     { .cmd = KSU_IOCTL_SET_FEATURE, .name = "SET_FEATURE", .handler = do_set_feature, .perm_check = manager_or_root },
     { .cmd = KSU_IOCTL_PROXY_FILE, .name = "PROXY_FILE", .handler = do_get_wrapper_fd, .perm_check = manager_or_root },
-    { .cmd = KSU_IOCTL_GET_WRAPPER_FD, .name = "GET_WRAPPER_FD", .handler = do_get_wrapper_fd_mksu, .perm_check = manager_or_root },
     { .cmd = KSU_IOCTL_GET_FULL_VERSION,.name = "GET_FULL_VERSION", .handler = do_get_full_version, .perm_check = always_allow},
     { .cmd = KSU_IOCTL_HOOK_TYPE,.name = "GET_HOOK_TYPE", .handler = do_get_hook_type, .perm_check = manager_or_root},
     { .cmd = KSU_IOCTL_ENABLE_KPM, .name = "GET_ENABLE_KPM", .handler = do_enable_kpm, .perm_check = manager_or_root},
