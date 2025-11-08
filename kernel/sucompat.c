@@ -34,6 +34,7 @@
 #include "sucompat.h"
 #include "core_hook.h"
 #include "sulog.h"
+#include "kernel_compat.h"
 
 #define SU_PATH "/system/bin/su"
 #define SH_PATH "/system/bin/sh"
