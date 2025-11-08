@@ -488,98 +488,6 @@ static bool is_appuid(uid_t uid)
     return appid >= FIRST_APPLICATION_UID && appid <= LAST_APPLICATION_UID;
 }
 
-static bool should_umount(struct path *path)
-{
-    if (!path) {
-        return false;
-    }
-
-    if (current->nsproxy->mnt_ns == init_nsproxy.mnt_ns) {
-        pr_info("ignore global mnt namespace process: %d\n",
-            current_uid().val);
-        return false;
-    }
-
-    if (path->mnt && path->mnt->mnt_sb && path->mnt->mnt_sb->s_type) {
-        const char *fstype = path->mnt->mnt_sb->s_type->name;
-        return strcmp(fstype, "overlay") == 0;
-    }
-    return false;
-}
-extern int path_umount(struct path *path, int flags);
-static void ksu_umount_mnt(struct path *path, int flags)
-{
-    int err = path_umount(path, flags);
-    if (err) {
-        pr_info("umount %s failed: %d\n", path->dentry->d_iname, err);
-    }
-}
-
-#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-void try_umount(const char *mnt, bool check_mnt, int flags, uid_t uid)
-#else
-static void try_umount(const char *mnt, bool check_mnt, int flags)
-#endif
-{
-    struct path path;
-    int ret;
-    int err = kern_path(mnt, 0, &path);
-    if (err) {
-        return;
-    }
-
-    if (path.dentry != path.mnt->mnt_root) {
-        // it is not root mountpoint, maybe umounted by others already.
-        path_put(&path);
-        return;
-    }
-
-    // we are only interest in some specific mounts
-    if (check_mnt && !should_umount(&path)) {
-        path_put(&path);
-        return;
-    }
-
-#if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
-    if (susfs_is_log_enabled) {
-        pr_info("susfs: umounting '%s' for uid: %d\n", mnt, uid);
-    }
-#endif
-
-    ret = ksu_umount_mnt(mnt, &path, flags);
-    if (ret) {
-#ifdef CONFIG_KSU_DEBUG
-        pr_info("%s: path: %s, ret: %d\n", __func__, mnt, ret);
-#endif
-    }
-}
-
-#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-void susfs_try_umount_all(uid_t uid) {
-    susfs_try_umount(uid);
-    /* For Legacy KSU only */
-    try_umount("/odm", true, 0, uid);
-    try_umount("/system", true, 0, uid);
-    try_umount("/vendor", true, 0, uid);
-    try_umount("/product", true, 0, uid);
-    try_umount("/system_ext", true, 0, uid);
-    // - For '/data/adb/modules' we pass 'false' here because it is a loop device that we can't determine whether 
-    //   its dev_name is KSU or not, and it is safe to just umount it if it is really a mountpoint
-    try_umount("/data/adb/modules", false, MNT_DETACH, uid);
-    try_umount("/data/adb/kpm", false, MNT_DETACH, uid);
-    /* For both Legacy KSU and Magic Mount KSU */
-    try_umount("/debug_ramdisk", true, MNT_DETACH, uid);
-    try_umount("/sbin", false, MNT_DETACH, uid);
-    
-    // try umount hosts file
-    try_umount("/system/etc/hosts", false, MNT_DETACH, uid);
-
-    // try umount lsposed dex2oat bins
-    try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
-    try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
-}
-#endif
-
 #ifdef CONFIG_KSU_SUSFS
 int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
@@ -672,7 +580,7 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
     // Handle kernel umount
     
     // We only interest in process spwaned by zygote
-    if (!susfs_is_sid_equal(old->security, susfs_zygote_sid)) {
+    if (!susfs_is_sid_equal(current->cred->security, susfs_zygote_sid)) {
         return 0;
     }
 
@@ -682,7 +590,7 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
     }
 
     // - Since ksu maanger app uid is excluded in allow_list_arr, so ksu_uid_should_umount(manager_uid)
-    //   will always return true, that's why we need to explicitly check if new_uid.val belongs to
+    //   will always return true, that's why we need to explicitly check if new_uid belongs to
     //   ksu manager
     if (ksu_is_manager_uid_valid() &&
         (new_uid % 1000000 == ksu_get_manager_uid())) // % 1000000 in case it is private space uid
@@ -726,7 +634,7 @@ do_umount:
     put_task_struct(current);
 
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-    susfs_run_sus_path_loop(new_uid.val);
+    susfs_run_sus_path_loop(new_uid);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
     return 0;
 }

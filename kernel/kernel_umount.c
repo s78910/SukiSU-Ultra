@@ -1,6 +1,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/task_work.h>
+#include <linux/version.h>
 #include <linux/cred.h>
 #include <linux/fs.h>
 #include <linux/mount.h>
@@ -10,12 +11,24 @@
 #include <linux/printk.h>
 #include <linux/types.h>
 
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#include <linux/susfs_def.h>
+#endif // #ifdef CONFIG_KSU_SUSFS
+
 #include "kernel_umount.h"
 #include "klog.h" // IWYU pragma: keep
 #include "allowlist.h"
 #include "selinux/selinux.h"
 #include "feature.h"
 #include "ksud.h"
+
+#ifdef CONFIG_KSU_SUSFS
+extern bool susfs_is_mnt_devname_ksu(struct path *path);
+#ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+extern bool susfs_is_log_enabled __read_mostly;
+#endif // #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+#endif // #ifdef CONFIG_KSU_SUSFS
 
 static bool ksu_kernel_umount_enabled = true;
 
@@ -50,27 +63,61 @@ static bool should_umount(struct path *path)
         pr_info("ignore global mnt namespace process: %d\n", current_uid().val);
         return false;
     }
-
+#ifdef CONFIG_KSU_SUSFS
+    return susfs_is_mnt_devname_ksu(path);
+#else
     if (path->mnt && path->mnt->mnt_sb && path->mnt->mnt_sb->s_type) {
         const char *fstype = path->mnt->mnt_sb->s_type->name;
         return strcmp(fstype, "overlay") == 0;
     }
     return false;
+#endif
 }
 
-extern int path_umount(struct path *path, int flags);
-
-static void ksu_umount_mnt(struct path *path, int flags)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
+static int ksu_path_umount(struct path *path, int flags)
 {
-    int err = path_umount(path, flags);
-    if (err) {
-        pr_info("umount %s failed: %d\n", path->dentry->d_iname, err);
-    }
+    return path_umount(path, flags);
+}
+#define ksu_umount_mnt(__unused, path, flags)    (ksu_path_umount(path, flags))
+#else
+// TODO: Search a way to make this works without set_fs functions
+static int ksu_sys_umount(const char *mnt, int flags)
+{
+    char __user *usermnt = (char __user *)mnt;
+    mm_segment_t old_fs;
+    int ret; // although asmlinkage long
+
+    old_fs = get_fs();
+    set_fs(KERNEL_DS);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
+    ret = ksys_umount(usermnt, flags);
+#else
+    ret = sys_umount(usermnt, flags); // cuz asmlinkage long sys##name
+#endif
+    set_fs(old_fs);
+    pr_info("%s was called, ret: %d\n", __func__, ret);
+    return ret;
 }
 
-static void try_umount(const char *mnt, bool check_mnt, int flags)
+#define ksu_umount_mnt(mnt, __unused, flags)        \
+    ({                        \
+        int ret;                \
+        path_put(__unused);            \
+        ret = ksu_sys_umount(mnt, flags);    \
+        ret;                    \
+    })
+
+#endif
+
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+void try_umount(const char *mnt, bool check_mnt, int flags, uid_t uid)
+#else
+void try_umount(const char *mnt, bool check_mnt, int flags)
+#endif
 {
     struct path path;
+    int ret;
     int err = kern_path(mnt, 0, &path);
     if (err) {
         return;
@@ -88,8 +135,45 @@ static void try_umount(const char *mnt, bool check_mnt, int flags)
         return;
     }
 
-    ksu_umount_mnt(&path, flags);
+#if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
+    if (susfs_is_log_enabled) {
+        pr_info("susfs: umounting '%s' for uid: %d\n", mnt, uid);
+    }
+#endif
+
+    ret = ksu_umount_mnt(mnt, &path, flags);
+    if (ret) {
+#ifdef CONFIG_KSU_DEBUG
+        pr_info("%s: path: %s, ret: %d\n", __func__, mnt, ret);
+#endif
+    }
 }
+
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+void susfs_try_umount_all(uid_t uid) {
+    susfs_try_umount(uid);
+    /* For Legacy KSU only */
+    try_umount("/odm", true, 0, uid);
+    try_umount("/system", true, 0, uid);
+    try_umount("/vendor", true, 0, uid);
+    try_umount("/product", true, 0, uid);
+    try_umount("/system_ext", true, 0, uid);
+    // - For '/data/adb/modules' we pass 'false' here because it is a loop device that we can't determine whether 
+    //   its dev_name is KSU or not, and it is safe to just umount it if it is really a mountpoint
+    try_umount("/data/adb/modules", false, MNT_DETACH, uid);
+    try_umount("/data/adb/kpm", false, MNT_DETACH, uid);
+    /* For both Legacy KSU and Magic Mount KSU */
+    try_umount("/debug_ramdisk", true, MNT_DETACH, uid);
+    try_umount("/sbin", false, MNT_DETACH, uid);
+    
+    // try umount hosts file
+    try_umount("/system/etc/hosts", false, MNT_DETACH, uid);
+
+    // try umount lsposed dex2oat bins
+    try_umount("/apex/com.android.art/bin/dex2oat64", false, MNT_DETACH, uid);
+    try_umount("/apex/com.android.art/bin/dex2oat32", false, MNT_DETACH, uid);
+}
+#endif
 
 struct umount_tw {
     struct callback_head cb;
@@ -171,6 +255,7 @@ static void umount_tw_func(struct callback_head *cb)
 
     kfree(tw);
 }
+#endif
 
 static inline bool is_appuid(uid_t uid)
 {
@@ -249,11 +334,6 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 
 void ksu_kernel_umount_init(void)
 {
-    int rc = 0;
-    rc = ksu_umount_manager_init();
-    if (rc) {
-        pr_err("Failed to initialize umount manager: %d\n", rc);
-    }
     if (ksu_register_feature_handler(&kernel_umount_handler)) {
         pr_err("Failed to register kernel_umount feature handler\n");
     }

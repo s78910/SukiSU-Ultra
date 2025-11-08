@@ -264,6 +264,7 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
     if (!ksu_su_compat_enabled) {
         return 0;
     }
+#endif
 
     if (unlikely(!filename_user))
         return 0;

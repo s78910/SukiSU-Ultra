@@ -107,6 +107,18 @@ void on_post_fs_data(void)
 	pr_info("ksu_file sid: %d\n", ksu_file_sid);
 }
 
+struct user_arg_ptr {
+#ifdef CONFIG_COMPAT
+    bool is_compat;
+#endif
+    union {
+        const char __user *const __user *native;
+#ifdef CONFIG_COMPAT
+        const compat_uptr_t __user *compat;
+#endif
+    } ptr;
+};
+
 extern void ext4_unregister_sysfs(struct super_block *sb);
 static void nuke_ext4_sysfs(void)
 {
