@@ -64,11 +64,8 @@
 #include "sucompat.h"
 #include "sulog.h"
 #include "seccomp_cache.h"
-#include "ksud.h"
 
 #include "throne_comm.h"
-#include "umount_manager.h"
-
 
 #ifdef CONFIG_KSU_SUSFS
 bool susfs_is_boot_completed_triggered = false;
