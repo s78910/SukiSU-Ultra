@@ -354,7 +354,7 @@ static int do_set_feature(void __user *arg)
     return 0;
 }
 
-static int do_get_wrapper_fd(void __user *arg)
+static int __do_get_wrapper_fd(const char *anon_name)
 {
 	if (!ksu_file_sid) {
 		return -1;
@@ -379,11 +379,11 @@ static int do_get_wrapper_fd(void __user *arg)
 		goto put_orig_file;
 	}
 
-	struct file *pf = anon_inode_getfile("[mksu_fdwrapper]", &data->ops,
+	struct file *pf = anon_inode_getfile(anon_name, &data->ops,
 					     data, f->f_flags);
 	if (IS_ERR(pf)) {
 		ret = PTR_ERR(pf);
-		pr_err("mksu_fdwrapper: anon_inode_getfile failed: %ld\n",
+		pr_err("fdwrapper: anon_inode_getfile failed: %ld\n",
 		       PTR_ERR(pf));
 		goto put_wrapper_data;
 	}
@@ -402,7 +402,7 @@ static int do_get_wrapper_fd(void __user *arg)
 
 	ret = get_unused_fd_flags(cmd.flags);
 	if (ret < 0) {
-		pr_err("mksu_fdwrapper: get unused fd failed: %d\n", ret);
+		pr_err("fdwrapper: get unused fd failed: %d\n", ret);
 		goto put_wrapper_file;
 	}
 
@@ -579,6 +579,16 @@ static int do_enable_uid_scanner(void __user *arg)
     return 0;
 }
 
+static int do_get_wrapper_fd(void __user *arg)
+{
+	return __do_get_wrapper_fd("[mksu_fdwrapper]");
+}
+
+static int do_proxy_file(void __user *arg)
+{
+	return __do_get_wrapper_fd("[ksu_file_proxy]");
+}
+
 // IOCTL handlers mapping table
 static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
     { .cmd = KSU_IOCTL_GRANT_ROOT, .name = "GRANT_ROOT", .handler = do_grant_root, .perm_check = allowed_for_su },
@@ -596,6 +606,7 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
     { .cmd = KSU_IOCTL_GET_FEATURE, .name = "GET_FEATURE", .handler = do_get_feature, .perm_check = manager_or_root },
     { .cmd = KSU_IOCTL_SET_FEATURE, .name = "SET_FEATURE", .handler = do_set_feature, .perm_check = manager_or_root },
     { .cmd = KSU_IOCTL_GET_WRAPPER_FD, .name = "GET_WRAPPER_FD", .handler = do_get_wrapper_fd, .perm_check = manager_or_root },
+    { .cmd = KSU_IOCTL_PROXY_FILE, .name = "PROXY_FILE", .handler = do_proxy_file, .perm_check = manager_or_root },
     { .cmd = KSU_IOCTL_GET_FULL_VERSION,.name = "GET_FULL_VERSION", .handler = do_get_full_version, .perm_check = always_allow},
     { .cmd = KSU_IOCTL_HOOK_TYPE,.name = "GET_HOOK_TYPE", .handler = do_get_hook_type, .perm_check = manager_or_root},
     { .cmd = KSU_IOCTL_ENABLE_KPM, .name = "GET_ENABLE_KPM", .handler = do_enable_kpm, .perm_check = manager_or_root},
