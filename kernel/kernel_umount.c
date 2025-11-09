@@ -16,6 +16,7 @@
 #include <linux/susfs_def.h>
 #endif // #ifdef CONFIG_KSU_SUSFS
 
+#include "manager.h"
 #include "kernel_umount.h"
 #include "klog.h" // IWYU pragma: keep
 #include "allowlist.h"
@@ -26,7 +27,6 @@
 #include "sulog.h"
 
 #ifdef CONFIG_KSU_SUSFS
-bool susfs_is_boot_completed_triggered = false;
 extern u32 susfs_zygote_sid;
 extern bool susfs_is_mnt_devname_ksu(struct path *path);
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
@@ -38,7 +38,6 @@ extern bool susfs_is_log_enabled __read_mostly;
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 static bool susfs_is_umount_for_zygote_system_process_enabled = false;
 static bool susfs_is_umount_for_zygote_iso_service_enabled = false;
-extern bool susfs_hide_sus_mnts_for_all_procs;
 extern void susfs_reorder_mnt_id(void);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
@@ -50,12 +49,6 @@ extern bool susfs_is_auto_add_sus_ksu_default_mount_enabled;
 #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 extern bool susfs_is_auto_add_try_umount_for_bind_mount_enabled;
 #endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
-#ifdef CONFIG_KSU_SUSFS_SUS_SU
-extern bool susfs_is_sus_su_ready;
-extern int susfs_sus_su_working_mode;
-extern bool susfs_is_sus_su_hooks_enabled __read_mostly;
-extern bool ksu_devpts_hook;
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
 
 static inline void susfs_on_post_fs_data(void) {
     struct path path;
