@@ -23,11 +23,87 @@
 #include "feature.h"
 #include "ksud.h"
 
+#include "sulog.h"
+
 #ifdef CONFIG_KSU_SUSFS
+bool susfs_is_boot_completed_triggered = false;
+extern u32 susfs_zygote_sid;
 extern bool susfs_is_mnt_devname_ksu(struct path *path);
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+extern void susfs_run_sus_path_loop(uid_t uid);
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
 extern bool susfs_is_log_enabled __read_mostly;
 #endif // #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+static bool susfs_is_umount_for_zygote_system_process_enabled = false;
+static bool susfs_is_umount_for_zygote_iso_service_enabled = false;
+extern bool susfs_hide_sus_mnts_for_all_procs;
+extern void susfs_reorder_mnt_id(void);
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
+extern bool susfs_is_auto_add_sus_bind_mount_enabled;
+#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+extern bool susfs_is_auto_add_sus_ksu_default_mount_enabled;
+#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+extern bool susfs_is_auto_add_try_umount_for_bind_mount_enabled;
+#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+extern bool susfs_is_sus_su_ready;
+extern int susfs_sus_su_working_mode;
+extern bool susfs_is_sus_su_hooks_enabled __read_mostly;
+extern bool ksu_devpts_hook;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
+
+static inline void susfs_on_post_fs_data(void) {
+    struct path path;
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+    if (!kern_path(DATA_ADB_UMOUNT_FOR_ZYGOTE_SYSTEM_PROCESS, 0, &path)) {
+        susfs_is_umount_for_zygote_system_process_enabled = true;
+        path_put(&path);
+    }
+    pr_info("susfs_is_umount_for_zygote_system_process_enabled: %d\n", susfs_is_umount_for_zygote_system_process_enabled);
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
+    if (!kern_path(DATA_ADB_NO_AUTO_ADD_SUS_BIND_MOUNT, 0, &path)) {
+        susfs_is_auto_add_sus_bind_mount_enabled = false;
+        path_put(&path);
+    }
+    pr_info("susfs_is_auto_add_sus_bind_mount_enabled: %d\n", susfs_is_auto_add_sus_bind_mount_enabled);
+#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+    if (!kern_path(DATA_ADB_NO_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT, 0, &path)) {
+        susfs_is_auto_add_sus_ksu_default_mount_enabled = false;
+        path_put(&path);
+    }
+    pr_info("susfs_is_auto_add_sus_ksu_default_mount_enabled: %d\n", susfs_is_auto_add_sus_ksu_default_mount_enabled);
+#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
+#ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+    if (!kern_path(DATA_ADB_NO_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT, 0, &path)) {
+        susfs_is_auto_add_try_umount_for_bind_mount_enabled = false;
+        path_put(&path);
+    }
+    pr_info("susfs_is_auto_add_try_umount_for_bind_mount_enabled: %d\n", susfs_is_auto_add_try_umount_for_bind_mount_enabled);
+#endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
+}
+
+static inline bool is_some_system_uid(uid_t uid)
+{
+    return (uid >= 1000 && uid < 10000);
+}
+
+static inline bool is_zygote_isolated_service_uid(uid_t uid)
+{
+    return ((uid >= 90000 && uid < 100000) || (uid >= 1090000 && uid < 1100000));
+}
+
+static inline bool is_zygote_normal_app_uid(uid_t uid)
+{
+    return ((uid >= 10000 && uid < 19999) || (uid >= 1010000 && uid < 1019999));
+}
+
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 static bool ksu_kernel_umount_enabled = true;
@@ -274,6 +350,109 @@ static inline bool is_unsupported_uid(uid_t uid)
     return appid > LAST_APPLICATION_UID;
 }
 
+#ifdef CONFIG_KSU_SUSFS
+int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
+{
+    struct umount_tw *tw;
+
+    // this hook is used for umounting overlayfs for some uid, if there isn't any module mounted, just ignore it!
+    if (!ksu_module_mounted) {
+        return 0;
+    }
+
+    if (!ksu_kernel_umount_enabled) {
+        return 0;
+    }
+
+    if (!is_appuid(new_uid) || is_unsupported_uid(new_uid)) {
+        pr_info("handle setuid ignore non application or isolated uid: %d\n", new_uid);
+        return 0;
+    }
+
+    if (!ksu_uid_should_umount(new_uid)) {
+        return 0;
+    } else {
+        pr_info("uid: %d should not umount!\n", current_uid().val);
+    }
+
+    // We only interest in process spwaned by zygote
+    if (!susfs_is_sid_equal(current->cred->security, susfs_zygote_sid)) {
+        return 0;
+    }
+
+    // Check if spawned process is isolated service first, and force to do umount if so  
+    if (is_zygote_isolated_service_uid(new_uid) && susfs_is_umount_for_zygote_iso_service_enabled) {
+        goto do_umount;
+    }
+
+    // - Since ksu maanger app uid is excluded in allow_list_arr, so ksu_uid_should_umount(manager_uid)
+    //   will always return true, that's why we need to explicitly check if new_uid.val belongs to
+    //   ksu manager
+    if (ksu_is_manager_uid_valid() &&
+        (new_uid % 1000000 == ksu_get_manager_uid())) // % 1000000 in case it is private space uid
+    {
+        return 0;
+    }
+
+    // Check if spawned process is normal user app and needs to be umounted
+    if (likely(is_zygote_normal_app_uid(new_uid) && ksu_uid_should_umount(new_uid))) {
+        goto do_umount;
+    }
+
+    // Lastly, Check if spawned process is some system process and needs to be umounted
+    if (unlikely(is_some_system_uid(new_uid) && susfs_is_umount_for_zygote_system_process_enabled)) {
+        goto do_umount;
+    }
+#if __SULOG_GATE
+    ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
+#endif
+
+    return 0;
+
+do_umount:
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+    // susfs come first, and lastly umount by ksu, make sure umount in reversed order
+    susfs_try_umount_all(new_uid);
+#else
+    tw = kmalloc(sizeof(*tw), GFP_ATOMIC);
+    if (!tw)
+        return 0;
+
+    tw->old_cred = get_current_cred();
+    tw->cb.func = umount_tw_func;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+    int err = task_work_add(current, &tw->cb, TWA_RESUME);
+#else
+    int err = task_work_add(current, &tw->cb, true);
+#endif
+    if (err) {
+        if (tw->old_cred) {
+            put_cred(tw->old_cred);
+        }
+        kfree(tw);
+        pr_warn("unmount add task_work failed\n");
+    }
+#endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+
+    get_task_struct(current);
+
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+    // We can reorder the mnt_id now after all sus mounts are umounted
+    susfs_reorder_mnt_id();
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+
+    susfs_set_current_proc_umounted();
+
+    put_task_struct(current);
+
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+    susfs_run_sus_path_loop(new_uid);
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+
+    return 0;
+}
+#else
 int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 {
     struct umount_tw *tw;
@@ -306,6 +485,9 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
         pr_info("handle umount ignore non zygote child: %d\n", current->pid);
         return 0;
     }
+#if __SULOG_GATE
+    ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
+#endif
     // umount the target mnt
     pr_info("handle umount for uid: %d, pid: %d\n", new_uid, current->pid);
 
@@ -331,6 +513,7 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 
     return 0;
 }
+#endif
 
 void ksu_kernel_umount_init(void)
 {

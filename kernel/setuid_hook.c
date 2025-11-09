@@ -151,21 +151,6 @@ static inline void susfs_on_post_fs_data(void) {
 #endif // #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT
 }
 
-static inline bool is_some_system_uid(uid_t uid)
-{
-    return (uid >= 1000 && uid < 10000);
-}
-
-static inline bool is_zygote_isolated_service_uid(uid_t uid)
-{
-    return ((uid >= 90000 && uid < 100000) || (uid >= 1090000 && uid < 1100000));
-}
-
-static inline bool is_zygote_normal_app_uid(uid_t uid)
-{
-    return ((uid >= 10000 && uid < 19999) || (uid >= 1010000 && uid < 1019999));
-}
-
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 static inline bool is_allow_su(void)
@@ -182,6 +167,16 @@ static inline bool is_unsupported_uid(uid_t uid)
 #define LAST_APPLICATION_UID 19999
     uid_t appid = uid % 100000;
     return appid > LAST_APPLICATION_UID;
+}
+
+static bool is_appuid(uid_t uid)
+{
+#define PER_USER_RANGE 100000
+#define FIRST_APPLICATION_UID 10000
+#define LAST_APPLICATION_UID 19999
+
+    uid_t appid = uid % PER_USER_RANGE;
+    return appid >= FIRST_APPLICATION_UID && appid <= LAST_APPLICATION_UID;
 }
 
 #if __SULOG_GATE
@@ -478,167 +473,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
     return 0;
 }
 
-static bool is_appuid(uid_t uid)
-{
-#define PER_USER_RANGE 100000
-#define FIRST_APPLICATION_UID 10000
-#define LAST_APPLICATION_UID 19999
-
-    uid_t appid = uid % PER_USER_RANGE;
-    return appid >= FIRST_APPLICATION_UID && appid <= LAST_APPLICATION_UID;
-}
-
-#ifdef CONFIG_KSU_SUSFS
-int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
-{
-    uid_t new_uid = ruid;
-	uid_t old_uid = current_uid().val;
-    pr_info("handle_setuid from %d to %d\n", old_uid, new_uid);
-
-    if (0 != old_uid) {
-        // old process is not root, ignore it.
-        if (ksu_enhanced_security_enabled) {
-            // disallow any non-ksu domain escalation from non-root to root!
-            if (unlikely(new_uid) == 0) {
-                if (!is_ksu_domain()) {
-                    pr_warn("find suspicious EoP: %d %s, from %d to %d\n", 
-                        current->pid, current->comm, old_uid, new_uid);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
-                    force_sig(SIGKILL);
-#else
-                    force_sig(SIGKILL, current);
-#endif
-                    return 0;
-                }
-            }
-            // disallow appuid decrease to any other uid if it is allowed to su
-            if (is_appuid(old_uid)) {
-                if (new_uid < old_uid && !ksu_is_allow_uid_for_current(old_uid)) {
-                    pr_warn("find suspicious EoP: %d %s, from %d to %d\n", 
-                        current->pid, current->comm, old_uid, new_uid);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
-                    force_sig(SIGKILL);
-#else
-                    force_sig(SIGKILL, current);
-#endif
-                    return 0;
-                }
-            }
-        }
-        return 0;
-    }
-
-    if (new_uid == 2000) {
-        ksu_set_task_tracepoint_flag(current);
-    }
-
-    if (!is_appuid(new_uid) || is_unsupported_uid(new_uid)) {
-        pr_info("handle setuid ignore non application or isolated uid: %d\n", new_uid);
-        ksu_clear_task_tracepoint_flag(current);
-        return 0;
-    }
-
-    // if on private space, see if its possibly the manager
-    if (unlikely(new_uid > 100000 && new_uid % 100000 == ksu_get_manager_uid())) {
-         ksu_set_manager_uid(new_uid);
-    }
-
-    if (unlikely(ksu_get_manager_uid() == new_uid)) {
-        pr_info("install fd for manager: %d\n", new_uid);
-        ksu_install_fd();
-        spin_lock_irq(&current->sighand->siglock);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 2) // Android backport this feature in 5.10.2
-        ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
-#else
-        // we dont have those new fancy things upstream has
-	    // lets just do original thing where we disable seccomp
-        disable_seccomp();
-#endif
-        ksu_set_task_tracepoint_flag(current);
-        spin_unlock_irq(&current->sighand->siglock);
-        return 0;
-    }
-
-    if (unlikely(ksu_is_allow_uid_for_current(new_uid))) {
-        if (current->seccomp.mode == SECCOMP_MODE_FILTER &&
-            current->seccomp.filter) {
-            spin_lock_irq(&current->sighand->siglock);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 2) // Android backport this feature in 5.10.2
-            ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
-#else
-            // we don't have those new fancy things upstream has
-            // lets just do original thing where we disable seccomp
-            disable_seccomp();
-#endif
-            spin_unlock_irq(&current->sighand->siglock);
-        }
-        ksu_set_task_tracepoint_flag(current);
-    } else {
-        ksu_clear_task_tracepoint_flag(current);
-    }
-
-    // Handle kernel umount
-    
-    // We only interest in process spwaned by zygote
-    if (!susfs_is_sid_equal(current->cred->security, susfs_zygote_sid)) {
-        return 0;
-    }
-
-    // Check if spawned process is isolated service first, and force to do umount if so  
-    if (is_zygote_isolated_service_uid(new_uid) && susfs_is_umount_for_zygote_iso_service_enabled) {
-        goto do_umount;
-    }
-
-    // - Since ksu maanger app uid is excluded in allow_list_arr, so ksu_uid_should_umount(manager_uid)
-    //   will always return true, that's why we need to explicitly check if new_uid belongs to
-    //   ksu manager
-    if (ksu_is_manager_uid_valid() &&
-        (new_uid % 1000000 == ksu_get_manager_uid())) // % 1000000 in case it is private space uid
-    {
-        return 0;
-    }
-
-    // Check if spawned process is normal user app and needs to be umounted
-    if (likely(is_zygote_normal_app_uid(new_uid) && ksu_uid_should_umount(new_uid))) {
-        goto do_umount;
-    }
-
-    // Lastly, Check if spawned process is some system process and needs to be umounted
-    if (unlikely(is_some_system_uid(new_uid) && susfs_is_umount_for_zygote_system_process_enabled)) {
-        goto do_umount;
-    }
-#if __SULOG_GATE
-    ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
-#endif
-
-    return 0;
-
-do_umount:
-#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-    // susfs come first, and lastly umount by ksu, make sure umount in reversed order
-    susfs_try_umount_all(new_uid);
-#else
-    ksu_handle_umount(old_uid, new_uid);
-
-#endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-
-    get_task_struct(current);
-
-#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-    // We can reorder the mnt_id now after all sus mounts are umounted
-    susfs_reorder_mnt_id();
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-
-    susfs_set_current_proc_umounted();
-
-    put_task_struct(current);
-
-#ifdef CONFIG_KSU_SUSFS_SUS_PATH
-    susfs_run_sus_path_loop(new_uid);
-#endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-    return 0;
-}
-#else
 int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
     uid_t new_uid = ruid;
@@ -721,15 +555,9 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 
     // Handle kernel umount
     ksu_handle_umount(old_uid, new_uid);
-    
-#if __SULOG_GATE
-    ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
-#endif
 
     return 0;
 }
-#endif // #ifdef CONFIG_KSU_SUSFS
-
 
 static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
               unsigned long arg4, unsigned long arg5)
