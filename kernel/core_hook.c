@@ -290,7 +290,7 @@ void nuke_ext4_sysfs(void)
 	}
 
 	ext4_unregister_sysfs(sb);
-	pr_info("nuke_module: ext4 sysfs unregistered.n\n");
+	pr_info("nuke_module: ext4 sysfs unregistered.\n");
 	path_put(&path);
 #endif
 }
