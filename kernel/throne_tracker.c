@@ -11,6 +11,7 @@
 #include "allowlist.h"
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
+#include "apk_sign.h"
 #include "manager.h"
 #include "throne_tracker.h"
 #include "kernel_compat.h"

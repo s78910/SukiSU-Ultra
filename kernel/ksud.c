@@ -1,3 +1,6 @@
+#include <linux/rcupdate.h>
+#include <linux/slab.h>
+#include <linux/task_work.h>
 #include <asm/current.h>
 #include <linux/compat.h>
 #include <linux/cred.h>
@@ -26,6 +29,8 @@
 #include "ksud.h"
 #include "kernel_compat.h"
 #include "selinux/selinux.h"
+#include "manager.h"
+#include "sucompat.h"
 
 static const char KERNEL_SU_RC[] =
 	"\n"
@@ -79,6 +84,7 @@ void on_post_fs_data(void)
 	done = true;
 	pr_info("%s!\n", __func__);
 	ksu_load_allow_list();
+	ksu_mark_running_process();
 	ksu_observer_init();
 	// sanity check, this may influence the performance
 	stop_input_hook();
@@ -101,6 +107,13 @@ struct user_arg_ptr {
 #endif
 	} ptr;
 };
+
+static void on_post_fs_data_cbfun(struct callback_head *cb)
+{
+	on_post_fs_data();
+}
+
+static struct callback_head on_post_fs_data_cb = { .func = on_post_fs_data_cbfun };
 
 // since _ksud handler only uses argv and envp for comparisons
 // this can probably work
@@ -146,7 +159,6 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
 			pr_info("%s: /system/bin/init second_stage executed\n", __func__);
 			apply_kernelsu_rules();
 			init_second_stage_executed = true;
-			ksu_android_ns_fs_check();
 		}
 	}
 
@@ -157,7 +169,6 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
 			pr_info("%s: /init --second-stage executed\n", __func__);
 			apply_kernelsu_rules();
 			init_second_stage_executed = true;
-			ksu_android_ns_fs_check();
 		}
 	}
 
@@ -184,15 +195,25 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
 			pr_info("%s: /init +envp: INIT_SECOND_STAGE executed\n", __func__);
 			apply_kernelsu_rules();
 			init_second_stage_executed = true;
-			ksu_android_ns_fs_check();
 		}
 	}
 
 first_app_process:
 	if (first_app_process && !memcmp(filename, app_process, sizeof(app_process) - 1)) {
 		first_app_process = false;
-		pr_info("%s: exec app_process, /data prepared, second_stage: %d\n", __func__, init_second_stage_executed);
-		on_post_fs_data();
+		pr_info("exec app_process, /data prepared, second_stage: %d\n",
+			init_second_stage_executed);
+		struct task_struct *init_task;
+		rcu_read_lock();
+		init_task = rcu_dereference(current->real_parent);
+		if (init_task) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 8)
+			task_work_add(init_task, &on_post_fs_data_cb, TWA_RESUME);
+#else
+			task_work_add(init_task, &on_post_fs_data_cb, true);
+#endif
+		}
+		rcu_read_unlock();
 		stop_execve_hook();
 	}
 
