@@ -56,6 +56,7 @@
 #include "supercalls.h"
 #include "syscall_hook_manager.h"
 #include "kernel_umount.h"
+#include "app_profile.h"
 
 #include "sulog.h"
 
@@ -194,13 +195,6 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
     return 0;
 }
 
-static int ksu_task_prctl(int option, unsigned long arg2, unsigned long arg3,
-              unsigned long arg4, unsigned long arg5)
-{
-    ksu_handle_prctl(option, arg2, arg3, arg4, arg5);
-    return -ENOSYS;
-}
-
 // kernel 4.4 and 4.9
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||    \
     defined(CONFIG_IS_HW_HISI) ||    \
@@ -223,7 +217,6 @@ static int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
 
 #ifndef MODULE
 static struct security_hook_list ksu_hooks[] = {
-    LSM_HOOK_INIT(task_prctl, ksu_task_prctl),
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || \
     defined(CONFIG_IS_HW_HISI) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
     LSM_HOOK_INIT(key_permission, ksu_key_permission)
