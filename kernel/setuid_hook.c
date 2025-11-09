@@ -58,8 +58,6 @@
 #include "kernel_umount.h"
 #include "app_profile.h"
 
-#include "sulog.h"
-
 static bool ksu_enhanced_security_enabled = false;
 
 static int enhanced_security_feature_get(u64 *value)
