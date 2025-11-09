@@ -382,21 +382,20 @@ static void do_persistent_allow_list(struct callback_head *_cb)
 	if (IS_ERR(fp)) {
 		pr_err("save_allow_list create file failed: %ld\n",
 		       PTR_ERR(fp));
-		mutex_unlock(&allowlist_mutex);
-		return;
+		goto unlock;
 	}
 
 	// store magic and version
 	if (ksu_kernel_write_compat(fp, &magic, sizeof(magic), &off) !=
 	    sizeof(magic)) {
 		pr_err("save_allow_list write magic failed.\n");
-		goto exit;
+		goto close_file;
 	}
 
 	if (ksu_kernel_write_compat(fp, &version, sizeof(version), &off) !=
 	    sizeof(version)) {
 		pr_err("save_allow_list write version failed.\n");
-		goto exit;
+		goto close_file;
 	}
 
 	list_for_each (pos, &allow_list) {
@@ -409,9 +408,11 @@ static void do_persistent_allow_list(struct callback_head *_cb)
 					&off);
 	}
 
-exit:
+close_file:
 	filp_close(fp, 0);
+unlock:
 	mutex_unlock(&allowlist_mutex);
+	kfree(_cb);
 }
 
 void persistent_allow_list(void)
