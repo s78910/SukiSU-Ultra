@@ -111,4 +111,6 @@ static inline int endswith(const char *s, const char *t)
 }
 #endif
 
+bool ksu_queue_work(struct work_struct *work);
+
 #endif
