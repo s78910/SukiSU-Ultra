@@ -3,7 +3,9 @@
 #include <linux/kobject.h>
 #include <linux/module.h>
 #include <linux/workqueue.h>
-#include <linux/version.h>
+#include <generated/utsrelease.h>
+#include <generated/compile.h>
+#include <linux/version.h> /* LINUX_VERSION_CODE, KERNEL_VERSION macros */
 
 #include "allowlist.h"
 #include "feature.h"
@@ -40,6 +42,9 @@ void sukisu_custom_config_exit(void)
 
 int __init kernelsu_init(void)
 {
+	pr_info("Initialized on: %s (%s) with driver version: %u\n",
+		UTS_RELEASE, UTS_MACHINE, KSU_VERSION);
+		
 #ifdef CONFIG_KSU_DEBUG
     pr_alert("*************************************************************");
     pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
@@ -64,11 +69,7 @@ int __init kernelsu_init(void)
 
     ksu_throne_tracker_init();
 
-#ifdef KSU_KPROBES_HOOK
     ksu_ksud_init();
-#else
-     pr_alert("KPROBES is disabled, KernelSU may not work, please check https://kernelsu.org/guide/how-to-integrate-for-non-gki.html");
-#endif
 
 #ifdef MODULE
 #ifndef CONFIG_KSU_DEBUG
@@ -89,11 +90,7 @@ void kernelsu_exit(void)
 
     destroy_workqueue(ksu_workqueue);
 
-
-
-#ifdef KSU_KPROBES_HOOK
     ksu_ksud_exit();
-#endif
 
     ksu_syscall_hook_manager_exit();
 

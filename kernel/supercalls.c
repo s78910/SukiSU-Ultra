@@ -717,8 +717,6 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
     { .cmd = 0, .name = NULL, .handler = NULL, .perm_check = NULL} // Sentine
 };
 
-#ifdef KSU_KPROBES_HOOK
-
 struct ksu_install_fd_tw {
     struct callback_head cb;
     int __user *outp;
@@ -776,6 +774,7 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
     return 0;
 }
 
+#ifdef KSU_KPROBES_HOOK
 // Reboot hook for installing fd
 static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -812,7 +811,8 @@ void ksu_supercalls_init(void)
 #endif
 }
 
-void ksu_supercalls_exit(void){
+void ksu_supercalls_exit(void) 
+{
 #ifdef KSU_KPROBES_HOOK
     unregister_kprobe(&reboot_kp);
 #endif
