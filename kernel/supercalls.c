@@ -51,9 +51,6 @@ bool always_allow(void)
 bool allowed_for_su(void)
 {
     bool is_allowed = is_manager() || ksu_is_allow_uid_for_current(current_uid().val);
-#if __SULOG_GATE
-	ksu_sulog_report_permission_check(current_uid().val, current->comm, is_allowed);
-#endif
     return is_allowed;
 }
 
@@ -116,9 +113,6 @@ static int do_report_event(void __user *arg)
             pr_info("post-fs-data triggered\n");
             on_post_fs_data();
             init_uid_scanner();
-#if __SULOG_GATE    
-            ksu_sulog_init();
-#endif
             ksu_dynamic_manager_init();
         }
         break;
@@ -298,10 +292,6 @@ static int do_set_app_profile(void __user *arg)
     }
 
     if (!ksu_set_app_profile(&cmd.profile, true)) {
-#if __SULOG_GATE
-            ksu_sulog_report_manager_operation("SET_APP_PROFILE", 
-                current_uid().val, cmd.profile.current_uid);
-#endif
         return -EFAULT;
     }
 
@@ -686,10 +676,6 @@ int ksu_install_fd(void)
 
     // Install fd
     fd_install(fd, filp);
-
-#if __SULOG_GATE
-    ksu_sulog_report_permission_check(current_uid().val, current->comm, fd >= 0);
-#endif
 
     pr_info("ksu fd installed: %d for pid %d\n", fd, current->pid);
 
