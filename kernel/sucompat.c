@@ -193,39 +193,6 @@ int ksu_handle_execve_sucompat(const char __user **filename_user,
     return 0;
 }
 
-int __ksu_handle_devpts(struct inode *inode)
-{
-
-#ifdef KSU_MANUAL_HOOK
-    if (!ksu_su_compat_enabled)
-        return 0;
-#endif
-
-    if (!current->mm) {
-        return 0;
-    }
-
-    uid_t uid = current_uid().val;
-    if (uid % 100000 < 10000) {
-        // not untrusted_app, ignore it
-        return 0;
-    }
-
-    if (likely(!ksu_is_allow_uid_for_current(uid)))
-        return 0;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0) || defined(KSU_OPTIONAL_SELINUX_INODE)
-        struct inode_security_struct *sec = selinux_inode(inode);
-#else
-        struct inode_security_struct *sec =
-            (struct inode_security_struct *)inode->i_security;
-#endif
-    if (ksu_file_sid && sec)
-        sec->sid = ksu_file_sid;
-
-    return 0;
-}
-
 // sucompat: permitted process can execute 'su' to gain root access.
 void ksu_sucompat_init()
 {
