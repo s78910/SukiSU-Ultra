@@ -43,6 +43,8 @@ struct manager_list_info {
 
 bool ksu_queue_work(struct work_struct *work);
 
+void ksu_lsm_hook_init(void);
+
 #if 0
 static inline int startswith(char *s, char *prefix)
 {

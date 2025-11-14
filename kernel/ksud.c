@@ -33,7 +33,9 @@
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
 #include "selinux/selinux.h"
+#ifndef CONFIG_KSU_SUSFS
 #include "syscall_hook_manager.h"
+#endif // #ifndef CONFIG_KSU_SUSFS
 
 bool ksu_module_mounted __read_mostly = false;
 bool ksu_boot_completed __read_mostly = false;
@@ -65,7 +67,7 @@ static void stop_vfs_read_hook(void);
 static void stop_execve_hook(void);
 static void stop_input_hook(void);
 
-#ifdef KSU_KPROBES_HOOK
+#if defined(KSU_KPROBES_HOOK) && !defined(CONFIG_KSU_SUSFS)
 static struct work_struct stop_vfs_read_work;
 static struct work_struct stop_execve_hook_work;
 static struct work_struct stop_input_hook_work;
@@ -90,8 +92,10 @@ void on_post_fs_data(void)
     done = true;
     pr_info("on_post_fs_data!\n");
     ksu_load_allow_list();
+#ifndef CONFIG_KSU_SUSFS
     pr_info("mark tif for running process\n");
     ksu_mark_running_process();
+#endif // #ifndef CONFIG_KSU_SUSFS
     ksu_observer_init();
     // sanity check, this may influence the performance
     stop_input_hook();
@@ -136,11 +140,15 @@ void on_module_mounted(void){
 void on_boot_completed(void){
     ksu_boot_completed = true;
     pr_info("on_boot_completed!\n");
+#ifndef CONFIG_KSU_SUSFS
     // remark process, we don't want to mark other init
     // forked process excepte zygote and adbd
+    ksu_unmark_all_process();
     ksu_mark_running_process();
+#endif // #ifndef CONFIG_KSU_SUSFS
 }
 
+#ifndef CONFIG_KSU_SUSFS
 #define MAX_ARG_STRINGS 0x7FFFFFFF
 struct user_arg_ptr {
 #ifdef CONFIG_COMPAT
@@ -153,6 +161,7 @@ struct user_arg_ptr {
 #endif
     } ptr;
 };
+#endif // #ifndef CONFIG_KSU_SUSFS
 
 static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 {
@@ -335,7 +344,9 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
             task_work_add(init_task, &on_post_fs_data_cb, TWA_RESUME);
         }
         rcu_read_unlock();
+#ifndef CONFIG_KSU_SUSFS
         ksu_set_task_tracepoint_flag(current); // we are zygote!
+#endif
 
         stop_execve_hook();
     }
@@ -529,7 +540,7 @@ bool ksu_is_safe_mode()
     return false;
 }
 
-#ifdef KSU_KPROBES_HOOK
+#if defined(KSU_KPROBES_HOOK) && !defined(CONFIG_KSU_SUSFS)
 
 static int sys_execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -605,7 +616,7 @@ static void do_stop_input_hook(struct work_struct *work)
 
 static void stop_vfs_read_hook(void)
 {
-#ifdef KSU_KPROBES_HOOK
+#if defined(KSU_KPROBES_HOOK) && !defined(CONFIG_KSU_SUSFS)
     bool ret = schedule_work(&stop_vfs_read_work);
     pr_info("unregister vfs_read kprobe: %d!\n", ret);
 #else
@@ -616,7 +627,7 @@ static void stop_vfs_read_hook(void)
 
 static void stop_execve_hook(void)
 {
-#ifdef KSU_KPROBES_HOOK
+#if defined(KSU_KPROBES_HOOK) && !defined(CONFIG_KSU_SUSFS)
     bool ret = schedule_work(&stop_execve_hook_work);
     pr_info("unregister execve kprobe: %d!\n", ret);
 #else
@@ -632,7 +643,7 @@ static void stop_input_hook(void)
         return;
     }
     input_hook_stopped = true;
-#ifdef KSU_KPROBES_HOOK
+#if defined(KSU_KPROBES_HOOK) && !defined(CONFIG_KSU_SUSFS)
     bool ret = schedule_work(&stop_input_hook_work);
     pr_info("unregister input kprobe: %d!\n", ret);
 #else
@@ -644,7 +655,7 @@ static void stop_input_hook(void)
 // ksud: module support
 void ksu_ksud_init(void)
 {
-#ifdef KSU_KPROBES_HOOK
+#if defined(KSU_KPROBES_HOOK) && !defined(CONFIG_KSU_SUSFS)
     int ret;
 
     ret = register_kprobe(&execve_kp);
@@ -664,7 +675,7 @@ void ksu_ksud_init(void)
 
 void ksu_ksud_exit(void)
 {
-#ifdef KSU_KPROBES_HOOK
+#if defined(KSU_KPROBES_HOOK) && !defined(CONFIG_KSU_SUSFS)
     unregister_kprobe(&execve_kp);
     // this should be done before unregister vfs_read_kp
     // unregister_kprobe(&vfs_read_kp);

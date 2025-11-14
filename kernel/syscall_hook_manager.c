@@ -259,28 +259,28 @@ int ksu_handle_init_mark_tracker(const char __user **filename_user)
 
     return 0;
 }
-#ifdef CONFIG_KSU_MANUAL_SU
-#include "manual_su.h"
-static inline void ksu_handle_task_alloc(struct pt_regs *regs)
-{
-    ksu_try_escalate_for_uid(current_uid().val);
-}
-#endif
 
 #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
 // Generic sys_enter handler that dispatches to specific handlers
 static void ksu_sys_enter_handler(void *data, struct pt_regs *regs, long id)
 {
 	if (unlikely(check_syscall_fastpath(id))) {
+#ifndef CONFIG_KSU_SUSFS
 #ifdef KSU_TP_HOOK
 		if (ksu_su_compat_enabled) {
 			// Handle newfstatat
 			if (id == __NR_newfstatat) {
 				int *dfd = (int *)&PT_REGS_PARM1(regs);
-				const char __user **filename_user =
-					(const char __user **)&PT_REGS_PARM2(regs);
 				int *flags = (int *)&PT_REGS_SYSCALL_PARM4(regs);
-				ksu_handle_stat(dfd, filename_user, flags);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0) && defined(CONFIG_KSU_SUSFS)
+					// Kernel 6.1+ with SUSFS uses struct filename **
+					struct filename **filename_ptr = (struct filename **)&PT_REGS_PARM2(regs);
+					ksu_handle_stat(dfd, filename_ptr, flags);
+#else
+					// Older kernel or no SUSFS: use const char __user **
+					const char __user **filename_user = (const char __user **)&PT_REGS_PARM2(regs);
+					ksu_handle_stat(dfd, filename_user, flags);
+#endif
 				return;
 			}
 
@@ -316,11 +316,6 @@ static void ksu_sys_enter_handler(void *data, struct pt_regs *regs, long id)
 			ksu_handle_setresuid(ruid, euid, suid);
 			return;
 		}
-
-#ifdef CONFIG_KSU_MANUAL_SU
-		// Handle task_alloc via clone/fork
-    	if (id == __NR_clone || id == __NR_clone3)
-        	return ksu_handle_task_alloc(regs);
 #endif
 	}
 }
