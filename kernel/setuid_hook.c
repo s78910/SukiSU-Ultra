@@ -304,17 +304,16 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid){
     return 0;
 
 do_umount:
-#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
     if (!ksu_kernel_umount_enabled || !ksu_module_mounted) {
         goto skip_try_umount;
         
     }
-
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
     pr_info("susfs: running susfs_try_umount_all() for uid: %u\n", new_uid);
     susfs_try_umount_all();
+#endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
 skip_try_umount:
-#endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
     get_task_struct(current);
 
