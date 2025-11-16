@@ -248,6 +248,10 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid){
         return 0;
     }
 
+#if __SULOG_GATE
+    ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
+#endif
+
     // Check if spawned process is isolated service first, and force to do umount if so  
     if (is_zygote_isolated_service_uid(new_uid) && susfs_is_umount_for_zygote_iso_service_enabled) {
         goto do_umount;
