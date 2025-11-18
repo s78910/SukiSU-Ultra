@@ -87,12 +87,12 @@ static inline bool is_zygote_normal_app_uid(uid_t uid)
 
 bool susfs_is_umount_for_zygote_system_process_enabled = false;
 
-extern bool susfs_is_umount_for_zygote_iso_service_enabled;
 extern u32 susfs_zygote_sid;
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 extern void susfs_run_sus_path_loop(uid_t uid);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+extern bool susfs_is_umount_for_zygote_iso_service_enabled;
 extern void susfs_reorder_mnt_id(void);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
@@ -253,10 +253,12 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid){
     ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
 #endif
 
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
     // Check if spawned process is isolated service first, and force to do umount if so  
     if (is_zygote_isolated_service_uid(new_uid) && susfs_is_umount_for_zygote_iso_service_enabled) {
         goto do_umount;
     }
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 
     // - Since ksu maanger app uid is excluded in allow_list_arr, so ksu_uid_should_umount(manager_uid)
     //   will always return true, that's why we need to explicitly check if new_uid belongs to
