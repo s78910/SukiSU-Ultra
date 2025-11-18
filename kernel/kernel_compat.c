@@ -9,7 +9,7 @@
 #include "klog.h" // IWYU pragma: keep
 #include "kernel_compat.h"
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||                           \
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||						   \
 	defined(CONFIG_IS_HW_HISI) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
 #include <linux/key.h>
 #include <linux/errno.h>
@@ -40,10 +40,10 @@ static int install_session_keyring(struct key *keyring)
 
 struct file *ksu_filp_open_compat(const char *filename, int flags, umode_t mode)
 {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||                           \
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||						   \
 	defined(CONFIG_IS_HW_HISI) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
 	if (init_session_keyring != NULL && !current_cred()->session_keyring &&
-	    (current->flags & PF_WQ_WORKER)) {
+		(current->flags & PF_WQ_WORKER)) {
 		pr_info("installing init session keyring for older kernel\n");
 		install_session_keyring(init_session_keyring);
 	}
@@ -52,9 +52,9 @@ struct file *ksu_filp_open_compat(const char *filename, int flags, umode_t mode)
 }
 
 ssize_t ksu_kernel_read_compat(struct file *p, void *buf, size_t count,
-			       loff_t *pos)
+				   loff_t *pos)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0) ||                          \
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0) ||						  \
 	defined(KSU_OPTIONAL_KERNEL_READ)
 	return kernel_read(p, buf, count, pos);
 #else
@@ -70,7 +70,7 @@ ssize_t ksu_kernel_read_compat(struct file *p, void *buf, size_t count,
 ssize_t ksu_kernel_write_compat(struct file *p, const void *buf, size_t count,
 				loff_t *pos)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0) ||                          \
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0) ||						  \
 	defined(KSU_OPTIONAL_KERNEL_WRITE)
 	return kernel_write(p, buf, count, pos);
 #else
@@ -83,7 +83,7 @@ ssize_t ksu_kernel_write_compat(struct file *p, const void *buf, size_t count,
 #endif
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0) ||                           \
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0) ||						   \
 	defined(KSU_OPTIONAL_STRNCPY)
 long ksu_strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
 				   long count)

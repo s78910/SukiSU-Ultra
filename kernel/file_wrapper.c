@@ -320,7 +320,7 @@ static int ksu_wrapper_fadvise(struct file *fp, loff_t off1, loff_t off2, int fl
 
 static int ksu_wrapper_release(struct inode *inode, struct file *filp) {
 	ksu_delete_file_wrapper(filp->private_data);
-    return 0;
+	return 0;
 }
 
 struct ksu_file_wrapper* ksu_create_file_wrapper(struct file* fp) {

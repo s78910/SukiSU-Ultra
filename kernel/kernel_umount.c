@@ -35,23 +35,23 @@ bool ksu_kernel_umount_enabled = true;
 
 static int kernel_umount_feature_get(u64 *value)
 {
-    *value = ksu_kernel_umount_enabled ? 1 : 0;
-    return 0;
+	*value = ksu_kernel_umount_enabled ? 1 : 0;
+	return 0;
 }
 
 static int kernel_umount_feature_set(u64 value)
 {
-    bool enable = value != 0;
-    ksu_kernel_umount_enabled = enable;
-    pr_info("kernel_umount: set to %d\n", enable);
-    return 0;
+	bool enable = value != 0;
+	ksu_kernel_umount_enabled = enable;
+	pr_info("kernel_umount: set to %d\n", enable);
+	return 0;
 }
 
 static const struct ksu_feature_handler kernel_umount_handler = {
-    .feature_id = KSU_FEATURE_KERNEL_UMOUNT,
-    .name = "kernel_umount",
-    .get_handler = kernel_umount_feature_get,
-    .set_handler = kernel_umount_feature_set,
+	.feature_id = KSU_FEATURE_KERNEL_UMOUNT,
+	.name = "kernel_umount",
+	.get_handler = kernel_umount_feature_get,
+	.set_handler = kernel_umount_feature_set,
 };
 
 #ifdef CONFIG_KSU_SUSFS
@@ -102,130 +102,130 @@ static void try_umount(const char *mnt, int flags)
 void try_umount(const char *mnt, int flags)
 #endif // #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 {
-    struct path path;
-    int err = kern_path(mnt, 0, &path);
-    if (err) {
-        return;
-    }
+	struct path path;
+	int err = kern_path(mnt, 0, &path);
+	if (err) {
+		return;
+	}
 
-    if (path.dentry != path.mnt->mnt_root) {
-        // it is not root mountpoint, maybe umounted by others already.
-        path_put(&path);
-        return;
-    }
+	if (path.dentry != path.mnt->mnt_root) {
+		// it is not root mountpoint, maybe umounted by others already.
+		path_put(&path);
+		return;
+	}
 
 #if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
-    if (susfs_is_log_enabled) {
-        pr_info("susfs: umounting '%s'\n", mnt);
-    }
+	if (susfs_is_log_enabled) {
+		pr_info("susfs: umounting '%s'\n", mnt);
+	}
 #endif // #if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
 
-    ksu_umount_mnt(&path, flags);
+	ksu_umount_mnt(&path, flags);
 }
 
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void susfs_try_umount_all(void) {
-    susfs_try_umount();
+	susfs_try_umount();
 }
 #endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
 #if !defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
 struct umount_tw {
-    struct callback_head cb;
-    const struct cred *old_cred;
+	struct callback_head cb;
+	const struct cred *old_cred;
 };
 
 static void umount_tw_func(struct callback_head *cb)
 {
-    struct umount_tw *tw = container_of(cb, struct umount_tw, cb);
-    const struct cred *saved = NULL;
-    if (tw->old_cred) {
-        saved = override_creds(tw->old_cred);
-    }
+	struct umount_tw *tw = container_of(cb, struct umount_tw, cb);
+	const struct cred *saved = NULL;
+	if (tw->old_cred) {
+		saved = override_creds(tw->old_cred);
+	}
 
-    struct mount_entry *entry;
-    down_read(&mount_list_lock);
-    list_for_each_entry(entry, &mount_list, list) {
-        pr_info("%s: unmounting: %s flags 0x%x\n", __func__, entry->umountable, entry->flags);
-        try_umount(entry->umountable, entry->flags);
-    }
-    up_read(&mount_list_lock);
+	struct mount_entry *entry;
+	down_read(&mount_list_lock);
+	list_for_each_entry(entry, &mount_list, list) {
+		pr_info("%s: unmounting: %s flags 0x%x\n", __func__, entry->umountable, entry->flags);
+		try_umount(entry->umountable, entry->flags);
+	}
+	up_read(&mount_list_lock);
 
-    if (saved)
-        revert_creds(saved);
+	if (saved)
+		revert_creds(saved);
 
-    if (tw->old_cred)
-        put_cred(tw->old_cred);
+	if (tw->old_cred)
+		put_cred(tw->old_cred);
 
-    kfree(tw);
+	kfree(tw);
 }
 
 int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 {
-    struct umount_tw *tw;
+	struct umount_tw *tw;
 
 #if defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
-    // this hook is used for umounting overlayfs for some uid, if there isn't any module mounted, just ignore it!
-    if (!ksu_module_mounted) {
-        return 0;
-    }
+	// this hook is used for umounting overlayfs for some uid, if there isn't any module mounted, just ignore it!
+	if (!ksu_module_mounted) {
+		return 0;
+	}
 
-    if (!ksu_kernel_umount_enabled) {
-        return 0;
-    }
+	if (!ksu_kernel_umount_enabled) {
+		return 0;
+	}
 
-    // FIXME: isolated process which directly forks from zygote is not handled
-    if (!is_appuid(new_uid)) {
-        return 0;
-    }
+	// FIXME: isolated process which directly forks from zygote is not handled
+	if (!is_appuid(new_uid)) {
+		return 0;
+	}
 
-    if (!ksu_uid_should_umount(new_uid)) {
-        return 0;
-    }
+	if (!ksu_uid_should_umount(new_uid)) {
+		return 0;
+	}
 
-    // check old process's selinux context, if it is not zygote, ignore it!
-    // because some su apps may setuid to untrusted_app but they are in global mount namespace
-    // when we umount for such process, that is a disaster!
-    bool is_zygote_child = is_zygote(get_current_cred());
-    if (!is_zygote_child) {
-        pr_info("handle umount ignore non zygote child: %d\n", current->pid);
-        return 0;
-    }
+	// check old process's selinux context, if it is not zygote, ignore it!
+	// because some su apps may setuid to untrusted_app but they are in global mount namespace
+	// when we umount for such process, that is a disaster!
+	bool is_zygote_child = is_zygote(get_current_cred());
+	if (!is_zygote_child) {
+		pr_info("handle umount ignore non zygote child: %d\n", current->pid);
+		return 0;
+	}
 #if __SULOG_GATE
-    ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
+	ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
 #endif
 #endif // #if defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
-    // umount the target mnt
-    pr_info("handle umount for uid: %d, pid: %d\n", new_uid, current->pid);
+	// umount the target mnt
+	pr_info("handle umount for uid: %d, pid: %d\n", new_uid, current->pid);
 
-    tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
-    if (!tw)
-        return 0;
+	tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
+	if (!tw)
+		return 0;
 
-    tw->old_cred = get_current_cred();
-    tw->cb.func = umount_tw_func;
+	tw->old_cred = get_current_cred();
+	tw->cb.func = umount_tw_func;
 
-    int err = task_work_add(current, &tw->cb, TWA_RESUME);
-    if (err) {
-        if (tw->old_cred) {
-            put_cred(tw->old_cred);
-        }
-        kfree(tw);
-        pr_warn("unmount add task_work failed\n");
-    }
+	int err = task_work_add(current, &tw->cb, TWA_RESUME);
+	if (err) {
+		if (tw->old_cred) {
+			put_cred(tw->old_cred);
+		}
+		kfree(tw);
+		pr_warn("unmount add task_work failed\n");
+	}
 
-    return 0;
+	return 0;
 }
 #endif // #if !defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
 
 void ksu_kernel_umount_init(void)
 {
-    if (ksu_register_feature_handler(&kernel_umount_handler)) {
-        pr_err("Failed to register kernel_umount feature handler\n");
-    }
+	if (ksu_register_feature_handler(&kernel_umount_handler)) {
+		pr_err("Failed to register kernel_umount feature handler\n");
+	}
 }
 
 void ksu_kernel_umount_exit(void)
 {
-    ksu_unregister_feature_handler(KSU_FEATURE_KERNEL_UMOUNT);
+	ksu_unregister_feature_handler(KSU_FEATURE_KERNEL_UMOUNT);
 }

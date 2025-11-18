@@ -16,59 +16,59 @@
 #include "manual_su.h"
 
 static int ksu_task_alloc(struct task_struct *task,
-                          unsigned long clone_flags)
+						  unsigned long clone_flags)
 {
-    ksu_try_escalate_for_uid(task_uid(task).val);
-    return 0;
+	ksu_try_escalate_for_uid(task_uid(task).val);
+	return 0;
 }
 #endif
 
 // kernel 4.4 and 4.9
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||    \
-    defined(CONFIG_IS_HW_HISI) ||    \
-    defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) ||	\
+	defined(CONFIG_IS_HW_HISI) ||	\
+	defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
 static int ksu_key_permission(key_ref_t key_ref, const struct cred *cred,
-                  unsigned perm)
+				  unsigned perm)
 {
-    if (init_session_keyring != NULL) {
-        return 0;
-    }
-    if (strcmp(current->comm, "init")) {
-        // we are only interested in `init` process
-        return 0;
-    }
-    init_session_keyring = cred->session_keyring;
-    pr_info("kernel_compat: got init_session_keyring\n");
-    return 0;
+	if (init_session_keyring != NULL) {
+		return 0;
+	}
+	if (strcmp(current->comm, "init")) {
+		// we are only interested in `init` process
+		return 0;
+	}
+	init_session_keyring = cred->session_keyring;
+	pr_info("kernel_compat: got init_session_keyring\n");
+	return 0;
 }
 #endif
 
 static struct security_hook_list ksu_hooks[] = {
 #if LINUX_VERSION_CODE > KERNEL_VERSION(4, 10, 0) && defined(CONFIG_KSU_MANUAL_SU)
-    LSM_HOOK_INIT(task_alloc, ksu_task_alloc),
+	LSM_HOOK_INIT(task_alloc, ksu_task_alloc),
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0) || \
-    defined(CONFIG_IS_HW_HISI) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
-    LSM_HOOK_INIT(key_permission, ksu_key_permission)
+	defined(CONFIG_IS_HW_HISI) || defined(CONFIG_KSU_ALLOWLIST_WORKAROUND)
+	LSM_HOOK_INIT(key_permission, ksu_key_permission)
 #endif
 };
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
 const struct lsm_id ksu_lsmid = {
-    .name = "ksu",
-    .id = 912,
+	.name = "ksu",
+	.id = 912,
 };
 #endif
 
 void __init ksu_lsm_hook_init(void)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
-    // https://elixir.bootlin.com/linux/v6.8/source/include/linux/lsm_hooks.h#L120
-    security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), &ksu_lsmid);
+	// https://elixir.bootlin.com/linux/v6.8/source/include/linux/lsm_hooks.h#L120
+	security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), &ksu_lsmid);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
-    security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), "ksu");
+	security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), "ksu");
 #else
-    // https://elixir.bootlin.com/linux/v4.10.17/source/include/linux/lsm_hooks.h#L1892
-    security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks));
+	// https://elixir.bootlin.com/linux/v4.10.17/source/include/linux/lsm_hooks.h#L1892
+	security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks));
 #endif
 }

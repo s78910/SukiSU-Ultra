@@ -83,7 +83,7 @@ static void init_default_profiles(void)
 	default_root_profile.groups_count = 1;
 	default_root_profile.groups[0] = 0;
 	memcpy(&default_root_profile.capabilities.effective, &full_cap,
-	       sizeof(default_root_profile.capabilities.effective));
+		   sizeof(default_root_profile.capabilities.effective));
 	default_root_profile.namespaces = 0;
 	strcpy(default_root_profile.selinux_domain, KSU_DEFAULT_SELINUX_DOMAIN);
 
@@ -127,7 +127,7 @@ static void ksu_grant_root_to_shell(void)
 	};
 	strcpy(profile.key, "com.android.shell");
 	strcpy(profile.rp_config.profile.selinux_domain,
-	       KSU_DEFAULT_SELINUX_DOMAIN);
+		   KSU_DEFAULT_SELINUX_DOMAIN);
 	ksu_set_app_profile(&profile, false);
 }
 #endif
@@ -199,7 +199,7 @@ bool ksu_set_app_profile(struct app_profile *profile, bool persist)
 		p = list_entry(pos, struct perm_data, list);
 		// both uid and package must match, otherwise it will break multiple package with different user id
 		if (profile->current_uid == p->profile.current_uid &&
-		    !strcmp(profile->key, p->profile.key)) {
+			!strcmp(profile->key, p->profile.key)) {
 			// found it, just override it all!
 			memcpy(&p->profile, profile, sizeof(*profile));
 			result = true;
@@ -238,9 +238,9 @@ out:
 	} else {
 		if (profile->allow_su) {
 			/*
-             * 1024 apps with uid higher than BITMAP_UID_MAX
-             * registered to request superuser?
-             */
+			 * 1024 apps with uid higher than BITMAP_UID_MAX
+			 * registered to request superuser?
+			 */
 			if (allow_list_pointer >= ARRAY_SIZE(allow_list_arr)) {
 				pr_err("too many apps registered\n");
 				WARN_ON(1);
@@ -258,13 +258,13 @@ out:
 	if (unlikely(!strcmp(profile->key, "$"))) {
 		// set default non root profile
 		memcpy(&default_non_root_profile, &profile->nrp_config.profile,
-		       sizeof(default_non_root_profile));
+			   sizeof(default_non_root_profile));
 	}
 
 	if (unlikely(!strcmp(profile->key, "#"))) {
 		// set default root profile
 		memcpy(&default_root_profile, &profile->rp_config.profile,
-		       sizeof(default_root_profile));
+			   sizeof(default_root_profile));
 	}
 
 	if (persist) {
@@ -286,7 +286,7 @@ bool __ksu_is_allow_uid(uid_t uid)
 	}
 
 	if (likely(ksu_is_manager_uid_valid()) &&
-	    unlikely(ksu_get_manager_uid() == uid)) {
+		unlikely(ksu_get_manager_uid() == uid)) {
 		// manager is always allowed!
 		return true;
 	}
@@ -317,7 +317,7 @@ bool ksu_uid_should_umount(uid_t uid)
 {
 	struct app_profile profile = { .current_uid = uid };
 	if (likely(ksu_is_manager_uid_valid()) &&
-	    unlikely(ksu_get_manager_uid() == uid)) {
+		unlikely(ksu_get_manager_uid() == uid)) {
 		// we should not umount on manager!
 		return false;
 	}
@@ -387,19 +387,19 @@ static void do_persistent_allow_list(struct callback_head *_cb)
 		KERNEL_SU_ALLOWLIST, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (IS_ERR(fp)) {
 		pr_err("save_allow_list create file failed: %ld\n",
-		       PTR_ERR(fp));
+			   PTR_ERR(fp));
 		goto unlock;
 	}
 
 	// store magic and version
 	if (ksu_kernel_write_compat(fp, &magic, sizeof(magic), &off) !=
-	    sizeof(magic)) {
+		sizeof(magic)) {
 		pr_err("save_allow_list write magic failed.\n");
 		goto close_file;
 	}
 
 	if (ksu_kernel_write_compat(fp, &version, sizeof(version), &off) !=
-	    sizeof(version)) {
+		sizeof(version)) {
 		pr_err("save_allow_list write version failed.\n");
 		goto close_file;
 	}
@@ -466,14 +466,14 @@ void ksu_load_allow_list(void)
 
 	// verify magic
 	if (ksu_kernel_read_compat(fp, &magic, sizeof(magic), &off) !=
-		    sizeof(magic) ||
-	    magic != FILE_MAGIC) {
+			sizeof(magic) ||
+		magic != FILE_MAGIC) {
 		pr_err("allowlist file invalid: %d!\n", magic);
 		goto exit;
 	}
 
 	if (ksu_kernel_read_compat(fp, &version, sizeof(version), &off) !=
-	    sizeof(version)) {
+		sizeof(version)) {
 		pr_err("allowlist read version: %d failed\n", version);
 		goto exit;
 	}
@@ -484,7 +484,7 @@ void ksu_load_allow_list(void)
 		struct app_profile profile;
 
 		ret = ksu_kernel_read_compat(fp, &profile, sizeof(profile),
-					     &off);
+						 &off);
 
 		if (ret <= 0) {
 			pr_info("load_allow_list read err: %zd\n", ret);
@@ -572,77 +572,77 @@ void ksu_allowlist_exit(void)
 #ifdef CONFIG_KSU_MANUAL_SU
 bool ksu_temp_grant_root_once(uid_t uid)
 {
-    struct app_profile profile = {
-        .version = KSU_APP_PROFILE_VER,
-        .allow_su = true,
-        .current_uid = uid,
-    };
+	struct app_profile profile = {
+		.version = KSU_APP_PROFILE_VER,
+		.allow_su = true,
+		.current_uid = uid,
+	};
 
-    const char *default_key = "com.temp.once";
+	const char *default_key = "com.temp.once";
 
-    struct perm_data *p = NULL;
-    struct list_head *pos = NULL;
-    bool found = false;
+	struct perm_data *p = NULL;
+	struct list_head *pos = NULL;
+	bool found = false;
 
-    list_for_each (pos, &allow_list) {
-        p = list_entry(pos, struct perm_data, list);
-        if (p->profile.current_uid == uid) {
-            strcpy(profile.key, p->profile.key);
-            found = true;
-            break;
-        }
-    }
+	list_for_each (pos, &allow_list) {
+		p = list_entry(pos, struct perm_data, list);
+		if (p->profile.current_uid == uid) {
+			strcpy(profile.key, p->profile.key);
+			found = true;
+			break;
+		}
+	}
 
-    if (!found) {
-        strcpy(profile.key, default_key);
-    }
+	if (!found) {
+		strcpy(profile.key, default_key);
+	}
 
-    profile.rp_config.profile.uid = default_root_profile.uid;
-    profile.rp_config.profile.gid = default_root_profile.gid;
-    profile.rp_config.profile.groups_count = default_root_profile.groups_count;
-    memcpy(profile.rp_config.profile.groups, default_root_profile.groups, sizeof(default_root_profile.groups));
-    memcpy(&profile.rp_config.profile.capabilities, &default_root_profile.capabilities, sizeof(default_root_profile.capabilities));
-    profile.rp_config.profile.namespaces = default_root_profile.namespaces;
-    strcpy(profile.rp_config.profile.selinux_domain, default_root_profile.selinux_domain);
+	profile.rp_config.profile.uid = default_root_profile.uid;
+	profile.rp_config.profile.gid = default_root_profile.gid;
+	profile.rp_config.profile.groups_count = default_root_profile.groups_count;
+	memcpy(profile.rp_config.profile.groups, default_root_profile.groups, sizeof(default_root_profile.groups));
+	memcpy(&profile.rp_config.profile.capabilities, &default_root_profile.capabilities, sizeof(default_root_profile.capabilities));
+	profile.rp_config.profile.namespaces = default_root_profile.namespaces;
+	strcpy(profile.rp_config.profile.selinux_domain, default_root_profile.selinux_domain);
 
-    bool ok = ksu_set_app_profile(&profile, false);
-    if (ok)
-        pr_info("pending_root: UID=%d granted and persisted\n", uid);
-    return ok;
+	bool ok = ksu_set_app_profile(&profile, false);
+	if (ok)
+		pr_info("pending_root: UID=%d granted and persisted\n", uid);
+	return ok;
 }
 
 void ksu_temp_revoke_root_once(uid_t uid)
 {
-    struct app_profile profile = {
-        .version = KSU_APP_PROFILE_VER,
-        .allow_su = false,
-        .current_uid = uid,
-    };
+	struct app_profile profile = {
+		.version = KSU_APP_PROFILE_VER,
+		.allow_su = false,
+		.current_uid = uid,
+	};
 
-    const char *default_key = "com.temp.once";
+	const char *default_key = "com.temp.once";
 
-    struct perm_data *p = NULL;
-    struct list_head *pos = NULL;
-    bool found = false;
+	struct perm_data *p = NULL;
+	struct list_head *pos = NULL;
+	bool found = false;
 
-    list_for_each (pos, &allow_list) {
-        p = list_entry(pos, struct perm_data, list);
-        if (p->profile.current_uid == uid) {
-            strcpy(profile.key, p->profile.key);
-            found = true;
-            break;
-        }
-    }
+	list_for_each (pos, &allow_list) {
+		p = list_entry(pos, struct perm_data, list);
+		if (p->profile.current_uid == uid) {
+			strcpy(profile.key, p->profile.key);
+			found = true;
+			break;
+		}
+	}
 
-    if (!found) {
-        strcpy(profile.key, default_key);
-    }
+	if (!found) {
+		strcpy(profile.key, default_key);
+	}
 
-    profile.nrp_config.profile.umount_modules = default_non_root_profile.umount_modules;
-    strcpy(profile.rp_config.profile.selinux_domain, KSU_DEFAULT_SELINUX_DOMAIN);
+	profile.nrp_config.profile.umount_modules = default_non_root_profile.umount_modules;
+	strcpy(profile.rp_config.profile.selinux_domain, KSU_DEFAULT_SELINUX_DOMAIN);
 
-    ksu_set_app_profile(&profile, false);
-    persistent_allow_list();
-    pr_info("pending_root: UID=%d removed and persist updated\n", uid);
+	ksu_set_app_profile(&profile, false);
+	persistent_allow_list();
+	pr_info("pending_root: UID=%d removed and persist updated\n", uid);
 }
 #endif
