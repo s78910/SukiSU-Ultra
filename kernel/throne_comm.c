@@ -7,8 +7,9 @@
 #include "ksu.h"
 
 #include "klog.h"
-#include "throne_comm.h"
 #include "ksu.h"
+#include "kernel_compat.h"
+#include "throne_comm.h"
 
 #define PROC_UID_SCANNER "ksu_uid_scanner"
 #define UID_SCANNER_STATE_FILE "/data/adb/ksu/.uid_scanner"
@@ -49,13 +50,13 @@ static void do_save_throne_state(struct work_struct *work)
     char state_char = ksu_uid_scanner_enabled ? '1' : '0';
     loff_t off = 0;
 
-    fp = filp_open(UID_SCANNER_STATE_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    fp = ksu_filp_open_compat(UID_SCANNER_STATE_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (IS_ERR(fp)) {
         pr_err("save_throne_state create file failed: %ld\n", PTR_ERR(fp));
         return;
     }
 
-    if (kernel_write(fp, &state_char, sizeof(state_char), &off) != sizeof(state_char)) {
+    if (ksu_kernel_write_compat(fp, &state_char, sizeof(state_char), &off) != sizeof(state_char)) {
         pr_err("save_throne_state write failed\n");
         goto exit;
     }
@@ -73,14 +74,14 @@ void do_load_throne_state(struct work_struct *work)
     loff_t off = 0;
     ssize_t ret;
 
-    fp = filp_open(UID_SCANNER_STATE_FILE, O_RDONLY, 0);
+    fp = ksu_filp_open_compat(UID_SCANNER_STATE_FILE, O_RDONLY, 0);
     if (IS_ERR(fp)) {
         pr_info("throne state file not found, using default: disabled\n");
         ksu_uid_scanner_enabled = false;
         return;
     }
 
-    ret = kernel_read(fp, &state_char, sizeof(state_char), &off);
+    ret = ksu_kernel_read_compat(fp, &state_char, sizeof(state_char), &off);
     if (ret != sizeof(state_char)) {
         pr_err("load_throne_state read err: %zd\n", ret);
         ksu_uid_scanner_enabled = false;

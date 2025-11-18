@@ -18,6 +18,7 @@
 #include "dynamic_manager.h"
 #include "klog.h" // IWYU pragma: keep
 #include "manager.h"
+#include "kernel_compat.h"
 
 #define MAX_MANAGERS 2
 
@@ -232,23 +233,23 @@ static void do_save_dynamic_manager(struct work_struct *work)
         return;
     }
 
-    fp = filp_open(KERNEL_SU_DYNAMIC_MANAGER, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_MANAGER, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (IS_ERR(fp)) {
         pr_err("save_dynamic_manager create file failed: %ld\n", PTR_ERR(fp));
         return;
     }
 
-    if (kernel_write(fp, &magic, sizeof(magic), &off) != sizeof(magic)) {
+    if (ksu_kernel_write_compat(fp, &magic, sizeof(magic), &off) != sizeof(magic)) {
         pr_err("save_dynamic_manager write magic failed.\n");
         goto exit;
     }
 
-    if (kernel_write(fp, &version, sizeof(version), &off) != sizeof(version)) {
+    if (ksu_kernel_write_compat(fp, &version, sizeof(version), &off) != sizeof(version)) {
         pr_err("save_dynamic_manager write version failed.\n");
         goto exit;
     }
 
-    if (kernel_write(fp, &config_to_save, sizeof(config_to_save), &off) != sizeof(config_to_save)) {
+    if (ksu_kernel_write_compat(fp, &config_to_save, sizeof(config_to_save), &off) != sizeof(config_to_save)) {
         pr_err("save_dynamic_manager write config failed.\n");
         goto exit;
     }
@@ -270,7 +271,7 @@ static void do_load_dynamic_manager(struct work_struct *work)
     unsigned long flags;
     int i;
 
-    fp = filp_open(KERNEL_SU_DYNAMIC_MANAGER, O_RDONLY, 0);
+    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_MANAGER, O_RDONLY, 0);
     if (IS_ERR(fp)) {
         if (PTR_ERR(fp) == -ENOENT) {
             pr_info("No saved dynamic manager config found\n");
@@ -280,20 +281,20 @@ static void do_load_dynamic_manager(struct work_struct *work)
         return;
     }
 
-    if (kernel_read(fp, &magic, sizeof(magic), &off) != sizeof(magic) ||
+    if (ksu_kernel_read_compat(fp, &magic, sizeof(magic), &off) != sizeof(magic) ||
         magic != DYNAMIC_MANAGER_FILE_MAGIC) {
         pr_err("dynamic manager file invalid magic: %x!\n", magic);
         goto exit;
     }
 
-    if (kernel_read(fp, &version, sizeof(version), &off) != sizeof(version)) {
+    if (ksu_kernel_read_compat(fp, &version, sizeof(version), &off) != sizeof(version)) {
         pr_err("dynamic manager read version failed\n");
         goto exit;
     }
 
     pr_info("dynamic manager file version: %d\n", version);
 
-    ret = kernel_read(fp, &loaded_config, sizeof(loaded_config), &off);
+    ret = ksu_kernel_read_compat(fp, &loaded_config, sizeof(loaded_config), &off);
     if (ret <= 0) {
         pr_info("load_dynamic_manager read err: %zd\n", ret);
         goto exit;
@@ -347,14 +348,14 @@ static void do_clear_dynamic_manager(struct work_struct *work)
 
     memset(zero_buffer, 0, sizeof(zero_buffer));
 
-    fp = filp_open(KERNEL_SU_DYNAMIC_MANAGER, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_MANAGER, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (IS_ERR(fp)) {
         pr_err("clear_dynamic_manager create file failed: %ld\n", PTR_ERR(fp));
         return;
     }
 
     // Write null bytes to overwrite the file content
-    if (kernel_write(fp, zero_buffer, sizeof(zero_buffer), &off) != sizeof(zero_buffer)) {
+    if (ksu_kernel_write_compat(fp, zero_buffer, sizeof(zero_buffer), &off) != sizeof(zero_buffer)) {
         pr_err("clear_dynamic_manager write null bytes failed.\n");
     } else {
         pr_info("Dynamic sign config file cleared successfully\n");

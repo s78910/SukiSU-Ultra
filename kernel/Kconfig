@@ -22,7 +22,6 @@ config KSU_MULTI_MANAGER_SUPPORT
     help
         Enable multi KernelSU manager support
 
-
 config KSU_ALLOWLIST_WORKAROUND
     bool "KernelSU Session Keyring Init workaround"
     depends on KSU

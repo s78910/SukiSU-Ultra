@@ -13,8 +13,9 @@
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
 
-#include "klog.h"
 #include "sulog.h"
+#include "klog.h"
+#include "kernel_compat.h"
 #include "ksu.h"
 #include "feature.h"
 
@@ -164,7 +165,7 @@ static void sulog_work_handler(struct work_struct *work)
     if (list_empty(&local_queue))
         return;
 
-    fp = filp_open(SULOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0640);
+    fp = ksu_filp_open_compat(SULOG_PATH, O_WRONLY | O_CREAT | O_APPEND, 0640);
     if (IS_ERR(fp)) {
         pr_err("sulog: failed to open log file: %ld\n", PTR_ERR(fp));
         goto cleanup;
@@ -179,7 +180,7 @@ static void sulog_work_handler(struct work_struct *work)
     }
 
     list_for_each_entry(entry, &local_queue, list)
-        kernel_write(fp, entry->content, strlen(entry->content), &pos);
+        ksu_kernel_write_compat(fp, entry->content, strlen(entry->content), &pos);
 
     vfs_fsync(fp, 0);
     filp_close(fp, 0);

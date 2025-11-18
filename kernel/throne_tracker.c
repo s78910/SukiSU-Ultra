@@ -13,6 +13,7 @@
 #include "manager.h"
 #include "throne_tracker.h"
 #include "apk_sign.h"
+#include "kernel_compat.h"
 #include "dynamic_manager.h"
 #include "throne_comm.h"
 
@@ -38,7 +39,7 @@ static int uid_from_um_list(struct list_head *uid_list)
     ssize_t nr;
     int cnt = 0;
 
-    fp = filp_open(KSU_UID_LIST_PATH, O_RDONLY, 0);
+    fp = ksu_filp_open_compat(KSU_UID_LIST_PATH, O_RDONLY, 0);
     if (IS_ERR(fp))
         return -ENOENT;
 
@@ -55,7 +56,7 @@ static int uid_from_um_list(struct list_head *uid_list)
         return -ENOMEM;
     }
 
-    nr = kernel_read(fp, buf, size, &pos);
+    nr = ksu_kernel_read_compat(fp, buf, size, &pos);
     filp_close(fp, NULL);
     if (nr != size) {
         pr_err("uid_list: short read %zd/%lld\n", nr, size);
@@ -361,7 +362,7 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
             struct file *file;
 
             if (!stop) {
-                file = filp_open(pos->dirpath, O_RDONLY | O_NOFOLLOW, 0);
+                file = ksu_filp_open_compat(pos->dirpath, O_RDONLY | O_NOFOLLOW, 0);
                 if (IS_ERR(file)) {
                     pr_err("Failed to open directory: %s, err: %ld\n",
                            pos->dirpath, PTR_ERR(file));
@@ -452,7 +453,7 @@ void track_throne(bool prune_only)
     }
 
     {
-        fp = filp_open(SYSTEM_PACKAGES_LIST_PATH, O_RDONLY, 0);
+        fp = ksu_filp_open_compat(SYSTEM_PACKAGES_LIST_PATH, O_RDONLY, 0);
         if (IS_ERR(fp)) {
             pr_err("%s: open " SYSTEM_PACKAGES_LIST_PATH " failed: %ld\n", __func__, PTR_ERR(fp));
             return;
@@ -460,13 +461,13 @@ void track_throne(bool prune_only)
 
         for (;;) {
             ssize_t count =
-                kernel_read(fp, &chr, sizeof(chr), &pos);
+                ksu_kernel_read_compat(fp, &chr, sizeof(chr), &pos);
             if (count != sizeof(chr))
                 break;
             if (chr != '\n')
                 continue;
 
-            count = kernel_read(fp, buf, sizeof(buf),
+            count = ksu_kernel_read_compat(fp, buf, sizeof(buf),
                             &line_start);
             struct uid_data *data =
                 kzalloc(sizeof(struct uid_data), GFP_ATOMIC);
