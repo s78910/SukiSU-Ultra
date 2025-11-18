@@ -318,6 +318,9 @@ do_umount:
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
     pr_info("susfs: running susfs_try_umount_all() for uid: %u\n", new_uid);
     susfs_try_umount_all();
+#else
+    // Handle kernel umount
+    ksu_handle_umount(old_uid, new_uid);
 #endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
 skip_try_umount:

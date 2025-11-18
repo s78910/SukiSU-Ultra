@@ -96,11 +96,11 @@ static int ksu_sys_umount(const char *mnt, int flags)
     })
 
 #endif
-#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-void try_umount(const char *mnt, int flags)
-#else
+#ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 static void try_umount(const char *mnt, int flags)
-#endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+#else
+void try_umount(const char *mnt, int flags)
+#endif // #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 {
     struct path path;
     int ret;
@@ -132,17 +132,10 @@ static void try_umount(const char *mnt, int flags)
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 void susfs_try_umount_all(void) {
     susfs_try_umount();
-    try_umount("/odm", true, 0);
-    try_umount("/system", true, 0);
-    try_umount("/vendor", true, 0);
-    try_umount("/product", true, 0);
-    try_umount("/system_ext", true, 0);
-    try_umount("/data/adb/modules", false, MNT_DETACH);
-    try_umount("/debug_ramdisk", true, MNT_DETACH);
 }
 #endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
-#ifndef CONFIG_KSU_SUSFS
+#if !defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
 struct umount_tw {
     struct callback_head cb;
     const struct cred *old_cred;
@@ -177,6 +170,7 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 {
     struct umount_tw *tw;
 
+#if defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
     // this hook is used for umounting overlayfs for some uid, if there isn't any module mounted, just ignore it!
     if (!ksu_module_mounted) {
         return 0;
@@ -206,6 +200,7 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 #if __SULOG_GATE
     ksu_sulog_report_syscall(new_uid, NULL, "setuid", NULL);
 #endif
+#endif // #if defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
     // umount the target mnt
     pr_info("handle umount for uid: %d, pid: %d\n", new_uid, current->pid);
 
@@ -227,7 +222,7 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 
     return 0;
 }
-#endif // #ifndef CONFIG_KSU_SUSFS
+#endif // #if !defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
 
 void ksu_kernel_umount_init(void)
 {
