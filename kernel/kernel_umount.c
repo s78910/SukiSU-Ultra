@@ -12,6 +12,10 @@
 #include <linux/types.h>
 #include <linux/uaccess.h>
 
+#ifndef KSU_HAS_PATH_UMOUNT
+#include <linux/syscalls.h>
+#endif
+
 #include "manager.h"
 #include "kernel_umount.h"
 #include "klog.h" // IWYU pragma: keep
@@ -51,7 +55,6 @@ static const struct ksu_feature_handler kernel_umount_handler = {
 };
 
 #ifdef CONFIG_KSU_SUSFS
-extern bool susfs_is_mnt_devname_ksu(struct path *path);
 #if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
 extern bool susfs_is_log_enabled;
 #endif // #if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
@@ -60,42 +63,39 @@ extern void susfs_try_umount(void);
 #endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 #endif // #ifdef CONFIG_KSU_SUSFS
 
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
-static int ksu_path_umount(struct path *path, int flags)
+extern int path_umount(struct path *path, int flags);
+static void ksu_umount_mnt(const char *__never_use_mnt, struct path *path, int flags)
 {
-    return path_umount(path, flags);
+	int err = path_umount(path, flags);
+	if (err) {
+		pr_info("umount %s failed: %d\n", path->dentry->d_iname, err);
+	}
 }
-#define ksu_umount_mnt(__unused, path, flags)    (ksu_path_umount(path, flags))
 #else
-// TODO: Search a way to make this works without set_fs functions
-static int ksu_sys_umount(const char *mnt, int flags)
+static void ksu_sys_umount(const char *mnt, int flags)
 {
-    char __user *usermnt = (char __user *)mnt;
-    mm_segment_t old_fs;
-    int ret; // although asmlinkage long
+	char __user *usermnt = (char __user *)mnt;
+	mm_segment_t old_fs;
 
-    old_fs = get_fs();
-    set_fs(KERNEL_DS);
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
-    ret = ksys_umount(usermnt, flags);
+	ksys_umount(usermnt, flags);
 #else
-    ret = sys_umount(usermnt, flags); // cuz asmlinkage long sys##name
+	sys_umount(usermnt, flags); // cuz asmlinkage long sys##name
 #endif
-    set_fs(old_fs);
-    pr_info("%s was called, ret: %d\n", __func__, ret);
-    return ret;
+	set_fs(old_fs);
 }
 
-#define ksu_umount_mnt(mnt, __unused, flags)        \
-    ({                        \
-        int ret;                \
-        path_put(__unused);            \
-        ret = ksu_sys_umount(mnt, flags);    \
-        ret;                    \
-    })
+#define ksu_umount_mnt(mnt, __unused, flags)                                   \
+	({                                                                     \
+		path_put(__unused);                                            \
+		ksu_sys_umount(mnt, flags);                              \
+	})
 
 #endif
+
 #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 static void try_umount(const char *mnt, int flags)
 #else
@@ -121,12 +121,7 @@ void try_umount(const char *mnt, int flags)
     }
 #endif // #if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
 
-    ret = ksu_umount_mnt(mnt, &path, flags);
-    if (ret) {
-#ifdef CONFIG_KSU_DEBUG
-        pr_info("%s: path: %s, ret: %d\n", __func__, mnt, ret);
-#endif
-    }
+    ksu_umount_mnt(mnt, &path, flags);
 }
 
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT

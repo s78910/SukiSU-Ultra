@@ -18,6 +18,7 @@
 #include "feature.h"
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
+#include "kernel_umount.h"
 #include "kernel_compat.h"
 #include "manager.h"
 #include "sulog.h"

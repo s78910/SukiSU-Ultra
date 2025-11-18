@@ -36,10 +36,6 @@
 #include <linux/susfs.h>
 #endif // #ifdef CONFIG_KSU_SUSFS
 
-#ifndef KSU_HAS_PATH_UMOUNT
-#include <linux/syscalls.h> // sys_umount (<4.17) & ksys_umount (4.17+)
-#endif
-
 #ifdef MODULE
 #include <linux/list.h>
 #include <linux/irqflags.h>
