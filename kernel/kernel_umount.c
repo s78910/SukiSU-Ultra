@@ -65,7 +65,7 @@ extern void susfs_try_umount(void);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || defined(KSU_HAS_PATH_UMOUNT)
 extern int path_umount(struct path *path, int flags);
-static void ksu_umount_mnt(const char *__never_use_mnt, struct path *path, int flags)
+static void ksu_umount_mnt(struct path *path, int flags)
 {
 	int err = path_umount(path, flags);
 	if (err) {
@@ -88,12 +88,12 @@ static void ksu_sys_umount(const char *mnt, int flags)
 	set_fs(old_fs);
 }
 
-#define ksu_umount_mnt(mnt, __unused, flags)                                   \
-	({                                                                     \
-		path_put(__unused);                                            \
-		ksu_sys_umount(mnt, flags);                              \
-	})
-
+static void ksu_umount_mnt(struct path *path, int flags)
+{
+	const char *mnt = path->dentry->d_iname;
+	path_put(path);
+	ksu_sys_umount(mnt, flags);
+}
 #endif
 
 #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
@@ -103,7 +103,6 @@ void try_umount(const char *mnt, int flags)
 #endif // #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 {
     struct path path;
-    int ret;
     int err = kern_path(mnt, 0, &path);
     if (err) {
         return;
@@ -121,7 +120,7 @@ void try_umount(const char *mnt, int flags)
     }
 #endif // #if defined(CONFIG_KSU_SUSFS_TRY_UMOUNT) && defined(CONFIG_KSU_SUSFS_ENABLE_LOG)
 
-    ksu_umount_mnt(mnt, &path, flags);
+    ksu_umount_mnt(&path, flags);
 }
 
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
