@@ -16,6 +16,10 @@
 #include <linux/thread_info.h>
 #include <linux/uidgid.h>
 #include <linux/syscalls.h>
+#include "objsec.h"
+#include <linux/spinlock.h>
+#include <linux/tty.h>
+#include <linux/security.h> 
 
 #include "allowlist.h"
 #include "app_profile.h"
@@ -223,31 +227,11 @@ static int __manual_su_handle_devpts(struct inode *inode)
 	return 0;
 }
 
-static void disable_seccomp_for_task(struct task_struct *tsk)
-{
-	assert_spin_locked(&tsk->sighand->siglock);
-#ifdef CONFIG_SECCOMP
-	if (tsk->seccomp.mode == SECCOMP_MODE_DISABLED && !tsk->seccomp.filter)
-		return;
-#endif
-	clear_tsk_thread_flag(tsk, TIF_SECCOMP);
-#ifdef CONFIG_SECCOMP
-	tsk->seccomp.mode = SECCOMP_MODE_DISABLED;
-	if (tsk->seccomp.filter) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-		seccomp_filter_release(tsk);
-#else
-		put_seccomp_filter(tsk);
-		tsk->seccomp.filter = NULL;
-#endif
-	}
-#endif
-}
-
 void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 {
 	struct cred *newcreds;
 	struct task_struct *target_task;
+	unsigned long flags;
 
 	pr_info("cmd_su: escape_to_root_for_cmd_su called for UID: %d, PID: %d\n", target_uid, target_pid);
 
@@ -310,7 +294,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 
 	if (target_task->sighand) {
 		spin_lock_irqsave(&target_task->sighand->siglock, flags);
-		disable_seccomp_for_task(target_task);
+		disable_seccomp(target_task);
 		spin_unlock_irqrestore(&target_task->sighand->siglock, flags);
 	}
 
