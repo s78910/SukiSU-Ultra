@@ -675,14 +675,20 @@ private fun InfoCard() {
                 title = stringResource(R.string.home_fingerprint),
                 content = Build.FINGERPRINT
             )
-            InfoText(
-                title = stringResource(R.string.home_selinux_status),
-                content = getSELinuxStatus()
-            )
             if (susfsPair.first == "Supported" && susfsPair.second.isNotEmpty()) {
+                InfoText(
+                    title = stringResource(R.string.home_selinux_status),
+                    content = getSELinuxStatus(),
+                )
                 InfoText(
                     title = stringResource(R.string.home_susfs_version),
                     content = susfsPair.second,
+                    bottomPadding = 0.dp
+                )
+            } else {
+                InfoText(
+                    title = stringResource(R.string.home_selinux_status),
+                    content = getSELinuxStatus(),
                     bottomPadding = 0.dp
                 )
             }
