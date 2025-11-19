@@ -117,10 +117,7 @@ fun HomePager(
             TopBar(
                 kernelVersion = kernelVersion,
                 onInstallClick = {
-                    navigator.navigate(InstallScreenDestination) {
-                        popUpTo(InstallScreenDestination) {
-                            inclusive = true
-                        }
+                    navigator.navigate(InstallScreenDestination()) {
                         launchSingleTop = true
                     }
                 },
@@ -171,7 +168,7 @@ fun HomePager(
                     StatusCard(
                         kernelVersion, ksuVersion, lkmMode,
                         onClickInstall = {
-                            navigator.navigate(InstallScreenDestination) {
+                            navigator.navigate(InstallScreenDestination()) {
                                 launchSingleTop = true
                             }
                         },

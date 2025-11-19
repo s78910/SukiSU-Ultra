@@ -20,8 +20,13 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import com.sukisu.ultra.ui.util.getKpmVersion
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.rememberNavController
@@ -39,6 +44,7 @@ import kotlinx.coroutines.launch
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ui.component.BottomBar
 import com.sukisu.ultra.ui.screen.HomePager
+import com.sukisu.ultra.ui.screen.KpmScreen
 import com.sukisu.ultra.ui.screen.ModulePager
 import com.sukisu.ultra.ui.screen.SettingPager
 import com.sukisu.ultra.ui.screen.SuperUserPager
@@ -120,7 +126,22 @@ val LocalHandlePageChange = compositionLocalOf<(Int) -> Unit> { error("No handle
 fun MainScreen(navController: DestinationsNavigator) {
     val activity = LocalActivity.current
     val coroutineScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    
+    // 检查 KPM 版本是否可用
+    val kpmVersion by produceState(initialValue = "") {
+        value = withContext(Dispatchers.IO) {
+            try {
+                getKpmVersion()
+            } catch (e: Exception) {
+                ""
+            }
+        }
+    }
+    
+    val isKpmAvailable = kpmVersion.isNotEmpty() && !kpmVersion.contains("Error", ignoreCase = true)
+    val pageCount = if (isKpmAvailable) 5 else 4
+    
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { pageCount })
     val hazeState = remember { HazeState() }
     val hazeStyle = HazeStyle(
         backgroundColor = MiuixTheme.colorScheme.background,
@@ -148,7 +169,7 @@ fun MainScreen(navController: DestinationsNavigator) {
     ) {
         Scaffold(
             bottomBar = {
-                BottomBar(hazeState, hazeStyle)
+                BottomBar(hazeState, hazeStyle, isKpmAvailable)
             },
         ) { innerPadding ->
             HorizontalPager(
@@ -157,11 +178,24 @@ fun MainScreen(navController: DestinationsNavigator) {
                 beyondViewportPageCount = 2,
                 userScrollEnabled = false
             ) {
-                when (it) {
-                    0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
-                    1 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
-                    2 -> ModulePager(navController, innerPadding.calculateBottomPadding())
-                    3 -> SettingPager(navController, innerPadding.calculateBottomPadding())
+                when {
+                    isKpmAvailable -> {
+                        when (it) {
+                            0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
+                            1 -> KpmScreen(bottomInnerPadding = innerPadding.calculateBottomPadding())
+                            2 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
+                            3 -> ModulePager(navController, innerPadding.calculateBottomPadding())
+                            4 -> SettingPager(navController, innerPadding.calculateBottomPadding())
+                        }
+                    }
+                    else -> {
+                        when (it) {
+                            0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
+                            1 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
+                            2 -> ModulePager(navController, innerPadding.calculateBottomPadding())
+                            3 -> SettingPager(navController, innerPadding.calculateBottomPadding())
+                        }
+                    }
                 }
             }
         }

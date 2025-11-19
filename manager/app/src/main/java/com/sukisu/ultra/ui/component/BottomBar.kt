@@ -2,6 +2,7 @@ package com.sukisu.ultra.ui.component
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Cottage
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Security
@@ -27,7 +28,8 @@ import top.yukonga.miuix.kmp.basic.NavigationItem
 @Composable
 fun BottomBar(
     hazeState: HazeState,
-    hazeStyle: HazeStyle
+    hazeStyle: HazeStyle,
+    isKpmAvailable: Boolean = false
 ) {
     val isManager = Natives.isManager
     val fullFeatured = isManager && !Natives.requireNewKernel() && rootAvailable()
@@ -37,11 +39,23 @@ fun BottomBar(
 
     if (!fullFeatured) return
 
-    val item = BottomBarDestination.entries.mapIndexed { index, destination ->
+    val destinations = if (isKpmAvailable) {
+        BottomBarDestination.entries
+    } else {
+        BottomBarDestination.entries.filter { it != BottomBarDestination.KPM }
+    }
+
+    val item = destinations.mapIndexed { index, destination ->
         NavigationItem(
             label = stringResource(destination.label),
             icon = destination.icon,
         )
+    }
+    
+    val bottomBarIndex = if (!isKpmAvailable) {
+        page.coerceIn(0, item.size - 1)
+    } else {
+        page.coerceIn(0, item.size - 1)
     }
 
     NavigationBar(
@@ -53,8 +67,10 @@ fun BottomBar(
             },
         color = Color.Transparent,
         items = item,
-        selected = page,
-        onClick = handlePageChange
+        selected = bottomBarIndex,
+        onClick = { index ->
+            handlePageChange(index)
+        }
     )
 }
 
@@ -63,6 +79,7 @@ enum class BottomBarDestination(
     val icon: ImageVector,
 ) {
     Home(R.string.home, Icons.Rounded.Cottage),
+    KPM(R.string.kpm_title, Icons.Rounded.Code),
     SuperUser(R.string.superuser, Icons.Rounded.Security),
     Module(R.string.module, Icons.Rounded.Extension),
     Setting(R.string.settings, Icons.Rounded.Settings)
