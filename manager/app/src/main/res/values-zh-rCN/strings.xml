@@ -193,4 +193,17 @@
     <string name="log_viewer_settings">设置</string>
     <string name="log_viewer_collapse">收起</string>
     <string name="log_viewer_expand">展开</string>
+    <!-- dynamic Manager -->
+    <string name="dynamic_manager_title">动态管理器配置</string>
+    <string name="dynamic_manager_enabled_summary">启用（大小：%s）</string>
+    <string name="dynamic_manager_disabled">已禁用</string>
+    <string name="enable_dynamic_manager">启用动态管理器</string>
+    <string name="signature_size">动态管理器签名大小</string>
+    <string name="signature_hash">动态管理器签名哈希</string>
+    <string name="hash_must_be_64_chars">哈希必须是 64 个 16 进制字符</string>
+    <string name="dynamic_manager_set_success">动态管理器配置设置成功</string>
+    <string name="dynamic_manager_set_failed">设置动态管理器配置失败</string>
+    <string name="invalid_sign_config">无效的管理器配置</string>
+    <string name="dynamic_manager_disabled_success">动态管理器已禁用</string>
+    <string name="dynamic_manager_clear_failed">清空动态管理器配置失败</string>
 </resources>

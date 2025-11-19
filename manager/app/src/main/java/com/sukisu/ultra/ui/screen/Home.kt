@@ -2,7 +2,6 @@ package com.sukisu.ultra.ui.screen
 
 import android.content.Context
 import android.os.Build
-import android.os.Process.myUid
 import android.system.Os
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -649,7 +648,7 @@ private fun InfoCard() {
             val dynamicValid = remember { Natives.getDynamicManager()?.isValid() == true }
             if (dynamicValid && managersList != null) {
                 val signatureMap = managersList.managers.groupBy { it.signatureIndex }
-                val showDetailed = signatureMap.size > 1 || signatureMap.keys.firstOrNull() != 0
+                val showDetailed = signatureMap.isNotEmpty() || signatureMap.keys.firstOrNull() != 0
                 if (showDetailed) {
                     val managersText = buildString {
                         signatureMap.toSortedMap().forEach { (idx, list) ->
