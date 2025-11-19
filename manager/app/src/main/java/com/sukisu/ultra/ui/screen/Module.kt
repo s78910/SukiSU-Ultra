@@ -1,787 +1,235 @@
 package com.sukisu.ultra.ui.screen
 
-import android.annotation.SuppressLint
-import android.app.Activity.*
-import android.content.ClipData
-import android.content.ClipboardManager
+import android.app.Activity.RESULT_OK
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.add
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Wysiwyg
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.outlined.Undo
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.dergoogler.mmrl.platform.Platform
-import com.dergoogler.mmrl.platform.model.ModuleConfig
-import com.dergoogler.mmrl.platform.model.ModuleConfig.Companion.asModuleConfig
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
+import com.kyant.capsule.ContinuousRoundedRectangle
 import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
-import com.sukisu.ultra.Natives
-import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.*
-import com.sukisu.ultra.ui.theme.getCardColors
-import com.sukisu.ultra.ui.theme.getCardElevation
-import com.sukisu.ultra.ui.util.*
-import com.sukisu.ultra.ui.util.module.ModuleModify
-import com.sukisu.ultra.ui.util.module.ModuleOperationUtils
-import com.sukisu.ultra.ui.util.module.ModuleUtils
-import com.sukisu.ultra.ui.util.module.verifyModuleSignature
-import com.sukisu.ultra.ui.viewmodel.ModuleViewModel
-import com.sukisu.ultra.ui.webui.WebUIActivity
-import com.sukisu.ultra.ui.webui.WebUIXActivity
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import java.util.concurrent.TimeUnit
+import com.sukisu.ultra.Natives
+import com.sukisu.ultra.R
+import com.sukisu.ultra.ksuApp
+import com.sukisu.ultra.ui.component.ConfirmResult
+import com.sukisu.ultra.ui.component.DropdownImpl
+import com.sukisu.ultra.ui.component.RebootListPopup
+import com.sukisu.ultra.ui.component.SearchBox
+import com.sukisu.ultra.ui.component.SearchPager
+import com.sukisu.ultra.ui.component.rememberConfirmDialog
+import com.sukisu.ultra.ui.component.rememberLoadingDialog
+import com.sukisu.ultra.ui.util.DownloadListener
+import com.sukisu.ultra.ui.util.download
+import com.sukisu.ultra.ui.util.getFileName
+import com.sukisu.ultra.ui.util.hasMagisk
+import com.sukisu.ultra.ui.util.toggleModule
+import com.sukisu.ultra.ui.util.undoUninstallModule
+import com.sukisu.ultra.ui.util.uninstallModule
+import com.sukisu.ultra.ui.viewmodel.ModuleViewModel
+import com.sukisu.ultra.ui.webui.WebUIActivity
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopup
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.ListPopupDefaults
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.useful.ImmersionMore
+import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import top.yukonga.miuix.kmp.utils.getWindowSize
+import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
-data class ModuleBottomSheetMenuItem(
-    val icon: ImageVector,
-    val titleRes: Int,
-    val onClick: () -> Unit
-)
-
-/**
- * @author ShirkNeko
- * @date 2025/9/29.
- */
-@SuppressLint("ResourceType", "AutoboxingStateCreation")
-@OptIn(ExperimentalMaterial3Api::class)
-@Destination<RootGraph>
 @Composable
-fun ModuleScreen(navigator: DestinationsNavigator) {
+fun ModulePager(
+    navigator: DestinationsNavigator,
+    bottomInnerPadding: Dp
+) {
     val viewModel = viewModel<ModuleViewModel>()
-    val context = LocalContext.current
-    val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
-    val snackBarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
-    val confirmDialog = rememberConfirmDialog()
-    var lastClickTime by remember { mutableStateOf(0L) }
+    val searchStatus by viewModel.searchStatus
 
-    var showSignatureDialog by remember { mutableStateOf(false) }
-    var signatureDialogMessage by remember { mutableStateOf("") }
-    var isForceVerificationFailed by remember { mutableStateOf(false) }
-    var pendingInstallAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    LaunchedEffect(Unit) {
-        viewModel.initializeCache(context)
-    }
+    val modules = viewModel.moduleList
 
-    val bottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-    var showBottomSheet by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
-    val fabVisible by rememberFabVisibilityState(listState)
-
-    val selectZipLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) {
-        if (it.resultCode != RESULT_OK) {
-            return@rememberLauncherForActivityResult
-        }
-        val data = it.data ?: return@rememberLauncherForActivityResult
-
-        scope.launch {
-            val clipData = data.clipData
-            if (clipData != null) {
-                val selectedModules = mutableListOf<Uri>()
-                val selectedModuleNames = mutableMapOf<Uri, String>()
-
-                fun processUri(uri: Uri) {
-                    try {
-                        if (!ModuleUtils.isUriAccessible(context, uri)) {
-                            return
-                        }
-                        ModuleUtils.takePersistableUriPermission(context, uri)
-                        val moduleName = ModuleUtils.extractModuleName(context, uri)
-                        selectedModules.add(uri)
-                        selectedModuleNames[uri] = moduleName
-                    } catch (e: Exception) {
-                        Log.e("ModuleScreen", "Error while processing URI: $uri, Error: ${e.message}")
-                    }
-                }
-
-                for (i in 0 until clipData.itemCount) {
-                    val uri = clipData.getItemAt(i).uri
-                    processUri(uri)
-                }
-
-                if (selectedModules.isEmpty()) {
-                    snackBarHost.showSnackbar("Unable to access selected module files")
-                    return@launch
-                }
-
-                val modulesList = selectedModuleNames.values.joinToString("\n• ", "• ")
-                val confirmResult = confirmDialog.awaitConfirm(
-                    title = context.getString(R.string.module_install),
-                    content = context.getString(R.string.module_install_multiple_confirm_with_names, selectedModules.size, modulesList),
-                    confirm = context.getString(R.string.install),
-                    dismiss = context.getString(R.string.cancel)
-                )
-
-                if (confirmResult == ConfirmResult.Confirmed) {
-                    // 验证模块签名
-                    val forceVerification = prefs.getBoolean("force_signature_verification", false)
-                    val verificationResults = mutableMapOf<Uri, Boolean>()
-
-                    for (uri in selectedModules) {
-                        val isVerified = verifyModuleSignature(context, uri)
-                        verificationResults[uri] = isVerified
-                        // 存储验证状态
-                        setModuleVerificationStatus(uri, isVerified)
-
-                        if (forceVerification && !isVerified) {
-                            withContext(Dispatchers.Main) {
-                                signatureDialogMessage = context.getString(R.string.module_signature_invalid_message)
-                                isForceVerificationFailed = true
-                                showSignatureDialog = true
-                            }
-                            return@launch
-                        } else if (!isVerified) {
-                            withContext(Dispatchers.Main) {
-                                signatureDialogMessage = context.getString(R.string.module_signature_verification_failed)
-                                isForceVerificationFailed = false
-                                pendingInstallAction = {
-                                    try {
-                                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(selectedModules)))
-                                        viewModel.markNeedRefresh()
-                                    } catch (e: Exception) {
-                                        Log.e("ModuleScreen", "Error navigating to FlashScreen: ${e.message}")
-                                        scope.launch {
-                                            snackBarHost.showSnackbar("Error while installing module: ${e.message}")
-                                        }
-                                    }
-                                }
-                                showSignatureDialog = true
-                            }
-                            return@launch
-                        }
-                    }
-
-                    // 所有模块签名验证通过，直接安装
-                    if (verificationResults.all { it -> it.value }) {
-                        try {
-                            navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(selectedModules)))
-                            viewModel.markNeedRefresh()
-                        } catch (e: Exception) {
-                            Log.e("ModuleScreen", "Error navigating to FlashScreen: ${e.message}")
-                            snackBarHost.showSnackbar("Error while installing module: ${e.message}")
-                        }
-                    }
-                }
-            } else {
-                val uri = data.data ?: return@launch
-                // 单个安装模块
-                try {
-                    if (!ModuleUtils.isUriAccessible(context, uri)) {
-                        snackBarHost.showSnackbar("Unable to access selected module files")
-                        return@launch
-                    }
-
-                    ModuleUtils.takePersistableUriPermission(context, uri)
-
-                    val moduleName = ModuleUtils.extractModuleName(context, uri)
-
-                    val confirmResult = confirmDialog.awaitConfirm(
-                        title = context.getString(R.string.module_install),
-                        content = context.getString(R.string.module_install_confirm, moduleName),
-                        confirm = context.getString(R.string.install),
-                        dismiss = context.getString(R.string.cancel)
-                    )
-
-                    if (confirmResult == ConfirmResult.Confirmed) {
-                        // 验证模块签名
-                        val forceVerification = prefs.getBoolean("force_signature_verification", false)
-                        val isVerified = verifyModuleSignature(context, uri)
-                        // 存储验证状态
-                        setModuleVerificationStatus(uri, isVerified)
-
-                        if (forceVerification && !isVerified) {
-                            signatureDialogMessage = context.getString(R.string.module_signature_invalid_message)
-                            isForceVerificationFailed = true
-                            showSignatureDialog = true
-                            return@launch
-                        } else if (!isVerified) {
-                            signatureDialogMessage = context.getString(R.string.module_signature_verification_failed)
-                            isForceVerificationFailed = false
-                            pendingInstallAction = {
-                                navigator.navigate(FlashScreenDestination(FlashIt.FlashModule(uri)))
-                                viewModel.markNeedRefresh()
-                            }
-                            showSignatureDialog = true
-                            return@launch
-                        }
-
-                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModule(uri)))
-                        viewModel.markNeedRefresh()
-                    }
-                } catch (e: Exception) {
-                    Log.e("ModuleScreen", "Error processing a single URI: $uri, Error: ${e.message}")
-                    snackBarHost.showSnackbar("Error processing module file: ${e.message}")
-                }
-            }
-        }
-    }
-
-    val backupLauncher = ModuleModify.rememberModuleBackupLauncher(context, snackBarHost)
-    val restoreLauncher = ModuleModify.rememberModuleRestoreLauncher(context, snackBarHost)
-
-    LaunchedEffect(Unit) {
-        if (viewModel.moduleList.isEmpty() || viewModel.isNeedRefresh) {
+    LaunchedEffect(navigator) {
+        if (viewModel.moduleList.isEmpty() || viewModel.searchResults.value.isEmpty() || viewModel.isNeedRefresh) {
+            viewModel.checkModuleUpdate = prefs.getBoolean("module_check_update", true)
             viewModel.sortEnabledFirst = prefs.getBoolean("module_sort_enabled_first", false)
             viewModel.sortActionFirst = prefs.getBoolean("module_sort_action_first", false)
             viewModel.fetchModuleList()
         }
     }
 
-    val isSafeMode = Natives.isSafeMode
-    val hasMagisk = hasMagisk()
-    val hideInstallButton = isSafeMode || hasMagisk
+    LaunchedEffect(searchStatus.searchText) {
+        viewModel.updateSearchText(searchStatus.searchText)
+    }
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    LaunchedEffect(modules) {
+        viewModel.syncModuleUpdateInfo(modules)
+        if (searchStatus.searchText.isNotEmpty()) {
+            viewModel.updateSearchText(searchStatus.searchText)
+        }
+    }
 
     val webUILauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { viewModel.fetchModuleList() }
 
-    val bottomSheetMenuItems = remember {
-        listOf(
-            ModuleBottomSheetMenuItem(
-                icon = Icons.Outlined.Save,
-                titleRes = R.string.backup_modules,
-                onClick = {
-                    backupLauncher.launch(ModuleModify.createBackupIntent())
-                    scope.launch {
-                        bottomSheetState.hide()
-                        showBottomSheet = false
-                    }
-                }
-            ),
-            ModuleBottomSheetMenuItem(
-                icon = Icons.Outlined.RestoreFromTrash,
-                titleRes = R.string.restore_modules,
-                onClick = {
-                    restoreLauncher.launch(ModuleModify.createRestoreIntent())
-                    scope.launch {
-                        bottomSheetState.hide()
-                        showBottomSheet = false
-                    }
-                }
-            )
-        )
+    val loadingDialog = rememberLoadingDialog()
+    val confirmDialog = rememberConfirmDialog()
+
+    val isSafeMode = Natives.isSafeMode
+    val magiskInstalled by produceState(initialValue = false) {
+        value = withContext(Dispatchers.IO) { hasMagisk() }
+    }
+    val hideInstallButton = isSafeMode || magiskInstalled
+
+    val scrollBehavior = MiuixScrollBehavior()
+    val listState = rememberLazyListState()
+    var fabVisible by remember { mutableStateOf(true) }
+    var scrollDistance by remember { mutableFloatStateOf(0f) }
+    val dynamicTopPadding by remember {
+        derivedStateOf { 12.dp * (1f - scrollBehavior.state.collapsedFraction) }
     }
 
-    Scaffold(
-        topBar = {
-            SearchAppBar(
-                title = { Text(stringResource(R.string.module)) },
-                searchText = viewModel.search,
-                onSearchTextChange = { viewModel.search = it },
-                onClearClick = { viewModel.search = "" },
-                dropdownContent = {
-                    IconButton(
-                        onClick = { showBottomSheet = true },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = stringResource(id = R.string.settings),
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-            )
-        },
-        floatingActionButton = {
-            AnimatedFab(visible = !hideInstallButton && fabVisible) {
-                FloatingActionButton(
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    onClick = {
-                        selectZipLauncher.launch(
-                            Intent(Intent.ACTION_GET_CONTENT).apply {
-                                type = "application/zip"
-                                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                            }
-                        )
-                    },
-                    content = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.package_import),
-                            contentDescription = null
-                        )
-                    }
-                )
-            }
-        },
-        contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Top + WindowInsetsSides.Horizontal
-        ),
-        snackbarHost = { SnackbarHost(hostState = snackBarHost) }
-    ) { innerPadding ->
-        when {
-            hasMagisk -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Warning,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(64.dp)
-                                .padding(bottom = 16.dp)
-                        )
-                        Text(
-                            stringResource(R.string.module_magisk_conflict),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                }
-            }
-            else -> {
-                ModuleList(
-                    navigator = navigator,
-                    viewModel = viewModel,
-                    listState = listState,
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                    boxModifier = Modifier.padding(innerPadding),
-                    onInstallModule = {
-                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModule(it)))
-                    },
-                    onUpdateModule = {
-                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModuleUpdate(it)))
-                    },
-                    onClickModule = { id, name, hasWebUi ->
-                        val currentTime = System.currentTimeMillis()
-                        if (currentTime - lastClickTime < 600) {
-                            Log.d("ModuleScreen", "Click too fast, ignoring")
-                            return@ModuleList
-                        }
-                        lastClickTime = currentTime
-
-                        if (hasWebUi) {
-                            try {
-                                val wxEngine = Intent(context, WebUIXActivity::class.java)
-                                    .setData("kernelsu://webuix/$id".toUri())
-                                    .putExtra("id", id)
-                                    .putExtra("name", name)
-
-                                val ksuEngine = Intent(context, WebUIActivity::class.java)
-                                    .setData("kernelsu://webui/$id".toUri())
-                                    .putExtra("id", id)
-                                    .putExtra("name", name)
-
-                                val config = try {
-                                    id.asModuleConfig
-                                } catch (e: Exception) {
-                                    Log.e("ModuleScreen", "Failed to get config from id: $id", e)
-                                    null
-                                }
-
-                                val globalEngine = prefs.getString("webui_engine", "default") ?: "default"
-                                val moduleEngine = config?.getWebuiEngine(context)
-                                val selectedEngine = when (globalEngine) {
-                                    "wx" -> wxEngine
-                                    "ksu" -> ksuEngine
-                                    "default" -> {
-                                        when (moduleEngine) {
-                                            "wx" -> wxEngine
-                                            "ksu" -> ksuEngine
-                                            else -> {
-                                                if (Platform.isAlive) {
-                                                    wxEngine
-                                                } else {
-                                                    ksuEngine
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else -> ksuEngine
-                                }
-                                webUILauncher.launch(selectedEngine)
-                            } catch (e: Exception) {
-                                Log.e("ModuleScreen", "Error launching WebUI: ${e.message}", e)
-                                scope.launch {
-                                    snackBarHost.showSnackbar("Error launching WebUI: ${e.message}")
-                                }
-                            }
-                            return@ModuleList
-                        }
-                    },
-                    context = context,
-                    snackBarHost = snackBarHost
-                )
-            }
-        }
-
-        if (showBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = {
-                    showBottomSheet = false
-                },
-                sheetState = bottomSheetState,
-                dragHandle = {
-                    Surface(
-                        modifier = Modifier.padding(vertical = 11.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Box(
-                            Modifier.size(
-                                width = 32.dp,
-                                height = 4.dp
-                            )
-                        )
-                    }
-                }
-            ) {
-                ModuleBottomSheetContent(
-                    menuItems = bottomSheetMenuItems,
-                    viewModel = viewModel,
-                    prefs = prefs,
-                    scope = scope,
-                    bottomSheetState = bottomSheetState,
-                    onDismiss = { showBottomSheet = false }
-                )
-            }
-        }
-
-        // 签名验证弹窗
-        if (showSignatureDialog) {
-            AlertDialog(
-                onDismissRequest = { showSignatureDialog = false },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                },
-                title = {
-                    Text(
-                        text = stringResource(R.string.module_signature_invalid),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                },
-                text = {
-                    Text(text = signatureDialogMessage)
-                },
-                confirmButton = {
-                    if (isForceVerificationFailed) {
-                        // 强制验证失败，只显示确定按钮
-                        TextButton(
-                            onClick = { showSignatureDialog = false }
-                        ) {
-                            Text(stringResource(R.string.confirm))
-                        }
-                    } else {
-                        // 非强制验证失败，显示继续安装按钮
-                        TextButton(
-                            onClick = {
-                                showSignatureDialog = false
-                                pendingInstallAction?.invoke()
-                                pendingInstallAction = null
-                            }
-                        ) {
-                            Text(stringResource(R.string.install))
-                        }
-                    }
-                },
-                dismissButton = if (!isForceVerificationFailed) {
-                    {
-                        TextButton(
-                            onClick = {
-                                showSignatureDialog = false
-                                pendingInstallAction = null
-                            }
-                        ) {
-                            Text(stringResource(R.string.cancel))
-                        }
-                    }
-                } else {
-                    null
-                }
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModuleBottomSheetContent(
-    menuItems: List<ModuleBottomSheetMenuItem>,
-    viewModel: ModuleViewModel,
-    prefs: android.content.SharedPreferences,
-    scope: kotlinx.coroutines.CoroutineScope,
-    bottomSheetState: SheetState,
-    onDismiss: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 24.dp)
-    ) {
-        // 标题
-        Text(
-            text = stringResource(R.string.menu_options),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-        )
-
-        // 菜单选项网格
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(menuItems) { menuItem ->
-                ModuleBottomSheetMenuItemView(
-                    menuItem = menuItem
-                )
-            }
-        }
-
-        // 排序选项
-        Spacer(modifier = Modifier.height(24.dp))
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
-
-        Text(
-            text = stringResource(R.string.sort_options),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-        )
-
-        Column(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // 优先显示有操作的模块
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.module_sort_action_first),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Switch(
-                    checked = viewModel.sortActionFirst,
-                    onCheckedChange = { checked ->
-                        viewModel.sortActionFirst = checked
-                        prefs.edit {
-                            putBoolean("module_sort_action_first", checked)
-                        }
-                        scope.launch {
-                            viewModel.fetchModuleList()
-                            bottomSheetState.hide()
-                            onDismiss()
-                        }
-                    }
-                )
-            }
-
-            // 优先显示已启用的模块
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.module_sort_enabled_first),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Switch(
-                    checked = viewModel.sortEnabledFirst,
-                    onCheckedChange = { checked ->
-                        viewModel.sortEnabledFirst = checked
-                        prefs.edit {
-                            putBoolean("module_sort_enabled_first", checked)
-                        }
-                        scope.launch {
-                            viewModel.fetchModuleList()
-                            bottomSheetState.hide()
-                            onDismiss()
-                        }
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ModuleBottomSheetMenuItemView(menuItem: ModuleBottomSheetMenuItem) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "menuItemScale"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { menuItem.onClick() }
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Surface(
-            modifier = Modifier.size(48.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) {
-            Box(
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = menuItem.icon,
-                    contentDescription = stringResource(menuItem.titleRes),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = stringResource(menuItem.titleRes),
-            style = MaterialTheme.typography.labelSmall,
-            textAlign = TextAlign.Center,
-            maxLines = 2
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ModuleList(
-    navigator: DestinationsNavigator,
-    viewModel: ModuleViewModel,
-    listState: LazyListState,
-    modifier: Modifier = Modifier,
-    boxModifier: Modifier = Modifier,
-    onInstallModule: (Uri) -> Unit,
-    onUpdateModule: (Uri) -> Unit,
-    onClickModule: (id: String, name: String, hasWebUi: Boolean) -> Unit,
-    context: Context,
-    snackBarHost: SnackbarHostState
-) {
     val failedEnable = stringResource(R.string.module_failed_to_enable)
     val failedDisable = stringResource(R.string.module_failed_to_disable)
+    val failedUndoUninstall = stringResource(R.string.module_undo_uninstall_failed)
+    val successUndoUninstall = stringResource(R.string.module_undo_uninstall_success)
     val failedUninstall = stringResource(R.string.module_uninstall_failed)
     val successUninstall = stringResource(R.string.module_uninstall_success)
-    val reboot = stringResource(R.string.reboot)
     val rebootToApply = stringResource(R.string.reboot_to_apply)
     val moduleStr = stringResource(R.string.module)
     val uninstall = stringResource(R.string.uninstall)
     val cancel = stringResource(android.R.string.cancel)
     val moduleUninstallConfirm = stringResource(R.string.module_uninstall_confirm)
+    val metaModuleUninstallConfirm = stringResource(R.string.metamodule_uninstall_confirm)
     val updateText = stringResource(R.string.module_update)
     val changelogText = stringResource(R.string.module_changelog)
     val downloadingText = stringResource(R.string.module_downloading)
     val startDownloadingText = stringResource(R.string.module_start_downloading)
     val fetchChangeLogFailed = stringResource(R.string.module_changelog_failed)
-    val downloadErrorText = stringResource(R.string.module_download_error)
-
-    val loadingDialog = rememberLoadingDialog()
-    val confirmDialog = rememberConfirmDialog()
 
     suspend fun onModuleUpdate(
         module: ModuleViewModel.ModuleInfo,
         changelogUrl: String,
         downloadUrl: String,
-        fileName: String
+        fileName: String,
+        context: Context,
+        onInstallModule: (Uri) -> Unit
     ) {
-        val client = OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .build()
-
-        val request = okhttp3.Request.Builder()
-            .url(changelogUrl)
-            .header("User-Agent", "SukiSU-Ultra/2.0")
-            .build()
-
         val changelogResult = loadingDialog.withLoading {
             withContext(Dispatchers.IO) {
                 runCatching {
-                    client.newCall(request).execute().body!!.string()
+                    ksuApp.okhttpClient.newCall(
+                        okhttp3.Request.Builder().url(changelogUrl).build()
+                    ).execute().body!!.string()
                 }
             }
         }
@@ -824,517 +272,882 @@ private fun ModuleList(
                 downloadUrl,
                 fileName,
                 downloading,
-                onDownloaded = { uri ->
-                    // 验证更新模块的签名
-                    val isVerified = verifyModuleSignature(context, uri)
-                    setModuleVerificationStatus(uri, isVerified)
-                    onUpdateModule(uri)
-                },
+                onDownloaded = onInstallModule,
                 onDownloading = {
-                    launch(Dispatchers.Main) {
+                    scope.launch(Dispatchers.Main) {
                         Toast.makeText(context, downloading, Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onError = { errorMsg ->
-                    launch(Dispatchers.Main) {
-                        Toast.makeText(context, "$downloadErrorText: $errorMsg", Toast.LENGTH_LONG).show()
                     }
                 }
             )
         }
     }
 
-    suspend fun onModuleUninstallClicked(module: ModuleViewModel.ModuleInfo) {
-        val isUninstall = !module.remove
-        if (isUninstall) {
-            val confirmResult = confirmDialog.awaitConfirm(
-                moduleStr,
-                content = moduleUninstallConfirm.format(module.name),
-                confirm = uninstall,
-                dismiss = cancel
-            )
-            if (confirmResult != ConfirmResult.Confirmed) {
-                return
-            }
-        }
+    suspend fun onModuleUndoUninstall(module: ModuleViewModel.ModuleInfo) {
 
         val success = loadingDialog.withLoading {
             withContext(Dispatchers.IO) {
-                if (isUninstall) {
-                    // 卸载时移除验证标志
-                    ModuleOperationUtils.handleModuleUninstall(module.dirId)
-                    uninstallModule(module.dirId)
-                } else {
-                    restoreModule(module.dirId)
-                }
+                undoUninstallModule(module.id)
             }
         }
 
         if (success) {
             viewModel.fetchModuleList()
-            viewModel.markNeedRefresh()
         }
-        if (!isUninstall) return
+        val message = if (success) {
+            successUndoUninstall.format(module.name)
+        } else {
+            failedUndoUninstall.format(module.name)
+        }
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    suspend fun onModuleUninstall(module: ModuleViewModel.ModuleInfo) {
+        val formatter = if (module.metamodule) metaModuleUninstallConfirm else moduleUninstallConfirm
+        val confirmResult = confirmDialog.awaitConfirm(
+            moduleStr,
+            content = formatter.format(module.name),
+            confirm = uninstall,
+            dismiss = cancel
+        )
+        if (confirmResult != ConfirmResult.Confirmed) {
+            return
+        }
+
+        val success = loadingDialog.withLoading {
+            withContext(Dispatchers.IO) {
+                uninstallModule(module.id)
+            }
+        }
+
+        if (success) {
+            viewModel.fetchModuleList()
+        }
         val message = if (success) {
             successUninstall.format(module.name)
         } else {
             failedUninstall.format(module.name)
         }
-        val actionLabel = if (success) {
-            reboot
-        } else {
-            null
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    suspend fun onModuleToggle(module: ModuleViewModel.ModuleInfo) {
+        val success = loadingDialog.withLoading {
+            withContext(Dispatchers.IO) {
+                toggleModule(module.id, !module.enabled)
+            }
         }
-        val result = snackBarHost.showSnackbar(
-            message = message,
-            actionLabel = actionLabel,
-            duration = SnackbarDuration.Long
-        )
-        if (result == SnackbarResult.ActionPerformed) {
-            reboot()
+        if (success) {
+            viewModel.fetchModuleList()
+            Toast.makeText(context, rebootToApply, Toast.LENGTH_SHORT).show()
+        } else {
+            val message = if (module.enabled) failedDisable else failedEnable
+            Toast.makeText(context, message.format(module.name), Toast.LENGTH_SHORT).show()
         }
     }
 
-    PullToRefreshBox(
-        modifier = boxModifier,
-        onRefresh = {
-            viewModel.fetchModuleList()
-        },
-        isRefreshing = viewModel.isRefreshing
-    ) {
-        LazyColumn(
-            state = listState,
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = remember {
-                PaddingValues(
-                    start = 16.dp,
-                    top = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp + 56.dp + 16.dp + 48.dp + 6.dp /* Scaffold Fab Spacing + Fab container height + SnackBar height */
-                )
-            },
-        ) {
-            when {
-                viewModel.moduleList.isEmpty() -> {
-                    item {
-                        Box(
-                            modifier = Modifier.fillParentMaxSize(),
-                            contentAlignment = Alignment.Center
+    fun onModuleClick(id: String, name: String, hasWebUi: Boolean) {
+        if (hasWebUi) {
+            webUILauncher.launch(
+                Intent(context, WebUIActivity::class.java)
+                    .setData("kernelsu://webui/$id".toUri())
+                    .putExtra("id", id)
+                    .putExtra("name", name)
+            )
+        }
+    }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val isScrolledToEnd =
+                    (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index == listState.layoutInfo.totalItemsCount - 1
+                            && (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.size
+                        ?: 0) < listState.layoutInfo.viewportEndOffset)
+                val delta = available.y
+                if (!isScrolledToEnd) {
+                    scrollDistance += delta
+                    if (scrollDistance < -50f) {
+                        if (fabVisible) fabVisible = false
+                        scrollDistance = 0f
+                    } else if (scrollDistance > 50f) {
+                        if (!fabVisible) fabVisible = true
+                        scrollDistance = 0f
+                    }
+                }
+                return Offset.Zero
+            }
+        }
+    }
+    val offsetHeight by animateDpAsState(
+        targetValue = if (fabVisible) 0.dp else 180.dp + WindowInsets.systemBars.asPaddingValues().calculateBottomPadding(),
+        animationSpec = tween(durationMillis = 350)
+    )
+
+    val hazeState = remember { HazeState() }
+    val hazeStyle = HazeStyle(
+        backgroundColor = colorScheme.background,
+        tint = HazeTint(colorScheme.background.copy(0.8f))
+    )
+
+    Scaffold(
+        topBar = {
+            searchStatus.TopAppBarAnim(hazeState = hazeState, hazeStyle = hazeStyle) {
+                TopAppBar(
+                    color = Color.Transparent,
+                    title = stringResource(R.string.module),
+                    actions = {
+                        val showTopPopup = remember { mutableStateOf(false) }
+                        ListPopup(
+                            show = showTopPopup,
+                            popupPositionProvider = ListPopupDefaults.ContextMenuPositionProvider,
+                            alignment = PopupPositionProvider.Align.TopRight,
+                            onDismissRequest = {
+                                showTopPopup.value = false
+                            }
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Extension,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                    modifier = Modifier
-                                        .size(96.dp)
-                                        .padding(bottom = 16.dp)
+                            ListPopupColumn {
+                                DropdownImpl(
+                                    text = stringResource(R.string.module_sort_action_first),
+                                    optionSize = 2,
+                                    isSelected = viewModel.sortActionFirst,
+                                    onSelectedIndexChange = {
+                                        viewModel.sortActionFirst = !viewModel.sortActionFirst
+                                        prefs.edit {
+                                            putBoolean("module_sort_action_first", viewModel.sortActionFirst)
+                                        }
+                                        scope.launch {
+                                            viewModel.fetchModuleList()
+                                        }
+                                        showTopPopup.value = false
+                                    },
+                                    index = 0
                                 )
-                                Text(
-                                    text = stringResource(R.string.module_empty),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.bodyLarge,
+                                DropdownImpl(
+                                    text = stringResource(R.string.module_sort_enabled_first),
+                                    optionSize = 2,
+                                    isSelected = viewModel.sortEnabledFirst,
+                                    onSelectedIndexChange = {
+                                        viewModel.sortEnabledFirst = !viewModel.sortEnabledFirst
+                                        prefs.edit {
+                                            putBoolean("module_sort_enabled_first", viewModel.sortEnabledFirst)
+                                        }
+                                        scope.launch {
+                                            viewModel.fetchModuleList()
+                                        }
+                                        showTopPopup.value = false
+                                    },
+                                    index = 1
                                 )
                             }
                         }
+                        IconButton(
+                            modifier = Modifier.padding(end = 8.dp),
+                            onClick = { showTopPopup.value = true },
+                            holdDownState = showTopPopup.value
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Useful.ImmersionMore,
+                                tint = colorScheme.onSurface,
+                                contentDescription = stringResource(id = R.string.settings)
+                            )
+                        }
+                        RebootListPopup(
+                            modifier = Modifier.padding(end = 16.dp),
+                            alignment = PopupPositionProvider.Align.TopRight
+                        )
+                    },
+                    scrollBehavior = scrollBehavior
+                )
+            }
+        },
+        floatingActionButton = {
+            if (!hideInstallButton) {
+                val moduleInstall = stringResource(id = R.string.module_install)
+                val confirmTitle = stringResource(R.string.module)
+                var zipUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+                val confirmDialog = rememberConfirmDialog(
+                    onConfirm = {
+                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(zipUris))) {
+                            launchSingleTop = true
+                        }
+                        viewModel.markNeedRefresh()
+                    }
+                )
+                val uris = mutableListOf<Uri>()
+                val moduleNames = uris.mapIndexed { index, uri -> "\n${index + 1}. ${uri.getFileName(context)}" }.joinToString("")
+                val confirmContent = stringResource(R.string.module_install_prompt_with_name, moduleNames)
+                val selectZipLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartActivityForResult()
+                ) {
+                    if (it.resultCode != RESULT_OK) {
+                        return@rememberLauncherForActivityResult
+                    }
+                    val data = it.data ?: return@rememberLauncherForActivityResult
+                    val clipData = data.clipData
+
+                    if (clipData != null) {
+                        for (i in 0 until clipData.itemCount) {
+                            clipData.getItemAt(i)?.uri?.let { uris.add(it) }
+                        }
+                    } else {
+                        data.data?.let { uris.add(it) }
+                    }
+
+                    if (uris.size == 1) {
+                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(listOf(uris.first())))) {
+                            launchSingleTop = true
+                        }
+                    } else if (uris.size > 1) {
+                        // multiple files selected
+                        zipUris = uris
+                        confirmDialog.showConfirm(
+                            title = confirmTitle,
+                            content = confirmContent
+                        )
                     }
                 }
+                FloatingActionButton(
+                    modifier = Modifier
+                        .offset(y = offsetHeight)
+                        .padding(bottom = bottomInnerPadding + 20.dp, end = 20.dp)
+                        .border(0.05.dp, colorScheme.outline.copy(alpha = 0.5f), CircleShape),
+                    shadowElevation = 0.dp,
+                    onClick = {
+                        // Select the zip files to install
+                        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                            type = "application/zip"
+                            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                        }
+                        selectZipLauncher.launch(intent)
+                    },
+                    content = {
+                        Icon(
+                            Icons.Rounded.Add,
+                            moduleInstall,
+                            modifier = Modifier.size(40.dp),
+                            tint = Color.White
+                        )
+                    },
+                )
+            }
+        },
+        popupHost = {
+            searchStatus.SearchPager(
+                defaultResult = {},
+                searchBarTopPadding = dynamicTopPadding,
+            ) {
+                item {
+                    Spacer(Modifier.height(6.dp))
+                }
+                items(
+                    viewModel.searchResults.value,
+                    key = { it.id },
+                    contentType = { "module" }
+                ) { module ->
+                    AnimatedVisibility(
+                        visible = viewModel.searchResults.value.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        val itemScope = rememberCoroutineScope()
+                        val updateInfoMap = viewModel.updateInfo
+                        val currentModuleState = rememberUpdatedState(module)
+                        val moduleUpdateInfo = updateInfoMap[module.id] ?: ModuleViewModel.ModuleUpdateInfo.Empty
 
-                else -> {
-                    items(viewModel.moduleList) { module ->
-                        val scope = rememberCoroutineScope()
-                        val updatedModule by produceState(initialValue = Triple("", "", "")) {
-                            scope.launch(Dispatchers.IO) {
-                                value = viewModel.checkUpdate(module)
+                        val onUninstallClick = remember(module.id, itemScope, ::onModuleUninstall) {
+                            {
+                                itemScope.launch {
+                                    onModuleUninstall(currentModuleState.value)
+                                }
+                                Unit
+                            }
+                        }
+                        val onUndoUninstallClick = remember(module.id, itemScope, ::onModuleUndoUninstall) {
+                            {
+                                itemScope.launch {
+                                    onModuleUndoUninstall(currentModuleState.value)
+                                }
+                                Unit
+                            }
+                        }
+                        val onToggleClick = remember(module.id, itemScope, ::onModuleToggle) {
+                            { _: Boolean ->
+                                itemScope.launch {
+                                    onModuleToggle(currentModuleState.value)
+                                }
+                                Unit
+                            }
+                        }
+                        val onUpdateClick = remember(module.id, moduleUpdateInfo, itemScope, ::onModuleUpdate, context, navigator) {
+                            {
+                                itemScope.launch {
+                                    onModuleUpdate(
+                                        currentModuleState.value,
+                                        moduleUpdateInfo.changelog,
+                                        moduleUpdateInfo.downloadUrl,
+                                        "${currentModuleState.value.name}-${moduleUpdateInfo.version}.zip",
+                                        context
+                                    ) { uri ->
+                                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(listOf(uri)))) {
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                }
+                                Unit
+                            }
+                        }
+                        val onExecuteActionClick = remember(module.id, navigator, viewModel) {
+                            {
+                                navigator.navigate(ExecuteModuleActionScreenDestination(currentModuleState.value.id)) {
+                                    launchSingleTop = true
+                                }
+                                viewModel.markNeedRefresh()
+                            }
+                        }
+                        val onOpenWebUiClick = remember(module.id) {
+                            {
+                                onModuleClick(
+                                    currentModuleState.value.id,
+                                    currentModuleState.value.name,
+                                    currentModuleState.value.hasWebUi
+                                )
+                            }
+                        }
+                        ModuleItem(
+                            module = module,
+                            updateUrl = moduleUpdateInfo.downloadUrl,
+                            onUndoUninstall = onUndoUninstallClick,
+                            onUninstall = onUninstallClick,
+                            onCheckChanged = onToggleClick,
+                            onUpdate = onUpdateClick,
+                            onExecuteAction = onExecuteActionClick,
+                            onOpenWebUi = onOpenWebUiClick
+                        )
+                    }
+                }
+                item {
+                    val imeBottomPadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+                    Spacer(Modifier.height(maxOf(bottomInnerPadding, imeBottomPadding)))
+                }
+            }
+        },
+        contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
+    ) { innerPadding ->
+        when {
+            magiskInstalled -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        stringResource(R.string.module_magisk_conflict),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+
+            else -> {
+                val layoutDirection = LocalLayoutDirection.current
+                searchStatus.SearchBox(
+                    searchBarTopPadding = dynamicTopPadding,
+                    contentPadding = PaddingValues(
+                        top = innerPadding.calculateTopPadding(),
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = innerPadding.calculateEndPadding(layoutDirection)
+                    ),
+                    hazeState = hazeState,
+                    hazeStyle = hazeStyle
+                ) { boxHeight ->
+                    ModuleList(
+                        navigator,
+                        viewModel = viewModel,
+                        modifier = Modifier
+                            .height(getWindowSize().height.dp)
+                            .scrollEndHaptic()
+                            .overScrollVertical()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .nestedScroll(nestedScrollConnection)
+                            .hazeSource(state = hazeState),
+                        scope = scope,
+                        modules = modules,
+                        onInstallModule = {
+                            navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(listOf(it)))) {
+                                launchSingleTop = true
+                            }
+                        },
+                        onClickModule = { id, name, hasWebUi ->
+                            onModuleClick(id, name, hasWebUi)
+                        },
+                        onModuleUninstall = { module ->
+                            onModuleUninstall(module)
+                        },
+                        onModuleUndoUninstall = { module ->
+                            onModuleUndoUninstall(module)
+                        },
+                        onModuleToggle = { module ->
+                            onModuleToggle(module)
+                        },
+                        onModuleUpdate = { module, changelogUrl, downloadUrl, fileName ->
+                            onModuleUpdate(
+                                module,
+                                changelogUrl,
+                                downloadUrl,
+                                fileName,
+                                context
+                            ) { uri ->
+                                navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(listOf(uri)))) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        },
+                        context = context,
+                        innerPadding = innerPadding,
+                        bottomInnerPadding = bottomInnerPadding,
+                        boxHeight = boxHeight
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModuleList(
+    navigator: DestinationsNavigator,
+    viewModel: ModuleViewModel,
+    modifier: Modifier = Modifier,
+    scope: CoroutineScope,
+    modules: List<ModuleViewModel.ModuleInfo>,
+    onInstallModule: (Uri) -> Unit,
+    onClickModule: (id: String, name: String, hasWebUi: Boolean) -> Unit,
+    onModuleUninstall: suspend (ModuleViewModel.ModuleInfo) -> Unit,
+    onModuleUndoUninstall: suspend (ModuleViewModel.ModuleInfo) -> Unit,
+    onModuleToggle: suspend (ModuleViewModel.ModuleInfo) -> Unit,
+    onModuleUpdate: suspend (ModuleViewModel.ModuleInfo, String, String, String) -> Unit,
+    context: Context,
+    innerPadding: PaddingValues,
+    bottomInnerPadding: Dp,
+    boxHeight: MutableState<Dp>
+) {
+    val layoutDirection = LocalLayoutDirection.current
+    val updateInfoMap = viewModel.updateInfo
+
+    var isRefreshing by rememberSaveable { mutableStateOf(false) }
+    val pullToRefreshState = rememberPullToRefreshState()
+    val refreshTexts = remember {
+        listOf(
+            context.getString(R.string.refresh_pulling),
+            context.getString(R.string.refresh_release),
+            context.getString(R.string.refresh_refresh),
+            context.getString(R.string.refresh_complete),
+        )
+    }
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            delay(350)
+            viewModel.fetchModuleList()
+            isRefreshing = false
+        }
+    }
+
+    when {
+        !viewModel.isOverlayAvailable -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = innerPadding.calculateEndPadding(layoutDirection),
+                        bottom = bottomInnerPadding
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    stringResource(R.string.module_overlay_fs_not_available),
+                    textAlign = TextAlign.Center,
+                    color = Color.Gray,
+                )
+            }
+        }
+
+        modules.isEmpty() -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = innerPadding.calculateEndPadding(layoutDirection),
+                        bottom = bottomInnerPadding
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    stringResource(R.string.module_empty),
+                    textAlign = TextAlign.Center,
+                    color = Color.Gray,
+                )
+            }
+        }
+
+        else -> {
+            PullToRefresh(
+                isRefreshing = isRefreshing,
+                pullToRefreshState = pullToRefreshState,
+                onRefresh = { if (!isRefreshing) isRefreshing = true },
+                refreshTexts = refreshTexts,
+                contentPadding = PaddingValues(
+                    top = innerPadding.calculateTopPadding() + boxHeight.value + 6.dp,
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    end = innerPadding.calculateEndPadding(layoutDirection),
+                ),
+            ) {
+                LazyColumn(
+                    modifier = modifier.height(getWindowSize().height.dp),
+                    contentPadding = PaddingValues(
+                        top = innerPadding.calculateTopPadding() + boxHeight.value + 6.dp,
+                        start = innerPadding.calculateStartPadding(layoutDirection),
+                        end = innerPadding.calculateEndPadding(layoutDirection),
+                    ),
+                    overscrollEffect = null,
+                ) {
+                    items(
+                        items = modules,
+                        key = { it.id },
+                        contentType = { "module" }
+                    ) { module ->
+                        val currentModuleState = rememberUpdatedState(module)
+                        val moduleUpdateInfo = updateInfoMap[module.id] ?: ModuleViewModel.ModuleUpdateInfo.Empty
+
+                        val onUndoUninstallClick = remember(module.id, scope, onModuleUndoUninstall) {
+                            {
+                                scope.launch {
+                                    onModuleUndoUninstall(currentModuleState.value)
+                                }
+                                Unit
+                            }
+                        }
+                        val onUninstallClick = remember(module.id, scope, onModuleUninstall) {
+                            {
+                                scope.launch {
+                                    onModuleUninstall(currentModuleState.value)
+                                }
+                                Unit
+                            }
+                        }
+                        val onToggleClick = remember(module.id, scope, onModuleToggle) {
+                            { _: Boolean ->
+                                scope.launch {
+                                    onModuleToggle(currentModuleState.value)
+                                }
+                                Unit
+                            }
+                        }
+                        val onUpdateClick = remember(module.id, moduleUpdateInfo, scope, onModuleUpdate) {
+                            {
+                                scope.launch {
+                                    onModuleUpdate(
+                                        currentModuleState.value,
+                                        moduleUpdateInfo.changelog,
+                                        moduleUpdateInfo.downloadUrl,
+                                        "${currentModuleState.value.name}-${moduleUpdateInfo.version}.zip",
+                                    )
+                                }
+                                Unit
+                            }
+                        }
+                        val onExecuteActionClick = remember(module.id, navigator, viewModel) {
+                            {
+                                navigator.navigate(ExecuteModuleActionScreenDestination(currentModuleState.value.id)) {
+                                    launchSingleTop = true
+                                }
+                                viewModel.markNeedRefresh()
+                            }
+                        }
+                        val onOpenWebUiClick = remember(module.id, onClickModule) {
+                            {
+                                onClickModule(
+                                    currentModuleState.value.id,
+                                    currentModuleState.value.name,
+                                    currentModuleState.value.hasWebUi
+                                )
                             }
                         }
 
                         ModuleItem(
-                            navigator = navigator,
                             module = module,
-                            updateUrl = updatedModule.first,
-                            onUninstallClicked = {
-                                scope.launch { onModuleUninstallClicked(module) }
-                            },
-                            onCheckChanged = {
-                                scope.launch {
-                                    val success = withContext(Dispatchers.IO) {
-                                        toggleModule(module.dirId, !module.enabled)
-                                    }
-                                    if (success) {
-                                        viewModel.fetchModuleList()
-
-                                        val result = snackBarHost.showSnackbar(
-                                            message = rebootToApply,
-                                            actionLabel = reboot,
-                                            duration = SnackbarDuration.Long
-                                        )
-                                        if (result == SnackbarResult.ActionPerformed) {
-                                            reboot()
-                                        }
-                                    } else {
-                                        val message = if (module.enabled) failedDisable else failedEnable
-                                        snackBarHost.showSnackbar(message.format(module.name))
-                                    }
-                                }
-                            },
-                            onUpdate = {
-                                scope.launch {
-                                    onModuleUpdate(
-                                        module,
-                                        updatedModule.third,
-                                        updatedModule.first,
-                                        "${module.name}-${updatedModule.second}.zip"
-                                    )
-                                }
-                            },
-                            onClick = {
-                                onClickModule(it.dirId, it.name, it.hasWebUi)
-                            }
+                            updateUrl = moduleUpdateInfo.downloadUrl,
+                            onUninstall = onUninstallClick,
+                            onUndoUninstall = onUndoUninstallClick,
+                            onCheckChanged = onToggleClick,
+                            onUpdate = onUpdateClick,
+                            onExecuteAction = onExecuteActionClick,
+                            onOpenWebUi = onOpenWebUiClick
                         )
-
-                        Spacer(Modifier.height(1.dp))
+                    }
+                    item {
+                        Spacer(Modifier.height(bottomInnerPadding))
                     }
                 }
             }
         }
-
-        DownloadListener(context, onInstallModule)
     }
+    DownloadListener(context, onInstallModule)
 }
 
 @Composable
 fun ModuleItem(
-    navigator: DestinationsNavigator,
     module: ModuleViewModel.ModuleInfo,
     updateUrl: String,
-    onUninstallClicked: (ModuleViewModel.ModuleInfo) -> Unit,
+    onUndoUninstall: () -> Unit,
+    onUninstall: () -> Unit,
     onCheckChanged: (Boolean) -> Unit,
-    onUpdate: (ModuleViewModel.ModuleInfo) -> Unit,
-    onClick: (ModuleViewModel.ModuleInfo) -> Unit
+    onUpdate: () -> Unit,
+    onExecuteAction: () -> Unit,
+    onOpenWebUi: () -> Unit
 ) {
-    val context = LocalContext.current
-    val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
-    val isHideTagRow = prefs.getBoolean("is_hide_tag_row", false)
-    // 获取显示更多模块信息的设置
-    val showMoreModuleInfo = prefs.getBoolean("show_more_module_info", false)
+    val isDark = isSystemInDarkTheme()
+    val hasUpdate by remember(updateUrl) { derivedStateOf { updateUrl.isNotEmpty() } }
+    val textDecoration by remember(module.remove) {
+        mutableStateOf(if (module.remove) TextDecoration.LineThrough else null)
+    }
+    val onSurface = colorScheme.onSurface
+    val secondaryContainer = colorScheme.secondaryContainer.copy(alpha = 0.8f)
+    val actionIconTint = remember(isDark) { onSurface.copy(alpha = if (isDark) 0.7f else 0.9f) }
+    val updateBg = remember(isDark) { Color(if (isDark) 0xFF25354E else 0xFFEAF2FF) }
+    val updateTint = remember { Color(0xFF0D84FF) }
 
-    // 剪贴板管理器和触觉反馈
-    val clipboardManager = context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-    val hapticFeedback = LocalHapticFeedback.current
-
-    ElevatedCard(
-        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerHigh),
-        elevation = getCardElevation(),
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 12.dp)
+            .padding(bottom = 12.dp),
+        insideMargin = PaddingValues(16.dp)
     ) {
-        val textDecoration = if (!module.remove) null else TextDecoration.LineThrough
-        val interactionSource = remember { MutableInteractionSource() }
-        val indication = LocalIndication.current
-        val viewModel = viewModel<ModuleViewModel>()
-
-        val sizeStr = remember(module.dirId) {
-            viewModel.getModuleSize(module.dirId)
-        }
-
-        Column(
-            modifier = Modifier
-                .run {
-                    if (module.hasWebUi) {
-                        toggleable(
-                            value = module.enabled,
-                            enabled = !module.remove && module.enabled,
-                            interactionSource = interactionSource,
-                            role = Role.Button,
-                            indication = indication,
-                            onValueChange = { onClick(module) }
-                        )
-                    } else {
-                        this
-                    }
-                }
-                .padding(22.dp, 18.dp, 22.dp, 12.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
             ) {
                 val moduleVersion = stringResource(id = R.string.module_version)
                 val moduleAuthor = stringResource(id = R.string.module_author)
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.8f)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                SubcomposeLayout { constraints ->
+                    val spacingPx = 6.dp.roundToPx()
+                    var nameTextLayout: TextLayoutResult? = null
+                    val metaPlaceable = if (module.metamodule) {
+                        subcompose("meta") {
+                            Text(
+                                text = "META",
+                                fontSize = 12.sp,
+                                color = updateTint,
+                                modifier = Modifier
+                                    .clip(ContinuousRoundedRectangle(6.dp))
+                                    .background(updateBg)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                fontWeight = FontWeight(750),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }.first().measure(Constraints(0, constraints.maxWidth, 0, constraints.maxHeight))
+                    } else null
+
+                    val reserved = (metaPlaceable?.width ?: 0) + if (metaPlaceable != null) spacingPx else 0
+                    val nameMax = (constraints.maxWidth - reserved).coerceAtLeast(0)
+                    val namePlaceable = subcompose("name") {
                         Text(
                             text = module.name,
-                            fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                            fontWeight = FontWeight.SemiBold,
-                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                            fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight(550),
+                            color = colorScheme.onSurface,
                             textDecoration = textDecoration,
-                            modifier = Modifier.weight(1f, false)
+                            onTextLayout = { nameTextLayout = it }
                         )
+                    }.first().measure(Constraints(constraints.minWidth, nameMax, constraints.minHeight, constraints.maxHeight))
 
-                        // 显示验证标签
-                        if (module.isVerified) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Verified,
-                                        contentDescription = stringResource(R.string.module_signature_verified),
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(2.dp))
-                                    Text(
-                                        text = stringResource(R.string.module_verified),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    val width = (namePlaceable.width + reserved).coerceIn(constraints.minWidth, constraints.maxWidth)
+                    val height = maxOf(namePlaceable.height, metaPlaceable?.height ?: 0)
 
-                    Text(
-                        text = "$moduleVersion: ${module.version}",
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                        textDecoration = textDecoration,
-                    )
-
-                    Text(
-                        text = "$moduleAuthor: ${module.author}",
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                        textDecoration = textDecoration,
-                    )
-
-                    // 显示更多模块信息时添加updateJson
-                    if (showMoreModuleInfo && module.updateJson.isNotEmpty()) {
-                        val updateJsonLabel = stringResource(R.string.module_update_json)
-                        Text(
-                            text = "$updateJsonLabel: ${module.updateJson}",
-                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                            fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                            textDecoration = textDecoration,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 5,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    onClick = { },
-                                    onLongClick = {
-                                        val clipData = ClipData.newPlainText(
-                                            "Update JSON URL",
-                                            module.updateJson
-                                        )
-                                        clipboardManager.setPrimaryClip(clipData)
-                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.module_update_json_copied),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                ),
-                        )
+                    layout(width, height) {
+                        namePlaceable.placeRelative(0, 0)
+                        val endX = nameTextLayout?.let { layoutRes ->
+                            val last = (layoutRes.lineCount - 1).coerceAtLeast(0)
+                            layoutRes.getLineRight(last).toInt()
+                        } ?: namePlaceable.width
+                        metaPlaceable?.placeRelative(endX + spacingPx, (height - (metaPlaceable.height)) / 2)
                     }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Switch(
-                        enabled = !module.update,
-                        checked = module.enabled,
-                        onCheckedChange = onCheckChanged,
-                        interactionSource = if (!module.hasWebUi) interactionSource else null,
-                    )
-                }
+                Text(
+                    text = "$moduleVersion: ${module.version}",
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 2.dp),
+                    fontWeight = FontWeight(550),
+                    color = colorScheme.onSurfaceVariantSummary,
+                    textDecoration = textDecoration
+                )
+                Text(
+                    text = "$moduleAuthor: ${module.author}",
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(bottom = 1.dp),
+                    fontWeight = FontWeight(550),
+                    color = colorScheme.onSurfaceVariantSummary,
+                    textDecoration = textDecoration
+                )
             }
+            Switch(
+                enabled = !module.update,
+                checked = module.enabled,
+                onCheckedChange = {
+                    if (it != module.enabled) onCheckChanged(it)
+                }
+            )
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
+        if (module.description.isNotBlank()) {
             Text(
                 text = module.description,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                fontWeight = MaterialTheme.typography.bodySmall.fontWeight,
+                fontSize = 14.sp,
+                color = colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.padding(top = 2.dp),
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 4,
-                textDecoration = textDecoration,
+                textDecoration = textDecoration
             )
+        }
 
-            if (!isHideTagRow) {
-                Spacer(modifier = Modifier.height(12.dp))
-                // 文件夹名称和大小标签
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                    ) {
-                        Text(
-                            text = module.dirId,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp),
+            thickness = 0.5.dp,
+            color = colorScheme.outline.copy(alpha = 0.5f)
+        )
+
+        Row {
+            AnimatedVisibility(
+                visible = module.enabled && !module.remove,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (module.hasActionScript) {
+                        IconButton(
+                            backgroundColor = secondaryContainer,
+                            minHeight = 35.dp,
+                            minWidth = 35.dp,
+                            onClick = onExecuteAction,
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                imageVector = Icons.Rounded.PlayArrow,
+                                tint = actionIconTint,
+                                contentDescription = stringResource(R.string.action)
+                            )
+                        }
                     }
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier
-                    ) {
-                        Text(
-                            text = sizeStr,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            maxLines = 1
-                        )
+                    if (module.hasWebUi) {
+                        IconButton(
+                            backgroundColor = secondaryContainer,
+                            minHeight = 35.dp,
+                            minWidth = 35.dp,
+                            onClick = onOpenWebUi,
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                imageVector = Icons.Rounded.Code,
+                                tint = actionIconTint,
+                                contentDescription = stringResource(R.string.open)
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.weight(1f))
 
-            HorizontalDivider(thickness = Dp.Hairline)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            AnimatedVisibility(
+                visible = hasUpdate,
+                enter = fadeIn(),
+                exit = fadeOut()
             ) {
-                if (module.hasActionScript) {
-                    FilledTonalButton(
-                        modifier = Modifier.defaultMinSize(minWidth = 52.dp, minHeight = 32.dp),
-                        enabled = !module.remove && module.enabled,
-                        onClick = {
-                            navigator.navigate(ExecuteModuleActionScreenDestination(module.dirId))
-                            viewModel.markNeedRefresh()
-                        },
-                        contentPadding = ButtonDefaults.TextButtonContentPadding,
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = Icons.Outlined.PlayArrow,
-                            contentDescription = null
-                        )
-                    }
-                }
-
-                if (module.hasWebUi) {
-                    FilledTonalButton(
-                        modifier = Modifier.defaultMinSize(minWidth = 52.dp, minHeight = 32.dp),
-                        enabled = !module.remove && module.enabled,
-                        onClick = { onClick(module) },
-                        interactionSource = interactionSource,
-                        contentPadding = ButtonDefaults.TextButtonContentPadding,
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = Icons.AutoMirrored.Outlined.Wysiwyg,
-                            contentDescription = null
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f, true))
-
-                if (updateUrl.isNotEmpty()) {
-                    Button(
-                        modifier = Modifier.defaultMinSize(minWidth = 52.dp, minHeight = 32.dp),
-                        enabled = !module.remove,
-                        onClick = { onUpdate(module) },
-                        shape = ButtonDefaults.textShape,
-                        contentPadding = ButtonDefaults.TextButtonContentPadding,
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = Icons.Outlined.Download,
-                            contentDescription = null
-                        )
-                    }
-                }
-
-                FilledTonalButton(
-                    modifier = Modifier.defaultMinSize(minWidth = 52.dp, minHeight = 32.dp),
-                    onClick = { onUninstallClicked(module) },
-                    contentPadding = ButtonDefaults.TextButtonContentPadding,
+                IconButton(
+                    modifier = Modifier.padding(end = 16.dp),
+                    backgroundColor = updateBg,
+                    enabled = !module.remove,
+                    minHeight = 35.dp,
+                    minWidth = 35.dp,
+                    onClick = onUpdate,
                 ) {
-                    if (!module.remove) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
                         Icon(
                             modifier = Modifier.size(20.dp),
-                            imageVector = Icons.Outlined.Delete,
-                            contentDescription = null,
+                            imageVector = Icons.Rounded.Download,
+                            tint = updateTint,
+                            contentDescription = stringResource(R.string.module_update),
                         )
-                    } else {
-                        Icon(
-                            modifier = Modifier.size(20.dp).rotate(180f),
-                            imageVector = Icons.Outlined.Refresh,
-                            contentDescription = null
+                        Text(
+                            modifier = Modifier.padding(end = 3.dp),
+                            text = stringResource(R.string.module_update),
+                            color = updateTint,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp
+                        )
+                    }
+                }
+            }
+            IconButton(
+                minHeight = 35.dp,
+                minWidth = 35.dp,
+                onClick = if (module.remove) onUndoUninstall else onUninstall,
+                backgroundColor = if (module.remove) {
+                    secondaryContainer.copy(alpha = 0.8f)
+                } else {
+                    secondaryContainer
+                },
+            ) {
+                val animatedPadding by animateDpAsState(
+                    targetValue = if (!hasUpdate) 10.dp else 0.dp,
+                    animationSpec = tween(durationMillis = 300)
+                )
+                Row(
+                    modifier = Modifier.padding(horizontal = animatedPadding),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        modifier = Modifier.size(20.dp),
+                        imageVector = if (module.remove) {
+                            Icons.AutoMirrored.Outlined.Undo
+                        } else {
+                            Icons.Outlined.Delete
+                        },
+                        tint = actionIconTint,
+                        contentDescription = null
+                    )
+                    AnimatedVisibility(
+                        visible = !hasUpdate,
+                        enter = expandHorizontally(),
+                        exit = shrinkHorizontally()
+                    ) {
+                        Text(
+                            modifier = Modifier.padding(start = 4.dp, end = 3.dp),
+                            text = stringResource(
+                                if (module.remove) R.string.undo else R.string.uninstall
+                            ),
+                            color = actionIconTint,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp
                         )
                     }
                 }
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun ModuleItemPreview() {
-    val module = ModuleViewModel.ModuleInfo(
-        id = "id",
-        name = "name",
-        version = "version",
-        versionCode = 1,
-        author = "author",
-        description = "I am a test module and i do nothing but show a very long description",
-        enabled = true,
-        update = true,
-        remove = false,
-        updateJson = "",
-        hasWebUi = false,
-        hasActionScript = false,
-        dirId = "dirId",
-        config = ModuleConfig(),
-        isVerified = true,
-        verificationTimestamp = System.currentTimeMillis()
-    )
-    ModuleItem(EmptyDestinationsNavigator, module, "", {}, {}, {}, {})
 }

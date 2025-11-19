@@ -1,250 +1,299 @@
 package com.sukisu.ultra.ui.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.BlendModeColorFilter
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.BasicComponentColors
+import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
+import top.yukonga.miuix.kmp.basic.ListPopup
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.basic.ArrowUpDownIntegrated
+import top.yukonga.miuix.kmp.icon.icons.basic.Check
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * A dropdown with a title and a summary.
+ *
+ * @param items The options of the [SuperDropdown].
+ * @param selectedIndex The index of the selected option.
+ * @param title The title of the [SuperDropdown].
+ * @param titleColor The color of the title.
+ * @param summary The summary of the [SuperDropdown].
+ * @param summaryColor The color of the summary.
+ * @param dropdownColors The [DropdownColors] of the [SuperDropdown].
+ * @param insideMargin The margin inside the [SuperDropdown].
+ * @param maxHeight The maximum height of the [ListPopup].
+ * @param enabled Whether the [SuperDropdown] is enabled.
+ * @param showValue Whether to show the selected value of the [SuperDropdown].
+ * @param onClick The callback when the [SuperDropdown] is clicked.
+ * @param onSelectedIndexChange The callback when the selected index of the [SuperDropdown] is changed.
+ */
 @Composable
 fun SuperDropdown(
     items: List<String>,
     selectedIndex: Int,
     title: String,
+    titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
     summary: String? = null,
-    icon: ImageVector? = null,
+    summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
+    dropdownColors: DropdownColors = DropdownDefaults.dropdownColors(),
+    leftAction: (@Composable (() -> Unit))? = null,
+    insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
+    maxHeight: Dp? = null,
     enabled: Boolean = true,
     showValue: Boolean = true,
-    maxHeight: Dp? = 400.dp,
-    colors: SuperDropdownColors = SuperDropdownDefaults.colors(),
-    leftAction: (@Composable () -> Unit)? = null,
-    onSelectedIndexChange: (Int) -> Unit
+    onClick: (() -> Unit)? = null,
+    onSelectedIndexChange: ((Int) -> Unit)?,
 ) {
-    var showDialog by remember { mutableStateOf(false) }
-    val selectedItemText = items.getOrNull(selectedIndex) ?: ""
+    val interactionSource = remember { MutableInteractionSource() }
+    val isDropdownExpanded = remember { mutableStateOf(false) }
+    val hapticFeedback = LocalHapticFeedback.current
+
     val itemsNotEmpty = items.isNotEmpty()
     val actualEnabled = enabled && itemsNotEmpty
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = actualEnabled) { showDialog = true }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        if (leftAction != null) {
-            leftAction()
-        } else if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (actualEnabled) colors.iconColor else colors.disabledIconColor,
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .size(24.dp)
-            )
-        }
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = if (actualEnabled) colors.titleColor else colors.disabledTitleColor
-            )
-            
-            if (summary != null) {
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (actualEnabled) colors.summaryColor else colors.disabledSummaryColor
-                )
-            }
-            
-            if (showValue && itemsNotEmpty) {
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = selectedItemText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (actualEnabled) colors.valueColor else colors.disabledValueColor,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
-            tint = if (actualEnabled) colors.arrowColor else colors.disabledArrowColor,
-            modifier = Modifier.size(24.dp)
-        )
+    val actionColor = if (actualEnabled) {
+        MiuixTheme.colorScheme.onSurfaceVariantActions
+    } else {
+        MiuixTheme.colorScheme.disabledOnSecondaryVariant
     }
 
-    if (showDialog && itemsNotEmpty) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { 
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall
-                ) 
-            },
-            text = {
-                val dialogMaxHeight = maxHeight ?: 400.dp
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = dialogMaxHeight),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    items(items.size) { index ->
-                        DropdownItem(
-                            text = items[index],
-                            isSelected = selectedIndex == index,
-                            colors = colors,
-                            onClick = {
-                                onSelectedIndexChange(index)
-                                showDialog = false
-                            }
-                        )
-                    }
+    val handleClick: () -> Unit = {
+        if (actualEnabled) {
+            onClick?.invoke()
+            isDropdownExpanded.value = !isDropdownExpanded.value
+            if (isDropdownExpanded.value) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
+            }
+        }
+    }
+
+    BasicComponent(
+        interactionSource = interactionSource,
+        insideMargin = insideMargin,
+        title = title,
+        titleColor = titleColor,
+        summary = summary,
+        summaryColor = summaryColor,
+        leftAction = if (itemsNotEmpty) {
+            {
+                SuperDropdownPopup(
+                    items = items,
+                    selectedIndex = selectedIndex,
+                    isDropdownExpanded = isDropdownExpanded,
+                    maxHeight = maxHeight,
+                    dropdownColors = dropdownColors,
+                    hapticFeedback = hapticFeedback,
+                    onSelectedIndexChange = onSelectedIndexChange
+                )
+                leftAction?.invoke()
+            }
+        } else null,
+        rightActions = {
+            SuperDropdownRightActions(
+                showValue = showValue,
+                itemsNotEmpty = itemsNotEmpty,
+                items = items,
+                selectedIndex = selectedIndex,
+                actionColor = actionColor
+            )
+        },
+        onClick = handleClick,
+        holdDownState = isDropdownExpanded.value,
+        enabled = actualEnabled
+    )
+}
+
+@Composable
+private fun SuperDropdownPopup(
+    items: List<String>,
+    selectedIndex: Int,
+    isDropdownExpanded: MutableState<Boolean>,
+    maxHeight: Dp?,
+    dropdownColors: DropdownColors,
+    hapticFeedback: HapticFeedback,
+    onSelectedIndexChange: ((Int) -> Unit)?
+) {
+    val onSelectState = rememberUpdatedState(onSelectedIndexChange)
+    ListPopup(
+        show = isDropdownExpanded,
+        alignment = PopupPositionProvider.Align.Right,
+        onDismissRequest = {
+            isDropdownExpanded.value = false
+        },
+        maxHeight = maxHeight
+    ) {
+        ListPopupColumn {
+            items.forEachIndexed { index, string ->
+                key(index) {
+                    DropdownImpl(
+                        text = string,
+                        optionSize = items.size,
+                        isSelected = selectedIndex == index,
+                        dropdownColors = dropdownColors,
+                        onSelectedIndexChange = { selectedIdx ->
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+                            onSelectState.value?.invoke(selectedIdx)
+                            isDropdownExpanded.value = false
+                        },
+                        index = index
+                    )
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text(text = stringResource(id = android.R.string.cancel))
-                }
-            },
-            containerColor = colors.dialogBackgroundColor,
-            shape = MaterialTheme.shapes.extraLarge,
-            tonalElevation = 4.dp
-        )
+            }
+        }
     }
 }
 
 @Composable
-private fun DropdownItem(
-    text: String,
-    isSelected: Boolean,
-    colors: SuperDropdownColors,
-    onClick: () -> Unit
+private fun RowScope.SuperDropdownRightActions(
+    showValue: Boolean,
+    itemsNotEmpty: Boolean,
+    items: List<String>,
+    selectedIndex: Int,
+    actionColor: Color
 ) {
-    val backgroundColor = if (isSelected) {
-        colors.selectedBackgroundColor
+    if (showValue && itemsNotEmpty) {
+        Text(
+            modifier = Modifier.widthIn(max = 130.dp),
+            text = items[selectedIndex],
+            fontSize = MiuixTheme.textStyles.body2.fontSize,
+            color = actionColor,
+            textAlign = TextAlign.End,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 2
+        )
+    }
+
+    Image(
+        modifier = Modifier
+            .padding(start = 8.dp)
+            .size(10.dp, 16.dp)
+            .align(Alignment.CenterVertically),
+        imageVector = MiuixIcons.Basic.ArrowUpDownIntegrated,
+        colorFilter = ColorFilter.tint(actionColor),
+        contentDescription = null
+    )
+}
+
+/**
+ * The implementation of the dropdown.
+ *
+ * @param text The text of the current option.
+ * @param optionSize The size of the options.
+ * @param isSelected Whether the option is selected.
+ * @param index The index of the current option in the options.
+ * @param onSelectedIndexChange The callback when the index is selected.
+ */
+@Composable
+fun DropdownImpl(
+    text: String,
+    optionSize: Int,
+    isSelected: Boolean,
+    index: Int,
+    dropdownColors: DropdownColors = DropdownDefaults.dropdownColors(),
+    onSelectedIndexChange: (Int) -> Unit
+) {
+    val additionalTopPadding = if (index == 0) 20.dp else 12.dp
+    val additionalBottomPadding = if (index == optionSize - 1) 20.dp else 12.dp
+
+    val (textColor, backgroundColor) = if (isSelected) {
+        dropdownColors.selectedContentColor to dropdownColors.selectedContainerColor
+    } else {
+        dropdownColors.contentColor to dropdownColors.containerColor
+    }
+
+    val checkColor = if (isSelected) {
+        dropdownColors.selectedContentColor
     } else {
         Color.Transparent
     }
 
-    val contentColor = if (isSelected) {
-        colors.selectedContentColor
-    } else {
-        colors.contentColor
-    }
-
     Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
+            .clickable { onSelectedIndexChange(index) }
             .background(backgroundColor)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 20.dp)
+            .padding(
+                top = additionalTopPadding,
+                bottom = additionalBottomPadding
+            )
     ) {
-        RadioButton(
-            selected = isSelected,
-            onClick = null,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = colors.selectedContentColor,
-                unselectedColor = colors.contentColor
-            )
-        )
-        
-        Spacer(modifier = Modifier.width(12.dp))
-        
         Text(
+            modifier = Modifier.widthIn(max = 200.dp),
             text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = contentColor,
-            modifier = Modifier.weight(1f)
+            fontSize = MiuixTheme.textStyles.body1.fontSize,
+            fontWeight = FontWeight.Medium,
+            color = textColor,
         )
-        
-        if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = colors.selectedContentColor,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+
+        Image(
+            modifier = Modifier
+                .padding(start = 12.dp)
+                .size(20.dp),
+            imageVector = MiuixIcons.Basic.Check,
+            colorFilter = BlendModeColorFilter(checkColor, BlendMode.SrcIn),
+            contentDescription = null,
+        )
     }
 }
 
 @Immutable
-data class SuperDropdownColors(
-    val titleColor: Color,
-    val summaryColor: Color,
-    val valueColor: Color,
-    val iconColor: Color,
-    val arrowColor: Color,
-    val disabledTitleColor: Color,
-    val disabledSummaryColor: Color,
-    val disabledValueColor: Color,
-    val disabledIconColor: Color,
-    val disabledArrowColor: Color,
-    val dialogBackgroundColor: Color,
+class DropdownColors(
     val contentColor: Color,
+    val containerColor: Color,
     val selectedContentColor: Color,
-    val selectedBackgroundColor: Color
+    val selectedContainerColor: Color
 )
 
-object SuperDropdownDefaults {
+object DropdownDefaults {
+
     @Composable
-    fun colors(
-        titleColor: Color = MaterialTheme.colorScheme.onSurface,
-        summaryColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-        valueColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-        iconColor: Color = MaterialTheme.colorScheme.primary,
-        arrowColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-        disabledTitleColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-        disabledSummaryColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-        disabledValueColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-        disabledIconColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-        disabledArrowColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-        dialogBackgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor: Color = MaterialTheme.colorScheme.onSurface,
-        selectedContentColor: Color = MaterialTheme.colorScheme.primary,
-        selectedBackgroundColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-    ): SuperDropdownColors {
-        return SuperDropdownColors(
-            titleColor = titleColor,
-            summaryColor = summaryColor,
-            valueColor = valueColor,
-            iconColor = iconColor,
-            arrowColor = arrowColor,
-            disabledTitleColor = disabledTitleColor,
-            disabledSummaryColor = disabledSummaryColor,
-            disabledValueColor = disabledValueColor,
-            disabledIconColor = disabledIconColor,
-            disabledArrowColor = disabledArrowColor,
-            dialogBackgroundColor = dialogBackgroundColor,
+    fun dropdownColors(
+        contentColor: Color = MiuixTheme.colorScheme.onSurface,
+        containerColor: Color = MiuixTheme.colorScheme.surface,
+        selectedContentColor: Color = MiuixTheme.colorScheme.onTertiaryContainer,
+        selectedContainerColor: Color = MiuixTheme.colorScheme.surface
+    ): DropdownColors {
+        return DropdownColors(
             contentColor = contentColor,
+            containerColor = containerColor,
             selectedContentColor = selectedContentColor,
-            selectedBackgroundColor = selectedBackgroundColor
+            selectedContainerColor = selectedContainerColor
         )
     }
 }

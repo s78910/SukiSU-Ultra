@@ -10,8 +10,6 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.lsplugin.apksign)
     id("kotlin-parcelize")
-
-
 }
 
 val managerVersionCode: Int by rootProject.extra
@@ -24,7 +22,6 @@ apksign {
     keyAliasProperty = "KEY_ALIAS"
     keyPasswordProperty = "KEY_PASSWORD"
 }
-
 
 android {
 
@@ -117,13 +114,8 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.compose.material)
-    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.foundation)
-    implementation(libs.androidx.documentfile)
-    implementation(libs.androidx.compose.foundation)
 
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -145,24 +137,12 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.core)
 
-    implementation(libs.me.zhanghai.android.appiconloader.coil)
-
-    implementation(libs.sheet.compose.dialogs.core)
-    implementation(libs.sheet.compose.dialogs.list)
-    implementation(libs.sheet.compose.dialogs.input)
-
     implementation(libs.markdown)
     implementation(libs.androidx.webkit)
 
     implementation(libs.lsposed.cxx)
 
-    implementation(libs.com.github.topjohnwu.libsu.core)
-
-    implementation(libs.mmrl.platform)
-    compileOnly(libs.mmrl.hidden.api)
-    implementation(libs.mmrl.webui)
-    implementation(libs.mmrl.ui)
-
-    implementation(libs.accompanist.drawablepainter)
-
+    implementation(libs.miuix)
+    implementation(libs.haze)
+    implementation(libs.capsule)
 }

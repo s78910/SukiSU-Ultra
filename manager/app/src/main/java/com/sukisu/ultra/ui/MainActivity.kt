@@ -1,307 +1,169 @@
 package com.sukisu.ultra.ui
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavBackStackEntry
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
-import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
-import com.ramcosta.composedestinations.spec.NavHostGraphSpec
-import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
-import zako.zako.zako.zakoui.screen.moreSettings.util.LocaleHelper
-import com.sukisu.ultra.Natives
-import com.sukisu.ultra.ui.screen.BottomBarDestination
-import com.sukisu.ultra.ui.theme.KernelSUTheme
-import com.sukisu.ultra.ui.util.LocalSnackbarHost
-import com.sukisu.ultra.ui.util.install
-import com.sukisu.ultra.ui.viewmodel.HomeViewModel
-import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
-import com.sukisu.ultra.ui.webui.initPlatform
-import com.sukisu.ultra.ui.component.*
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
-import com.sukisu.ultra.ui.activity.component.BottomBar
-import com.sukisu.ultra.ui.activity.util.*
+import com.sukisu.ultra.Natives
+import com.sukisu.ultra.ui.component.BottomBar
+import com.sukisu.ultra.ui.screen.HomePager
+import com.sukisu.ultra.ui.screen.ModulePager
+import com.sukisu.ultra.ui.screen.SettingPager
+import com.sukisu.ultra.ui.screen.SuperUserPager
+import com.sukisu.ultra.ui.theme.KernelSUTheme
+import com.sukisu.ultra.ui.util.install
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class MainActivity : ComponentActivity() {
-    private lateinit var superUserViewModel: SuperUserViewModel
-    private lateinit var homeViewModel: HomeViewModel
-    internal val settingsStateFlow = MutableStateFlow(SettingsState())
-
-    data class SettingsState(
-        val isHideOtherInfo: Boolean = false,
-        val showKpmInfo: Boolean = false
-    )
-
-    private var showConfirmationDialog = mutableStateOf(false)
-    private var pendingZipFiles = mutableStateOf<List<ZipFileInfo>>(emptyList())
-
-    private lateinit var themeChangeObserver: ThemeChangeContentObserver
-    private var isInitialized = false
-
-    override fun attachBaseContext(newBase: Context?) {
-        super.attachBaseContext(newBase?.let { LocaleHelper.applyLanguage(it) })
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        try {
-            // 应用自定义 DPI
-            DisplayUtils.applyCustomDpi(this)
 
-            // Enable edge to edge
-            enableEdgeToEdge()
+        // Enable edge to edge
+        enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                window.isNavigationBarContrastEnforced = false
-            }
+        super.onCreate(savedInstanceState)
 
-            super.onCreate(savedInstanceState)
+        val isManager = Natives.isManager
+        if (isManager && !Natives.requireNewKernel()) install()
 
-            val isManager = Natives.isManager
-            if (isManager && !Natives.requireNewKernel()) {
-                install()
-            }
+        setContent {
+            KernelSUTheme {
+                val navController = rememberNavController()
 
-            // 使用标记控制初始化流程
-            if (!isInitialized) {
-                initializeViewModels()
-                initializeData()
-                isInitialized = true
-            }
+                Scaffold {
+                    DestinationsNavHost(
+                        modifier = Modifier,
+                        navGraph = NavGraphs.root,
+                        navController = navController,
+                        defaultTransitions = object : NavHostAnimatedDestinationStyle() {
+                            override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition =
+                                {
+                                    slideInHorizontally(
+                                        initialOffsetX = { it },
+                                        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                                    )
+                                }
 
-            // Check if launched with a ZIP file
-            val zipUri: ArrayList<Uri>? = when (intent?.action) {
-                Intent.ACTION_SEND -> {
-                    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableExtra(Intent.EXTRA_STREAM)
-                    }
-                    uri?.let { arrayListOf(it) }
-                }
+                            override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition =
+                                {
+                                    slideOutHorizontally(
+                                        targetOffsetX = { -it / 5 },
+                                        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                                    )
+                                }
 
-                Intent.ACTION_SEND_MULTIPLE -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
-                    }
-                }
+                            override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition =
+                                {
+                                    slideInHorizontally(
+                                        initialOffsetX = { -it / 5 },
+                                        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                                    )
+                                }
 
-                else -> when {
-                    intent?.data != null -> arrayListOf(intent.data!!)
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                        intent.getParcelableArrayListExtra("uris", Uri::class.java)
-                    }
-                    else -> {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableArrayListExtra("uris")
-                    }
-                }
-            }
-
-            setContent {
-                KernelSUTheme {
-                    val navController = rememberNavController()
-                    val snackBarHostState = remember { SnackbarHostState() }
-                    val currentDestination = navController.currentBackStackEntryAsState().value?.destination
-
-                    val bottomBarRoutes = remember {
-                        BottomBarDestination.entries.map { it.direction.route }.toSet()
-                    }
-
-                    val navigator = navController.rememberDestinationsNavigator()
-
-                    InstallConfirmationDialog(
-                        show = showConfirmationDialog.value,
-                        zipFiles = pendingZipFiles.value,
-                        onConfirm = { confirmedFiles ->
-                            showConfirmationDialog.value = false
-                            UltraActivityUtils.navigateToFlashScreen(this, confirmedFiles, navigator)
-                        },
-                        onDismiss = {
-                            showConfirmationDialog.value = false
-                            pendingZipFiles.value = emptyList()
-                            finish()
+                            override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition =
+                                {
+                                    slideOutHorizontally(
+                                        targetOffsetX = { it },
+                                        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+                                    )
+                                }
                         }
                     )
-
-                    LaunchedEffect(zipUri) {
-                        if (!zipUri.isNullOrEmpty()) {
-                            // 检测 ZIP 文件类型并显示确认对话框
-                            lifecycleScope.launch {
-                                UltraActivityUtils.detectZipTypeAndShowConfirmation(this@MainActivity, zipUri) { infos ->
-                                    if (infos.isNotEmpty()) {
-                                        pendingZipFiles.value = infos
-                                        showConfirmationDialog.value = true
-                                    } else {
-                                        finish()
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    val showBottomBar = when (currentDestination?.route) {
-                        ExecuteModuleActionScreenDestination.route -> false
-                        else -> true
-                    }
-
-                    LaunchedEffect(Unit) {
-                        initPlatform()
-                    }
-
-                    CompositionLocalProvider(
-                        LocalSnackbarHost provides snackBarHostState
-                    ) {
-                        Scaffold(
-                            bottomBar = {
-                                AnimatedBottomBar.AnimatedBottomBarWrapper(
-                                    showBottomBar = showBottomBar,
-                                    content = { BottomBar(navController) }
-                                )
-                            },
-                            contentWindowInsets = WindowInsets(0, 0, 0, 0)
-                        ) { innerPadding ->
-                            DestinationsNavHost(
-                                modifier = Modifier.padding(innerPadding),
-                                navGraph = NavGraphs.root as NavHostGraphSpec,
-                                navController = navController,
-                                defaultTransitions = object : NavHostAnimatedDestinationStyle() {
-                                    override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-                                        // If the target is a detail page (not a bottom navigation page), slide in from the right
-                                        if (targetState.destination.route !in bottomBarRoutes) {
-                                            slideInHorizontally(initialOffsetX = { it })
-                                        } else {
-                                            // Otherwise (switching between bottom navigation pages), use fade in
-                                            fadeIn(animationSpec = tween(340))
-                                        }
-                                    }
-
-                                    override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-                                        // If navigating from the home page (bottom navigation page) to a detail page, slide out to the left
-                                        if (initialState.destination.route in bottomBarRoutes && targetState.destination.route !in bottomBarRoutes) {
-                                            slideOutHorizontally(targetOffsetX = { -it / 4 }) + fadeOut()
-                                        } else {
-                                            // Otherwise (switching between bottom navigation pages), use fade out
-                                            fadeOut(animationSpec = tween(340))
-                                        }
-                                    }
-
-                                    override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-                                        // If returning to the home page (bottom navigation page), slide in from the left
-                                        if (targetState.destination.route in bottomBarRoutes) {
-                                            slideInHorizontally(initialOffsetX = { -it / 4 }) + fadeIn()
-                                        } else {
-                                            // Otherwise (e.g., returning between multiple detail pages), use default fade in
-                                            fadeIn(animationSpec = tween(340))
-                                        }
-                                    }
-
-                                    override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-                                        // If returning from a detail page (not a bottom navigation page), scale down and fade out
-                                        if (initialState.destination.route !in bottomBarRoutes) {
-                                            scaleOut(targetScale = 0.9f) + fadeOut()
-                                        } else {
-                                            // Otherwise, use default fade out
-                                            fadeOut(animationSpec = tween(340))
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        }
+    }
+}
+
+
+val LocalPagerState = compositionLocalOf<PagerState> { error("No pager state") }
+val LocalHandlePageChange = compositionLocalOf<(Int) -> Unit> { error("No handle page change") }
+
+@Composable
+@Destination<RootGraph>(start = true)
+fun MainScreen(navController: DestinationsNavigator) {
+    val activity = LocalActivity.current
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    val hazeState = remember { HazeState() }
+    val hazeStyle = HazeStyle(
+        backgroundColor = MiuixTheme.colorScheme.background,
+        tint = HazeTint(MiuixTheme.colorScheme.background.copy(0.8f))
+    )
+    val handlePageChange: (Int) -> Unit = remember(pagerState, coroutineScope) {
+        { page ->
+            coroutineScope.launch { pagerState.animateScrollToPage(page) }
         }
     }
 
-    private fun initializeViewModels() {
-        superUserViewModel = SuperUserViewModel()
-        homeViewModel = HomeViewModel()
-
-        // 设置主题变化监听器
-        themeChangeObserver = ThemeUtils.registerThemeChangeObserver(this)
-    }
-
-    private fun initializeData() {
-        lifecycleScope.launch {
-            try {
-                superUserViewModel.fetchAppList()
-            } catch (e: Exception) {
-                e.printStackTrace()
+    BackHandler {
+        if (pagerState.currentPage != 0) {
+            coroutineScope.launch {
+                pagerState.animateScrollToPage(0)
             }
+        } else {
+            activity?.finishAndRemoveTask()
         }
-
-        // 数据刷新协程
-        DataRefreshUtils.startDataRefreshCoroutine(lifecycleScope)
-        DataRefreshUtils.startSettingsMonitorCoroutine(lifecycleScope, this, settingsStateFlow)
-
-        // 初始化主题相关设置
-        ThemeUtils.initializeThemeSettings(this, settingsStateFlow)
     }
 
-    override fun onResume() {
-        try {
-            super.onResume()
-            ThemeUtils.onActivityResume()
-
-            // 仅在需要时刷新数据
-            if (isInitialized) {
-                refreshData()
+    CompositionLocalProvider(
+        LocalPagerState provides pagerState,
+        LocalHandlePageChange provides handlePageChange
+    ) {
+        Scaffold(
+            bottomBar = {
+                BottomBar(hazeState, hazeStyle)
+            },
+        ) { innerPadding ->
+            HorizontalPager(
+                modifier = Modifier.hazeSource(state = hazeState),
+                state = pagerState,
+                beyondViewportPageCount = 2,
+                userScrollEnabled = false
+            ) {
+                when (it) {
+                    0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
+                    1 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
+                    2 -> ModulePager(navController, innerPadding.calculateBottomPadding())
+                    3 -> SettingPager(navController, innerPadding.calculateBottomPadding())
+                }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun refreshData() {
-        lifecycleScope.launch {
-            try {
-                superUserViewModel.fetchAppList()
-                DataRefreshUtils.refreshData(lifecycleScope)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    override fun onPause() {
-        try {
-            super.onPause()
-            ThemeUtils.onActivityPause(this)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    override fun onDestroy() {
-        try {
-            ThemeUtils.unregisterThemeChangeObserver(this, themeChangeObserver)
-            super.onDestroy()
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 }

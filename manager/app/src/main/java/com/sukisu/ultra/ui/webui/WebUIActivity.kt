@@ -14,27 +14,26 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewAssetLoader
-import com.dergoogler.mmrl.platform.model.ModId
-import com.dergoogler.mmrl.webui.interfaces.WXOptions
+import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.launch
 import com.sukisu.ultra.ui.util.createRootShell
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import java.io.File
 
 @SuppressLint("SetJavaScriptEnabled")
 class WebUIActivity : ComponentActivity() {
-    private val rootShell by lazy { createRootShell(true) }
+    private lateinit var webviewInterface: WebViewInterface
 
+    private var rootShell: Shell? = null
     private lateinit var insets: Insets
-    private var webView = null as WebView?
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -51,24 +50,26 @@ class WebUIActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator()
+                InfiniteProgressIndicator()
             }
         }
 
+        val superUserViewModel = ViewModelProvider(this)[SuperUserViewModel::class.java]
+
         lifecycleScope.launch {
-            SuperUserViewModel.isAppListLoaded.first { it }
+            superUserViewModel.fetchAppList()
             setupWebView()
         }
     }
+
     private fun setupWebView() {
-        val moduleId = intent.getStringExtra("id") ?: finishAndRemoveTask().let { return }
-        val name = intent.getStringExtra("name") ?: finishAndRemoveTask().let { return }
+        val moduleId = intent.getStringExtra("id")!!
+        val name = intent.getStringExtra("name")!!
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             @Suppress("DEPRECATION")
-            setTaskDescription(ActivityManager.TaskDescription("SukiSU-Ultra - $name"))
+            setTaskDescription(ActivityManager.TaskDescription("KernelSU - $name"))
         } else {
-            val taskDescription =
-                ActivityManager.TaskDescription.Builder().setLabel("SukiSU-Ultra - $name").build()
+            val taskDescription = ActivityManager.TaskDescription.Builder().setLabel("KernelSU - $name").build()
             setTaskDescription(taskDescription)
         }
 
@@ -77,12 +78,14 @@ class WebUIActivity : ComponentActivity() {
 
         val moduleDir = "/data/adb/modules/${moduleId}"
         val webRoot = File("${moduleDir}/webroot")
+        val rootShell = createRootShell(true).also { this.rootShell = it }
         insets = Insets(0, 0, 0, 0)
+
         val webViewAssetLoader = WebViewAssetLoader.Builder()
             .setDomain("mui.kernelsu.org")
             .addPathHandler(
                 "/",
-                SuFilePathHandler(webRoot, rootShell) { insets }
+                SuFilePathHandler(this, webRoot, rootShell) { insets }
             )
             .build()
 
@@ -92,6 +95,7 @@ class WebUIActivity : ComponentActivity() {
                 request: WebResourceRequest
             ): WebResourceResponse? {
                 val url = request.url
+
                 // Handle ksu://icon/[packageName] to serve app icon via WebView
                 if (url.scheme.equals("ksu", ignoreCase = true) && url.host.equals("icon", ignoreCase = true)) {
                     val packageName = url.path?.substring(1)
@@ -105,13 +109,12 @@ class WebUIActivity : ComponentActivity() {
                         }
                     }
                 }
+
                 return webViewAssetLoader.shouldInterceptRequest(url)
             }
         }
 
         val webView = WebView(this).apply {
-            webView = this
-
             setBackgroundColor(Color.TRANSPARENT)
             val density = resources.displayMetrics.density
 
@@ -128,7 +131,8 @@ class WebUIActivity : ComponentActivity() {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.allowFileAccess = false
-            addJavascriptInterface(WebViewInterface(WXOptions(this@WebUIActivity, this, ModId(moduleId))), "ksu")
+            webviewInterface = WebViewInterface(this@WebUIActivity, this, moduleDir)
+            addJavascriptInterface(webviewInterface, "ksu")
             setWebViewClient(webViewClient)
             loadUrl("https://mui.kernelsu.org/index.html")
         }
@@ -137,13 +141,7 @@ class WebUIActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        rootShell.runCatching { close() }
-        webView?.apply {
-            stopLoading()
-            removeAllViews()
-            destroy()
-            webView = null
-        }
         super.onDestroy()
+        runCatching { rootShell?.close() }
     }
 }

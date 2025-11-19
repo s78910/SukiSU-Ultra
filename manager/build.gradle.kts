@@ -34,19 +34,28 @@ val androidCompileNdkVersion by extra(libs.versions.ndk.get())
 val androidCmakeVersion by extra("3.22.0+")
 val androidSourceCompatibility = JavaVersion.VERSION_21
 val androidTargetCompatibility = JavaVersion.VERSION_21
-val managerVersionCode by extra(4 * 10000 + getGitCommitCount() - 2815)
-val managerVersionName by extra(getGitDescribe())
+val managerVersionCode by extra(getVersionCode())
+val managerVersionName by extra(getVersionName())
 
 fun getGitCommitCount(): Int {
-    return providers.exec {
-        commandLine("git", "rev-list", "--count", "HEAD")
-    }.standardOutput.asText.get().trim().toInt()
+    val process = Runtime.getRuntime().exec(arrayOf("git", "rev-list", "--count", "HEAD"))
+    return process.inputStream.bufferedReader().use { it.readText().trim().toInt() }
 }
 
 fun getGitDescribe(): String {
-    return providers.exec {
-        commandLine("git", "describe", "--tags", "--always", "--abbrev=0")
-    }.standardOutput.asText.get().trim()
+    val process = Runtime.getRuntime().exec(arrayOf("git", "describe", "--tags", "--always", "--abbrev=0"))
+    return process.inputStream.bufferedReader().use { it.readText().trim() }
+}
+
+fun getVersionCode(): Int {
+    val commitCount = getGitCommitCount()
+    val major = 4
+    val end = 2815
+    return major * 10000 + commitCount - end
+}
+
+fun getVersionName(): String {
+    return getGitDescribe()
 }
 
 subprojects {
