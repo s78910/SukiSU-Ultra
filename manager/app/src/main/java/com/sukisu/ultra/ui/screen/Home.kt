@@ -2,6 +2,7 @@ package com.sukisu.ultra.ui.screen
 
 import android.content.Context
 import android.os.Build
+import android.os.Process.myUid
 import android.system.Os
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
@@ -71,10 +72,7 @@ import com.sukisu.ultra.getKernelVersion
 import com.sukisu.ultra.ui.component.DropdownItem
 import com.sukisu.ultra.ui.component.RebootListPopup
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
-import com.sukisu.ultra.ui.util.checkNewVersion
-import com.sukisu.ultra.ui.util.getModuleCount
-import com.sukisu.ultra.ui.util.getSELinuxStatus
-import com.sukisu.ultra.ui.util.getSuperuserCount
+import com.sukisu.ultra.ui.util.*
 import com.sukisu.ultra.ui.util.module.LatestVersionInfo
 import com.sukisu.ultra.ui.util.reboot
 import com.sukisu.ultra.ui.util.rootAvailable
@@ -323,7 +321,7 @@ private fun StatusCard(
                 val workingMode = when (lkmMode) {
                     null -> ""
                     true -> " <LKM>"
-                    else -> " <GKI>"
+                    else -> " <Built-in>"
                 }
 
                 val workingText = "${stringResource(id = R.string.home_working)}$workingMode$safeMode"
@@ -590,6 +588,8 @@ fun DonateCard() {
 
 @Composable
 private fun InfoCard() {
+    val manualHookText = stringResource(R.string.manual_hook)
+    val inlineHookText = stringResource(R.string.inline_hook)
     @Composable
     fun InfoText(
         title: String,
@@ -609,10 +609,29 @@ private fun InfoCard() {
             modifier = Modifier.padding(top = 2.dp, bottom = bottomPadding)
         )
     }
+
+    val context = LocalContext.current
+    val uname = Os.uname()
+    val managerVersion = getManagerVersion(context)
+    val susfsPair by produceState(initialValue = "" to "") {
+        value = withContext(Dispatchers.IO) {
+            val rawFeature = getSuSFSFeatures()
+            val status = if (rawFeature.isNotEmpty() && !rawFeature.startsWith("[-]")) "Supported" else rawFeature
+            if (status == "Supported") {
+                val version = getSuSFSVersion()
+                val hook = when (Natives.getHookType()) {
+                    "Manual" -> "($manualHookText)"
+                    "Inline" -> "($inlineHookText)"
+                    else -> "(${Natives.getHookType()})"
+                }
+                status to "$version $hook".trim()
+            } else {
+                "" to ""
+            }
+        }
+    }
+
     Card {
-        val context = LocalContext.current
-        val uname = Os.uname()
-        val managerVersion = getManagerVersion(context)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -626,15 +645,46 @@ private fun InfoCard() {
                 title = stringResource(R.string.home_manager_version),
                 content = "${managerVersion.first} (${managerVersion.second})"
             )
+            val managersList = remember { Natives.getManagersList() }
+            val dynamicValid = remember { Natives.getDynamicManager()?.isValid() == true }
+            if (dynamicValid && managersList != null) {
+                val signatureMap = managersList.managers.groupBy { it.signatureIndex }
+                val showDetailed = signatureMap.size > 1 || signatureMap.keys.firstOrNull() != 0
+                if (showDetailed) {
+                    val managersText = buildString {
+                        signatureMap.toSortedMap().forEach { (idx, list) ->
+                            append(list.joinToString(", ") { "UID: ${it.uid}" })
+                            append(
+                                when (idx) {
+                                    0    -> " (${stringResource(R.string.default_signature)})"
+                                    100  -> " (${stringResource(R.string.dynamic_managerature)})"
+                                    else -> " (${stringResource(R.string.signature_index, idx)})"
+                                }
+                            )
+                            append(" | ")
+                        }
+                    }.trimEnd(' ', '|')
+                    InfoText(
+                        title = stringResource(R.string.multi_manager_list),
+                        content = managersText
+                    )
+                }
+            }
             InfoText(
                 title = stringResource(R.string.home_fingerprint),
                 content = Build.FINGERPRINT
             )
             InfoText(
                 title = stringResource(R.string.home_selinux_status),
-                content = getSELinuxStatus(),
-                bottomPadding = 0.dp
+                content = getSELinuxStatus()
             )
+            if (susfsPair.first == "Supported" && susfsPair.second.isNotEmpty()) {
+                InfoText(
+                    title = stringResource(R.string.home_susfs_version),
+                    content = susfsPair.second,
+                    bottomPadding = 0.dp
+                )
+            }
         }
     }
 }

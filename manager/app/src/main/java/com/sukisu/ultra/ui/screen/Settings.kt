@@ -47,6 +47,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AppProfileTemplateScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.LogViewerDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -112,6 +113,7 @@ fun SettingPager(
         val uninstallDialog = UninstallDialog(showUninstallDialog, navigator)
         val showSendLogDialog = rememberSaveable { mutableStateOf(false) }
         val sendLogDialog = SendLogDialog(showSendLogDialog, loadingDialog)
+        var isSuLogEnabled by remember { mutableStateOf(Natives.isSuLogEnabled()) }
 
         LazyColumn(
             modifier = Modifier
@@ -369,6 +371,59 @@ fun SettingPager(
                                 }
                             }
                         )
+
+                        var SuLogMode by rememberSaveable {
+                            mutableIntStateOf(
+                                run {
+                                    val currentEnabled = Natives.isSuLogEnabled()
+                                    val savedPersist = prefs.getInt("sulog_mode", 0)
+                                    if (savedPersist == 2) 2 else if (!currentEnabled) 1 else 0
+                                }
+                            )
+                        }
+                        SuperDropdown(
+                            title = stringResource(id = R.string.settings_disable_sulog),
+                            summary = stringResource(id = R.string.settings_disable_sulog_summary),
+                            items = modeItems,
+                            leftAction = {
+                                Icon(
+                                    Icons.Rounded.RemoveCircle,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = stringResource(id = R.string.settings_disable_sulog),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            selectedIndex = SuLogMode,
+                            onSelectedIndexChange = { index ->
+                                when (index) {
+                                    // Default: enable and save to persist
+                                    0 -> if (Natives.setSuLogEnabled(true)) {
+                                        execKsud("feature save", true)
+                                        prefs.edit { putInt("sulog_mode", 0) }
+                                        SuLogMode = 0
+                                        isSuLogEnabled = true
+                                    }
+
+                                    // Temporarily disable: save enabled state first, then disable
+                                    1 -> if (Natives.setSuLogEnabled(true)) {
+                                        execKsud("feature save", true)
+                                        if (Natives.setSuLogEnabled(false)) {
+                                            prefs.edit { putInt("sulog_mode", 0) }
+                                            SuLogMode = 1
+                                            isSuLogEnabled = false
+                                        }
+                                    }
+
+                                    // Permanently disable: disable and save
+                                    2 -> if (Natives.setSuLogEnabled(false)) {
+                                        execKsud("feature save", true)
+                                        prefs.edit { putInt("sulog_mode", 2) }
+                                        SuLogMode = 2
+                                        isSuLogEnabled = false
+                                    }
+                                }
+                            }
+                        )
                     }
 
                     Card(
@@ -452,6 +507,24 @@ fun SettingPager(
                         .padding(vertical = 12.dp)
                         .fillMaxWidth(),
                 ) {
+                    if (isSuLogEnabled) {
+                        val sulog = stringResource(id = R.string.log_viewer_view_logs)
+                        SuperArrow(
+                            title = sulog,
+                            leftAction = {
+                                Icon(
+                                    Icons.Rounded.BugReport,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = sulog,
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = {
+                                navigator.navigate(LogViewerDestination) {
+                                }
+                            }
+                        )
+                    }
                     SuperArrow(
                         title = stringResource(id = R.string.send_log),
                         leftAction = {
