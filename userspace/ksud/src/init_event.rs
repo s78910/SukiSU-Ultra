@@ -43,7 +43,7 @@ pub fn on_post_data_fs() -> Result<()> {
     assets::ensure_binaries(true).with_context(|| "Failed to extract bin assets")?;
 
     // Start UID scanner daemon with highest priority
-    crate::uid_scanner::uid_scanner::start_uid_scanner_daemon()?;
+    crate::uid_scanner::start_uid_scanner_daemon()?;
 
     if is_safe_mode() {
         warn!("safe mode, skip load feature config");
