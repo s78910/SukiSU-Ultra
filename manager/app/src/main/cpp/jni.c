@@ -419,7 +419,7 @@ NativeBridgeNP(getManagersList, jobject) {
 	LogDebug("getManagersList: count=%d", managerListInfo.count);
 	return obj;
 }
-
+#if 0
 NativeBridge(verifyModuleSignature, jboolean, jstring modulePath) {
 #if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
 	if (!modulePath) {
@@ -438,6 +438,7 @@ NativeBridge(verifyModuleSignature, jboolean, jstring modulePath) {
 	return false;
 #endif
 }
+#endif
 
 NativeBridgeNP(isUidScannerEnabled, jboolean) {
 	return is_uid_scanner_enabled();

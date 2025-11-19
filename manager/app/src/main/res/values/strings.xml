@@ -208,4 +208,46 @@
     <string name="invalid_sign_config">Invalid Manager configuration</string>
     <string name="dynamic_manager_disabled_success">Dynamic Manager disabled</string>
     <string name="dynamic_manager_clear_failed">Failed to clear dynamic Manager</string>
+    <!-- UID Scanner Settings -->
+    <string name="uid_auto_scan_title">User-mode scanning application list</string>
+    <string name="uid_auto_scan_summary">Enabling this option will use user-mode scanning for the application list, improving stability. (If you encounter issues such as freezing during kernel scanning of the application list, you may try enabling this option.)</string>
+    <string name="uid_multi_user_scan_title">Multi-User Application Scanning</string>
+    <string name="uid_multi_user_scan_summary">When enabled, scans applications for all users, including work profiles</string>
+    <string name="uid_scanner_setting_failed">Setting failed, please check permissions</string>
+    <string name="clean_runtime_environment">Clean Runtime Environment</string>
+    <string name="clean_runtime_environment_summary">Clean up runtime files and stop the scanner service</string>
+    <string name="clean_runtime_environment_confirm">Are you sure you want to clean the runtime environment? This will stop the scanner service and remove related files.</string>
+    <string name="clean_runtime_environment_success">Runtime environment cleaned successfully</string>
+    <string name="clean_runtime_environment_failed">Failed to clean runtime environment</string>
+    <!-- umount Manager -->
+    <string name="umount_path_manager">Umount Path Management</string>
+    <string name="umount_path_manager_summary">Manage kernel unmount paths</string>
+    <string name="umount_path_restart_notice">A reboot is required for changes to take effect. The system will apply the new configuration on the next boot.</string>
+    <string name="add_umount_path">Add Umount Path</string>
+    <string name="mount_path">Mount Path</string>
+    <string name="umount_flags">Unmount Flags</string>
+    <string name="umount_flags_hint">0=Normal unmount, 8=MNT_DETACH, -1=Auto</string>
+    <string name="flags">Flags</string>
+    <string name="default_entry">Default Entry</string>
+    <string name="confirm_delete">Confirm Delete</string>
+    <string name="confirm_delete_umount_path">Are you sure you want to delete the path %s?</string>
+    <string name="umount_path_added">Path added, will take effect after reboot</string>
+    <string name="umount_path_removed">Path removed, will take effect after reboot</string>
+    <string name="operation_failed">Operation failed</string>
+    <string name="confirm_action">Confirm Action</string>
+    <string name="confirm_clear_custom_paths">Are you sure you want to clear all custom paths? (Default paths will be preserved)</string>
+    <string name="custom_paths_cleared">Custom paths cleared</string>
+    <string name="clear_custom_paths">Clear Custom Paths</string>
+    <string name="apply_config">Apply Configuration</string>
+    <string name="config_applied">Configuration applied to kernel</string>
+    <string name="mnt_detach">MNT_DETACH</string>
+    <!-- Personalization Settings -->
+    <string name="personalization">Personalization</string>
+    <string name="personalization_summary">Customize the app\'s appearance and theme</string>
+    <string name="theme_settings">Theme Settings</string>
+    <string name="theme_mode">Theme Mode</string>
+    <string name="theme_mode_summary">Select the app\'s display theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_follow_system">Follow System</string>
 </resources>

@@ -14,6 +14,7 @@
 #include "prelude.h"
 #include "ksu.h"
 
+#if 0
 #if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
 
 // Zako extern declarations
@@ -23,6 +24,7 @@ extern uint32_t zako_file_verify_esig(int fd, uint32_t flags);
 extern const char* zako_file_verrcidx2str(uint8_t index);
 
 #endif // __aarch64__ || _M_ARM64 || __arm__ || _M_ARM
+#endif
 
 static int fd = -1;
 
@@ -348,6 +350,7 @@ bool clear_uid_scanner_environment(void)
 	return ksuctl(KSU_IOCTL_ENABLE_UID_SCANNER, &cmd);
 }
 
+#if 0
 bool verify_module_signature(const char* input) {
 #if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
 	if (input == NULL) {
@@ -404,3 +407,4 @@ bool verify_module_signature(const char* input) {
 	return false;
 #endif
 }
+#endif

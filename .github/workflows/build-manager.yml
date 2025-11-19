@@ -98,7 +98,7 @@ jobs:
           ./randomizer
 
       - name: Write key
-        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
+        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/miuix' )) || github.ref_type == 'tag' }}
         run: |
           if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
             {
@@ -169,14 +169,14 @@ jobs:
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
-        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
+        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/miuix' )) || github.ref_type == 'tag' }}
         with:
           name: ${{ steps.determine.outputs.title }}
           path: manager/app/build/outputs/apk/release/*.apk
 
       - name: Upload mappings
         uses: actions/upload-artifact@v4
-        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
+        if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/miuix' )) || github.ref_type == 'tag' }}
         with:
           name: "${{ steps.determine.outputs.title }}-mappings"
           path: "manager/app/build/outputs/mapping/release/"

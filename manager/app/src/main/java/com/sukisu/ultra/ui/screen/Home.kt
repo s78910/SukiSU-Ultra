@@ -371,6 +371,7 @@ private fun StatusCard(
                                     text = workingText,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.SemiBold,
+                                    color = if (isSystemInDarkTheme()) Color(0xFFB8E6C5) else Color(0xFF1A5A2E)
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(
@@ -378,6 +379,7 @@ private fun StatusCard(
                                     text = stringResource(R.string.home_working_version, ksuVersion),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
+                                    color = if (isSystemInDarkTheme()) Color(0xFF9DD4AC) else Color(0xFF2D7A4A)
                                 )
                             }
                         }
