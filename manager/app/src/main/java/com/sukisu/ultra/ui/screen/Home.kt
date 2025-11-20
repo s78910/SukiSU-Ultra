@@ -112,6 +112,7 @@ fun HomePager(
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val checkUpdate = prefs.getBoolean("check_update", true)
+    val themeMode = prefs.getInt("color_mode", 0)
 
     Scaffold(
         topBar = {
@@ -158,14 +159,15 @@ fun HomePager(
                 ) {
                     if (isManager && Natives.requireNewKernel()) {
                         WarningCard(
-                            stringResource(id = R.string.require_kernel_version).format(
-                                ksuVersion, Natives.MINIMAL_SUPPORTED_KERNEL
-                            )
+                            stringResource(id = R.string.require_kernel_version)
+                                .format(ksuVersion, Natives.MINIMAL_SUPPORTED_KERNEL),
+                            themeMode
                         )
                     }
                     if (ksuVersion != null && !rootAvailable()) {
                         WarningCard(
-                            stringResource(id = R.string.grant_root_failed)
+                            stringResource(id = R.string.grant_root_failed),
+                            themeMode
                         )
                     }
                     StatusCard(
@@ -184,11 +186,12 @@ fun HomePager(
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(getModulePageIndex(isKpmAvailable))
                             }
-                        }
+                        },
+                        themeMode = themeMode
                     )
 
                     if (checkUpdate) {
-                        UpdateCard()
+                        UpdateCard(themeMode)
                     }
                     InfoCard()
                     DonateCard()
@@ -201,7 +204,9 @@ fun HomePager(
 }
 
 @Composable
-fun UpdateCard() {
+fun UpdateCard(
+    themeMode: Int,
+) {
     val context = LocalContext.current
     val latestVersionInfo = LatestVersionInfo()
     val newVersion by produceState(initialValue = latestVersionInfo) {
@@ -227,7 +232,8 @@ fun UpdateCard() {
         val updateDialog = rememberConfirmDialog(onConfirm = { uriHandler.openUri(newVersionUrl) })
         WarningCard(
             message = stringResource(id = R.string.new_version_available).format(newVersionCode),
-            colorScheme.outline
+            themeMode = themeMode,
+            color = colorScheme.outline
         ) {
             if (changelog.isEmpty()) {
                 uriHandler.openUri(newVersionUrl)
@@ -306,6 +312,7 @@ private fun StatusCard(
     onClickInstall: () -> Unit = {},
     onClickSuperuser: () -> Unit = {},
     onclickModule: () -> Unit = {},
+    themeMode: Int,
 ) {
     Column(
         modifier = Modifier
@@ -339,7 +346,7 @@ private fun StatusCard(
                         colors = CardDefaults.defaultColors(
                             color = when {
                                 isDynamicColor -> colorScheme.secondaryContainer
-                                isSystemInDarkTheme() -> Color(0xFF1A3825)
+                                isSystemInDarkTheme() || themeMode == 2 -> Color(0xFF1A3825)
                                 else -> Color(0xFFDFFAE4)
                             }
                         ),
@@ -512,6 +519,7 @@ private fun StatusCard(
 @Composable
 fun WarningCard(
     message: String,
+    themeMode: Int,
     color: Color? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -522,7 +530,7 @@ fun WarningCard(
         colors = CardDefaults.defaultColors(
             color = color ?: when {
                 isDynamicColor -> colorScheme.errorContainer
-                isSystemInDarkTheme() -> Color(0XFF310808)
+                isSystemInDarkTheme() || themeMode == 2 -> Color(0XFF310808)
                 else -> Color(0xFFF8E2E2)
             }
         ),

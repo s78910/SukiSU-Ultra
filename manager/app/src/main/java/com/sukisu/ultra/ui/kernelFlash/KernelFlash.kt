@@ -9,6 +9,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -18,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +43,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
@@ -67,9 +68,6 @@ private object KernelFlashStateHolder {
     var isFlashing = false
 }
 
-/**
- * Kernel刷写界面
- */
 @Destination<RootGraph>
 @Composable
 fun KernelFlashScreen(
@@ -116,7 +114,6 @@ fun KernelFlashScreen(
         showFloatAction = true
         KernelFlashStateHolder.isFlashing = false
 
-        // 如果需要自动退出，延迟1.5秒后退出
         if (shouldAutoExit) {
             scope.launch {
                 delay(1500)
@@ -172,7 +169,6 @@ fun KernelFlashScreen(
 
     val onBack: () -> Unit = {
         if (!flashState.isFlashing || flashState.isCompleted || flashState.error.isNotEmpty()) {
-            // 清理全局状态
             if (flashState.isCompleted || flashState.error.isNotEmpty()) {
                 KernelFlashStateHolder.currentState = null
                 KernelFlashStateHolder.currentUri = null
@@ -279,7 +275,7 @@ private fun FlashProgressIndicator(
     kpmUndoPatch: Boolean = false
 ) {
     val progressColor = when {
-        flashState.error.isNotEmpty() -> colorScheme.primary
+        flashState.error.isNotEmpty() -> colorScheme.error
         flashState.isCompleted -> colorScheme.secondary
         else -> colorScheme.primary
     }
@@ -319,7 +315,7 @@ private fun FlashProgressIndicator(
                         Icon(
                             imageVector = Icons.Default.Error,
                             contentDescription = null,
-                            tint = colorScheme.primary
+                            tint = colorScheme.error
                         )
                     }
                     flashState.isCompleted -> {
@@ -353,12 +349,22 @@ private fun FlashProgressIndicator(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            LinearProgressIndicator(
-                progress = progress.value,
+            val progressFraction = progress.value.coerceIn(0f, 1f)
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-            )
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(colorScheme.surfaceVariant)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progressFraction)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(progressColor)
+                )
+            }
 
             if (flashState.error.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -369,7 +375,7 @@ private fun FlashProgressIndicator(
                     Icon(
                         imageVector = Icons.Default.Error,
                         contentDescription = null,
-                        tint = colorScheme.primary,
+                        tint = colorScheme.error,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -378,11 +384,11 @@ private fun FlashProgressIndicator(
 
                 Text(
                     text = flashState.error,
-                    color = colorScheme.primary,
+                    color = colorScheme.onErrorContainer,
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            colorScheme.errorContainer.copy(alpha = 0.8f)
                         )
                         .padding(8.dp)
                 )
