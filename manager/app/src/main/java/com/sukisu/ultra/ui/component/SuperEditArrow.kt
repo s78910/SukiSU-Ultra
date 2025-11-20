@@ -30,13 +30,12 @@ import top.yukonga.miuix.kmp.extra.SuperDialog
 
 @Composable
 fun SuperEditArrow(
+    modifier: Modifier = Modifier,
     title: String,
     titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
     defaultValue: Int = -1,
     summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
     leftAction: @Composable (() -> Unit)? = null,
-    rightActionColor: RightActionColors = SuperArrowDefaults.rightActionColors(),
-    modifier: Modifier = Modifier,
     insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
     enabled: Boolean = true,
     onValueChange: ((Int) -> Unit)? = null
@@ -50,7 +49,6 @@ fun SuperEditArrow(
         summary = dialogTextFieldValue.intValue.toString(),
         summaryColor = summaryColor,
         leftAction = leftAction,
-        rightActionColor = rightActionColor,
         modifier = modifier,
         insideMargin = insideMargin,
         onClick = {

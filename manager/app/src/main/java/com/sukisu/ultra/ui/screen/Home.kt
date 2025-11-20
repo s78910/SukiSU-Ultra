@@ -89,6 +89,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Save
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -104,8 +105,8 @@ fun HomePager(
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }
     val hazeStyle = HazeStyle(
-        backgroundColor = colorScheme.background,
-        tint = HazeTint(colorScheme.background.copy(0.8f))
+        backgroundColor = colorScheme.surface,
+        tint = HazeTint(colorScheme.surface.copy(0.8f))
     )
 
     val context = LocalContext.current
@@ -334,7 +335,11 @@ private fun StatusCard(
                             .weight(1f)
                             .fillMaxHeight(),
                         colors = CardDefaults.defaultColors(
-                            color = if (isSystemInDarkTheme()) Color(0xFF1A3825) else Color(0xFFDFFAE4)
+                            color = when {
+                                isDynamicColor -> colorScheme.secondaryContainer
+                                isSystemInDarkTheme() -> Color(0xFF1A3825)
+                                else -> Color(0xFFDFFAE4)
+                            }
                         ),
                         onClick = {
                             if (kernelVersion.isGKI()) onClickInstall()
@@ -354,7 +359,11 @@ private fun StatusCard(
                                 Icon(
                                     modifier = Modifier.size(170.dp),
                                     imageVector = Icons.Rounded.CheckCircleOutline,
-                                    tint = Color(0xFF36D167),
+                                    tint = if (isDynamicColor) {
+                                        colorScheme.primary.copy(alpha = 0.8f)
+                                    } else {
+                                        Color(0xFF36D167)
+                                    },
                                     contentDescription = null
                                 )
                             }
@@ -367,16 +376,14 @@ private fun StatusCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     text = workingText,
                                     fontSize = 20.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (isSystemInDarkTheme()) Color(0xFFB8E6C5) else Color(0xFF1A5A2E)
+                                    fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     modifier = Modifier.fillMaxWidth(),
                                     text = stringResource(R.string.home_working_version, ksuVersion),
                                     fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (isSystemInDarkTheme()) Color(0xFF9DD4AC) else Color(0xFF2D7A4A)
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
@@ -503,15 +510,19 @@ private fun StatusCard(
 @Composable
 fun WarningCard(
     message: String,
-    color: Color = if (isSystemInDarkTheme()) Color(0XFF310808) else Color(0xFFF8E2E2),
-    onClick: (() -> Unit)? = null
+    color: Color? = null,
+    onClick: (() -> Unit)? = null,
 ) {
     Card(
         onClick = {
             onClick?.invoke()
         },
         colors = CardDefaults.defaultColors(
-            color = color
+            color = color ?: when {
+                isDynamicColor -> colorScheme.errorContainer
+                isSystemInDarkTheme() -> Color(0XFF310808)
+                else -> Color(0xFFF8E2E2)
+            }
         ),
         showIndication = onClick != null,
         pressFeedbackType = PressFeedbackType.Tilt
@@ -523,7 +534,7 @@ fun WarningCard(
         ) {
             Text(
                 text = message,
-                color = Color(0xFFF72727),
+                color = if (isDynamicColor) colorScheme.onErrorContainer else Color(0xFFF72727),
                 fontSize = 14.sp
             )
         }

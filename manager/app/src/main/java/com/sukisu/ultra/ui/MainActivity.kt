@@ -1,5 +1,7 @@
 package com.sukisu.ultra.ui
 
+import android.content.SharedPreferences
+import androidx.compose.ui.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,11 +21,14 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.sukisu.ultra.ui.util.getKpmVersion
@@ -69,7 +74,24 @@ class MainActivity : ComponentActivity() {
         if (isManager && !Natives.requireNewKernel()) install()
 
         setContent {
-            KernelSUTheme {
+            val context = LocalActivity.current ?: this
+            val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
+            var colorMode by remember { mutableIntStateOf(prefs.getInt("color_mode", 0)) }
+            var keyColorInt by remember { mutableIntStateOf(prefs.getInt("key_color", 0)) }
+            val keyColor = remember(keyColorInt) { if (keyColorInt == 0) null else Color(keyColorInt) }
+
+            DisposableEffect(prefs) {
+                val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    when (key) {
+                        "color_mode" -> colorMode = prefs.getInt("color_mode", 0)
+                        "key_color" -> keyColorInt = prefs.getInt("key_color", 0)
+                    }
+                }
+                prefs.registerOnSharedPreferenceChangeListener(listener)
+                onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+            }
+
+            KernelSUTheme(colorMode = colorMode, keyColor = keyColor) {
                 val navController = rememberNavController()
 
                 Scaffold {

@@ -158,6 +158,26 @@
     <string name="module_undo_uninstall_success">成功撤销卸载 %s</string>
     <string name="module_undo_uninstall_failed">撤销卸载 %s 失败</string>
     <string name="group_contains_apps">包含 %1$d 个应用</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_summary">选择应用的主题模式。</string>
+    <string name="settings_theme_mode_system">跟随系统</string>
+    <string name="settings_theme_mode_light">浅色</string>
+    <string name="settings_theme_mode_dark">深色</string>
+    <string name="settings_theme_mode_monet_system">Monet（跟随系统）</string>
+    <string name="settings_theme_mode_monet_light">Monet（浅色）</string>
+    <string name="settings_theme_mode_monet_dark">Monet（深色）</string>
+    <string name="settings_key_color">强调色</string>
+    <string name="settings_key_color_summary">在使用 Monet 时自定义种子色。</string>
+    <string name="settings_key_color_default">默认</string>
+    <string name="color_blue">蓝色</string>
+    <string name="color_red">红色</string>
+    <string name="color_green">绿色</string>
+    <string name="color_purple">紫色</string>
+    <string name="color_orange">橙色</string>
+    <string name="color_teal">青色</string>
+    <string name="color_pink">粉色</string>
+    <string name="color_brown">棕色</string>
+    <!-- Customize -->
     <string name="home_susfs_version">SuSFS 版本</string>
     <string name="manual_hook">Manual Hook</string>
     <string name="inline_hook">Inline Hook</string>
@@ -243,9 +263,6 @@
     <string name="theme_settings">主题设置</string>
     <string name="theme_mode">主题模式</string>
     <string name="theme_mode_summary">选择应用的显示主题</string>
-    <string name="theme_light">浅色</string>
-    <string name="theme_dark">深色</string>
-    <string name="theme_follow_system">跟随系统</string>
     <!-- Kernel Flash Progress Related -->
     <string name="horizon_flash_complete">刷入完成</string>
     <string name="horizon_preparing">准备中…</string>

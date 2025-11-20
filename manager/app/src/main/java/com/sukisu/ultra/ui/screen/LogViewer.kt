@@ -390,7 +390,7 @@ private fun LogControlPanel(
             SuperArrow(
                 title = stringResource(R.string.log_viewer_settings),
                 onClick = { isExpanded = !isExpanded },
-                rightText = if (isExpanded)
+                summary = if (isExpanded)
                     stringResource(R.string.log_viewer_collapse)
                 else
                     stringResource(R.string.log_viewer_expand)

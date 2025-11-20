@@ -15,12 +15,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.SuperDropdown
 import com.sukisu.ultra.ui.util.listAppProfileTemplates
 import com.sukisu.ultra.ui.util.setSepolicy
 import com.sukisu.ultra.ui.viewmodel.getTemplateInfoById
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.extra.SuperArrow
+import top.yukonga.miuix.kmp.extra.SuperDropdown
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**

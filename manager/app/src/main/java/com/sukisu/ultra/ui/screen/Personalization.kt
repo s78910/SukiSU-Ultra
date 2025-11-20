@@ -2,6 +2,7 @@ package com.sukisu.ultra.ui.screen
 
 import android.app.Activity
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.add
@@ -22,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,7 +38,6 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.SuperDropdown
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -46,6 +47,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import top.yukonga.miuix.kmp.extra.SuperDropdown
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -58,8 +60,8 @@ fun Personalization(
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }
     val hazeStyle = HazeStyle(
-        backgroundColor = colorScheme.background,
-        tint = HazeTint(colorScheme.background.copy(0.8f))
+        backgroundColor = colorScheme.surface,
+        tint = HazeTint(colorScheme.surface.copy(0.8f))
     )
 
     Scaffold(
@@ -91,7 +93,6 @@ fun Personalization(
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         val context = LocalContext.current
-        val activity = context as? Activity
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
         LazyColumn(
@@ -112,36 +113,84 @@ fun Personalization(
                         .fillMaxWidth(),
                 ) {
                     val themeItems = listOf(
-                        stringResource(id = R.string.theme_follow_system),
-                        stringResource(id = R.string.theme_light),
-                        stringResource(id = R.string.theme_dark),
+                        stringResource(id = R.string.settings_theme_mode_system),
+                        stringResource(id = R.string.settings_theme_mode_light),
+                        stringResource(id = R.string.settings_theme_mode_dark),
+                        stringResource(id = R.string.settings_theme_mode_monet_system),
+                        stringResource(id = R.string.settings_theme_mode_monet_light),
+                        stringResource(id = R.string.settings_theme_mode_monet_dark),
                     )
-
                     var themeMode by rememberSaveable {
-                        mutableIntStateOf(prefs.getInt("theme_mode", 0))
+                        mutableIntStateOf(prefs.getInt("color_mode", 0))
                     }
-
                     SuperDropdown(
-                        title = stringResource(id = R.string.theme_mode),
-                        summary = stringResource(id = R.string.theme_mode_summary),
+                        title = stringResource(id = R.string.settings_theme),
+                        summary = stringResource(id = R.string.settings_theme_summary),
                         items = themeItems,
                         leftAction = {
                             Icon(
                                 Icons.Rounded.Palette,
                                 modifier = Modifier.padding(end = 16.dp),
-                                contentDescription = stringResource(id = R.string.theme_mode),
+                                contentDescription = stringResource(id = R.string.settings_theme),
                                 tint = colorScheme.onBackground
                             )
                         },
                         selectedIndex = themeMode,
                         onSelectedIndexChange = { index ->
-                            prefs.edit {
-                                putInt("theme_mode", index)
-                            }
+                            prefs.edit { putInt("color_mode", index) }
                             themeMode = index
-                            activity?.recreate()
                         }
                     )
+
+                    AnimatedVisibility(
+                        visible = themeMode in 3..5
+                    ) {
+                        val colorItems = listOf(
+                            stringResource(id = R.string.settings_key_color_default),
+                            stringResource(id = R.string.color_blue),
+                            stringResource(id = R.string.color_red),
+                            stringResource(id = R.string.color_green),
+                            stringResource(id = R.string.color_purple),
+                            stringResource(id = R.string.color_orange),
+                            stringResource(id = R.string.color_teal),
+                            stringResource(id = R.string.color_pink),
+                            stringResource(id = R.string.color_brown),
+                        )
+                        val colorValues = listOf(
+                            0,
+                            Color(0xFF1A73E8).toArgb(),
+                            Color(0xFFEA4335).toArgb(),
+                            Color(0xFF34A853).toArgb(),
+                            Color(0xFF9333EA).toArgb(),
+                            Color(0xFFFB8C00).toArgb(),
+                            Color(0xFF009688).toArgb(),
+                            Color(0xFFE91E63).toArgb(),
+                            Color(0xFF795548).toArgb(),
+                        )
+                        var keyColorIndex by rememberSaveable {
+                            mutableIntStateOf(
+                                colorValues.indexOf(prefs.getInt("key_color", 0)).coerceAtLeast(0)
+                            )
+                        }
+                        SuperDropdown(
+                            title = stringResource(id = R.string.settings_key_color),
+                            summary = stringResource(id = R.string.settings_key_color_summary),
+                            items = colorItems,
+                            leftAction = {
+                                Icon(
+                                    Icons.Rounded.Palette,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = stringResource(id = R.string.settings_key_color),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            selectedIndex = keyColorIndex,
+                            onSelectedIndexChange = { index ->
+                                prefs.edit { putInt("key_color", colorValues[index]) }
+                                keyColorIndex = index
+                            }
+                        )
+                    }
                 }
             }
         }
