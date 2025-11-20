@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.DeveloperMode
 import androidx.compose.material.icons.rounded.EnhancedEncryption
 import androidx.compose.material.icons.rounded.Fence
 import androidx.compose.material.icons.rounded.FolderDelete
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RemoveCircle
 import androidx.compose.material.icons.rounded.RemoveModerator
 import androidx.compose.material.icons.rounded.RestartAlt
@@ -33,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -66,6 +68,7 @@ import com.sukisu.ultra.ui.component.SendLogDialog
 import com.sukisu.ultra.ui.component.UninstallDialog
 import com.sukisu.ultra.ui.component.rememberLoadingDialog
 import com.sukisu.ultra.ui.util.execKsud
+import com.sukisu.ultra.ui.util.getFeatureStatus
 import com.sukisu.ultra.ui.util.rememberKpmAvailable
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -317,9 +320,17 @@ fun SettingPager(
                                 }
                             )
                         }
+                        val enhancedStatus by produceState(initialValue = "") {
+                            value = getFeatureStatus("enhanced_security")
+                        }
+                        val enhancedSummary = when (enhancedStatus) {
+                            "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                            "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                            else -> stringResource(id = R.string.settings_enable_enhanced_security_summary)
+                        }
                         SuperDropdown(
                             title = stringResource(id = R.string.settings_enable_enhanced_security),
-                            summary = stringResource(id = R.string.settings_enable_enhanced_security_summary),
+                            summary = enhancedSummary,
                             items = modeItems,
                             leftAction = {
                                 Icon(
@@ -329,6 +340,7 @@ fun SettingPager(
                                     tint = colorScheme.onBackground
                                 )
                             },
+                            enabled = enhancedStatus == "supported",
                             selectedIndex = enhancedSecurityMode,
                             onSelectedIndexChange = { index ->
                                 when (index) {
@@ -367,9 +379,17 @@ fun SettingPager(
                                 }
                             )
                         }
+                        val suStatus by produceState(initialValue = "") {
+                            value = getFeatureStatus("su_compat")
+                        }
+                        val suSummary = when (suStatus) {
+                            "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                            "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                            else -> stringResource(id = R.string.settings_disable_su_summary)
+                        }
                         SuperDropdown(
                             title = stringResource(id = R.string.settings_disable_su),
-                            summary = stringResource(id = R.string.settings_disable_su_summary),
+                            summary = suSummary,
                             items = modeItems,
                             leftAction = {
                                 Icon(
@@ -379,6 +399,7 @@ fun SettingPager(
                                     tint = colorScheme.onBackground
                                 )
                             },
+                            enabled = suStatus == "supported",
                             selectedIndex = suCompatMode,
                             onSelectedIndexChange = { index ->
                                 when (index) {
@@ -417,9 +438,17 @@ fun SettingPager(
                                 }
                             )
                         }
+                        val umountStatus by produceState(initialValue = "") {
+                            value = getFeatureStatus("kernel_umount")
+                        }
+                        val umountSummary = when (umountStatus) {
+                            "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                            "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                            else -> stringResource(id = R.string.settings_disable_kernel_umount_summary)
+                        }
                         SuperDropdown(
                             title = stringResource(id = R.string.settings_disable_kernel_umount),
-                            summary = stringResource(id = R.string.settings_disable_kernel_umount_summary),
+                            summary = umountSummary,
                             items = modeItems,
                             leftAction = {
                                 Icon(
@@ -429,6 +458,7 @@ fun SettingPager(
                                     tint = colorScheme.onBackground
                                 )
                             },
+                            enabled = umountStatus == "supported",
                             selectedIndex = kernelUmountMode,
                             onSelectedIndexChange = { index ->
                                 when (index) {
@@ -458,7 +488,7 @@ fun SettingPager(
                             }
                         )
 
-                        var SuLogMode by rememberSaveable {
+                        var suLogMode by rememberSaveable {
                             mutableIntStateOf(
                                 run {
                                     val currentEnabled = Natives.isSuLogEnabled()
@@ -467,9 +497,17 @@ fun SettingPager(
                                 }
                             )
                         }
+                        val suLogStatus by produceState(initialValue = "") {
+                            value = getFeatureStatus("sulog")
+                        }
+                        val suLogSummary = when (suLogStatus) {
+                            "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                            "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                            else -> stringResource(id = R.string.settings_disable_sulog_summary)
+                        }
                         SuperDropdown(
                             title = stringResource(id = R.string.settings_disable_sulog),
-                            summary = stringResource(id = R.string.settings_disable_sulog_summary),
+                            summary = suLogSummary,
                             items = modeItems,
                             leftAction = {
                                 Icon(
@@ -479,14 +517,15 @@ fun SettingPager(
                                     tint = colorScheme.onBackground
                                 )
                             },
-                            selectedIndex = SuLogMode,
+                            enabled = suLogStatus == "supported",
+                            selectedIndex = suLogMode,
                             onSelectedIndexChange = { index ->
                                 when (index) {
                                     // Default: enable and save to persist
                                     0 -> if (Natives.setSuLogEnabled(true)) {
                                         execKsud("feature save", true)
                                         prefs.edit { putInt("sulog_mode", 0) }
-                                        SuLogMode = 0
+                                        suLogMode = 0
                                         isSuLogEnabled = true
                                     }
 
@@ -495,7 +534,7 @@ fun SettingPager(
                                         execKsud("feature save", true)
                                         if (Natives.setSuLogEnabled(false)) {
                                             prefs.edit { putInt("sulog_mode", 0) }
-                                            SuLogMode = 1
+                                            suLogMode = 1
                                             isSuLogEnabled = false
                                         }
                                     }
@@ -504,7 +543,7 @@ fun SettingPager(
                                     2 -> if (Natives.setSuLogEnabled(false)) {
                                         execKsud("feature save", true)
                                         prefs.edit { putInt("sulog_mode", 2) }
-                                        SuLogMode = 2
+                                        suLogMode = 2
                                         isSuLogEnabled = false
                                     }
                                 }
