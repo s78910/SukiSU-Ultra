@@ -459,7 +459,7 @@ enum Umount {
     /// List all umount paths
     List,
 
-    /// Clear all custom paths (keep defaults)
+    /// Clear all recorded umount paths
     ClearCustom,
 
     /// Save configuration to file

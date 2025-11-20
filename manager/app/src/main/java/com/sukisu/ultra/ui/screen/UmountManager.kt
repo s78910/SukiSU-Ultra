@@ -55,8 +55,7 @@ private val SPACING_LARGE = 16.dp
 
 data class UmountPathEntry(
     val path: String,
-    val flags: Int,
-    val isDefault: Boolean
+    val flags: Int
 )
 
 @Destination<RootGraph>
@@ -321,10 +320,7 @@ fun UmountPathCard(
             Icon(
                 imageVector = Icons.Outlined.Folder,
                 contentDescription = null,
-                tint = if (entry.isDefault)
-                    colorScheme.primary
-                else
-                    colorScheme.secondary,
+                tint = colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
 
@@ -340,34 +336,28 @@ fun UmountPathCard(
                         append(context.getString(R.string.flags))
                         append(": ")
                         append(entry.flags.toUmountFlagName(context))
-                        if (entry.isDefault) {
-                            append(" | ")
-                            append(context.getString(R.string.default_entry))
-                        }
                     },
                     color = colorScheme.onSurfaceVariantSummary
                 )
             }
 
-            if (!entry.isDefault) {
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            if (confirmDialog.awaitConfirm(
-                                    title = context.getString(R.string.confirm_delete),
-                                    content = context.getString(R.string.confirm_delete_umount_path, entry.path)
-                                ) == ConfirmResult.Confirmed) {
-                                onDelete()
-                            }
+            IconButton(
+                onClick = {
+                    scope.launch {
+                        if (confirmDialog.awaitConfirm(
+                                title = context.getString(R.string.confirm_delete),
+                                content = context.getString(R.string.confirm_delete_umount_path, entry.path)
+                            ) == ConfirmResult.Confirmed) {
+                            onDelete()
                         }
                     }
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Useful.Delete,
-                        contentDescription = null,
-                        tint = colorScheme.primary
-                    )
                 }
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Useful.Delete,
+                    contentDescription = null,
+                    tint = colorScheme.primary
+                )
             }
         }
     }
@@ -451,11 +441,10 @@ private fun parseUmountPaths(output: String): List<UmountPathEntry> {
 
     return lines.drop(2).mapNotNull { line ->
         val parts = line.trim().split(Regex("\\s+"))
-        if (parts.size >= 3) {
+        if (parts.size >= 2) {
             UmountPathEntry(
                 path = parts[0],
-                flags = parts[1].toIntOrNull() ?: -1,
-                isDefault = parts[2].equals("Yes", ignoreCase = true)
+                flags = parts[1].toIntOrNull() ?: -1
             )
         } else null
     }
