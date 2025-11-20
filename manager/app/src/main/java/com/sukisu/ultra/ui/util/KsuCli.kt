@@ -12,7 +12,10 @@ import android.system.Os
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ShellUtils
@@ -727,14 +730,13 @@ fun applyUmountConfigToKernel(): Boolean {
 // 检查 KPM 版本是否可用
 @Composable
 fun rememberKpmAvailable(): Boolean {
-    val kpmVersion by produceState(initialValue = "") {
-        value = withContext(Dispatchers.IO) {
-            try {
-                getKpmVersion()
-            } catch (_: Exception) {
-                ""
-            }
+    var cachedVersion by rememberSaveable { mutableStateOf("") }
+    val kpmVersion by produceState(initialValue = cachedVersion) {
+        val result = withContext(Dispatchers.IO) {
+            runCatching { getKpmVersion() }.getOrElse { "" }
         }
+        cachedVersion = result
+        value = result
     }
     return kpmVersion.isNotEmpty() && !kpmVersion.contains("Error", ignoreCase = true)
 }

@@ -37,11 +37,14 @@ import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -149,8 +152,6 @@ fun HomePager(
                 val lkmMode = ksuVersion?.let {
                     if (kernelVersion.isGKI()) Natives.isLkmMode else null
                 }
-                
-                val isKpmAvailable = rememberKpmAvailable()
 
                 Column(
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -179,12 +180,12 @@ fun HomePager(
                         },
                         onClickSuperuser = {
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(getSuperuserPageIndex(isKpmAvailable))
+                                pagerState.animateScrollToPage(1)
                             }
                         },
                         onclickModule = {
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(getModulePageIndex(isKpmAvailable))
+                                pagerState.animateScrollToPage(2)
                             }
                         },
                         themeMode = themeMode
@@ -609,6 +610,19 @@ fun DonateCard() {
 private fun InfoCard() {
     val manualHookText = stringResource(R.string.manual_hook)
     val inlineHookText = stringResource(R.string.inline_hook)
+    val TracepointHookText = stringResource(R.string.tracepoint_hook)
+    val unknownHookText = stringResource(R.string.selinux_status_unknown)
+    val susfsInfo = rememberSusfsInfo(manualHookText, inlineHookText)
+    val isSusfsSupported = susfsInfo.status == SusfsStatus.Supported
+    val hookTypeLabel = remember(manualHookText, inlineHookText, TracepointHookText) {
+        val localized = when (val rawType = Natives.getHookType()) {
+            "Manual" -> manualHookText
+            "Tracepoint" -> TracepointHookText
+            else -> rawType
+        }
+        localized.ifBlank { unknownHookText }
+    }
+
     @Composable
     fun InfoText(
         title: String,
@@ -632,23 +646,6 @@ private fun InfoCard() {
     val context = LocalContext.current
     val uname = Os.uname()
     val managerVersion = getManagerVersion(context)
-    val susfsPair by produceState(initialValue = "" to "") {
-        value = withContext(Dispatchers.IO) {
-            val rawFeature = getSuSFSFeatures()
-            val status = if (rawFeature.isNotEmpty() && !rawFeature.startsWith("[-]")) "Supported" else rawFeature
-            if (status == "Supported") {
-                val version = getSuSFSVersion()
-                val hook = when (Natives.getHookType()) {
-                    "Manual" -> "($manualHookText)"
-                    "Inline" -> "($inlineHookText)"
-                    else -> "(${Natives.getHookType()})"
-                }
-                status to "$version $hook".trim()
-            } else {
-                "" to ""
-            }
-        }
-    }
 
     Card {
         Column(
@@ -689,27 +686,26 @@ private fun InfoCard() {
                     )
                 }
             }
-            InfoText(
-                title = stringResource(R.string.home_fingerprint),
-                content = Build.FINGERPRINT
-            )
-            if (susfsPair.first == "Supported" && susfsPair.second.isNotEmpty()) {
-                InfoText(
-                    title = stringResource(R.string.home_selinux_status),
-                    content = getSELinuxStatus(),
-                )
+            if (isSusfsSupported) {
                 InfoText(
                     title = stringResource(R.string.home_susfs_version),
-                    content = susfsPair.second,
-                    bottomPadding = 0.dp
+                    content = susfsInfo.detail
                 )
             } else {
                 InfoText(
-                    title = stringResource(R.string.home_selinux_status),
-                    content = getSELinuxStatus(),
-                    bottomPadding = 0.dp
+                    title = stringResource(R.string.hook_type),
+                    content = hookTypeLabel
                 )
             }
+            InfoText(
+                title = stringResource(R.string.home_selinux_status),
+                content = getSELinuxStatus(),
+            )
+            InfoText(
+                title = stringResource(R.string.home_fingerprint),
+                content = Build.FINGERPRINT,
+                bottomPadding = 0.dp
+            )
         }
     }
 }
@@ -720,10 +716,52 @@ fun getManagerVersion(context: Context): Pair<String, Long> {
     return Pair(packageInfo.versionName!!, versionCode)
 }
 
-fun getSuperuserPageIndex(isKpmAvailable: Boolean): Int {
-    return if (isKpmAvailable) 2 else 1
+private enum class SusfsStatus {
+    Idle, Loading, Supported, Unsupported, Error
 }
 
-fun getModulePageIndex(isKpmAvailable: Boolean): Int {
-    return if (isKpmAvailable) 3 else 2
+private data class SusfsInfoState(
+    val status: SusfsStatus = SusfsStatus.Idle,
+    val detail: String = "",
+)
+
+@Composable
+private fun rememberSusfsInfo(
+    manualHookLabel: String,
+    inlineHookLabel: String,
+): SusfsInfoState {
+    var susfsInfo by remember { mutableStateOf(SusfsInfoState(status = SusfsStatus.Loading)) }
+
+    LaunchedEffect(manualHookLabel, inlineHookLabel) {
+        val info = withContext(Dispatchers.IO) {
+            runCatching {
+                val rawFeature = getSuSFSFeatures()
+                val supported = rawFeature.isNotEmpty() && !rawFeature.startsWith("[-]")
+                if (supported) {
+                    val version = getSuSFSVersion().trim()
+                    val hookLabel = when (val type = Natives.getHookType()) {
+                        "Manual" -> manualHookLabel
+                        "Inline" -> inlineHookLabel
+                        else -> type
+                    }.takeIf { it.isNotBlank() }?.let { "($it)" }.orEmpty()
+                    SusfsInfoState(
+                        status = SusfsStatus.Supported,
+                        detail = listOf(version, hookLabel).filter { it.isNotBlank() }.joinToString(" ")
+                    )
+                } else {
+                    SusfsInfoState(
+                        status = SusfsStatus.Unsupported,
+                        detail = rawFeature
+                    )
+                }
+            }.getOrElse {
+                SusfsInfoState(status = SusfsStatus.Error)
+            }
+        }
+        if (susfsInfo != info) {
+            susfsInfo = info
+        }
+    }
+
+    return susfsInfo
 }

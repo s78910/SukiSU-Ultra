@@ -16,6 +16,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.ContactPage
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteForever
@@ -49,6 +50,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AppProfileTemplateScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.LogViewerDestination
+import com.ramcosta.composedestinations.generated.destinations.KpmScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PersonalizationDestination
 import com.ramcosta.composedestinations.generated.destinations.ToolsDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -64,6 +66,7 @@ import com.sukisu.ultra.ui.component.SendLogDialog
 import com.sukisu.ultra.ui.component.UninstallDialog
 import com.sukisu.ultra.ui.component.rememberLoadingDialog
 import com.sukisu.ultra.ui.util.execKsud
+import com.sukisu.ultra.ui.util.rememberKpmAvailable
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -93,6 +96,8 @@ fun SettingPager(
         backgroundColor = colorScheme.surface,
         tint = HazeTint(colorScheme.surface.copy(0.8f))
     )
+
+    val isKpmAvailable = rememberKpmAvailable()
 
     Scaffold(
         topBar = {
@@ -258,6 +263,33 @@ fun SettingPager(
                             },
                             onClick = {
                                 navigator.navigate(AppProfileTemplateScreenDestination) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (isKpmAvailable) {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        val kpmTitle = stringResource(id = R.string.kpm_title)
+                        SuperArrow(
+                            title = kpmTitle,
+                            summary = stringResource(id = R.string.settings_kpm_summary),
+                            leftAction = {
+                                Icon(
+                                    Icons.Rounded.Code,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = kpmTitle,
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = {
+                                navigator.navigate(KpmScreenDestination) {
                                     launchSingleTop = true
                                 }
                             }

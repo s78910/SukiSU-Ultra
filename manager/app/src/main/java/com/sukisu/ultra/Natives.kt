@@ -121,8 +121,6 @@ object Natives {
      */
     external fun isSuLogEnabled(): Boolean
     external fun setSuLogEnabled(enabled: Boolean): Boolean
-
-    external fun isKPMEnabled(): Boolean
     external fun getHookType(): String
 
     /**

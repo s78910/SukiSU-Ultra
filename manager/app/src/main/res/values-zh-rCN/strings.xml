@@ -178,9 +178,8 @@
     <string name="color_pink">粉色</string>
     <string name="color_brown">棕色</string>
     <!-- Customize -->
+    <string name="hook_type">钩子类型</string>
     <string name="home_susfs_version">SuSFS 版本</string>
-    <string name="manual_hook">Manual Hook</string>
-    <string name="inline_hook">Inline Hook</string>
     <string name="multi_manager_list">活跃管理器</string>
     <string name="default_signature">SukiSU</string>
     <string name="dynamic_managerature">Dynamic</string>
@@ -320,7 +319,7 @@
     <string name="horizon_kernel">AnyKernel3 内核</string>
     <string name="horizon_kernel_summary">刷入AnyKernel3格式的内核zip包</string>
     <!-- kpm -->
-    <string name="kpm_title">KPM</string>
+    <string name="settings_kpm_summary">使用 KPM 管理内核模块</string>
     <string name="kpm_empty">当前没有安装内核模块</string>
     <string name="kpm_version">版本</string>
     <string name="kpm_author">作者</string>

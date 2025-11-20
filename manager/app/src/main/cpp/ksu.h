@@ -229,10 +229,6 @@ struct ksu_hook_type_cmd {
 	char hook_type[32]; // Output: hook type string
 };
 
-struct ksu_enable_kpm_cmd {
-    uint8_t enabled; // Output: true if KPM is enabled
-};
-
 struct ksu_dynamic_manager_cmd {
 	struct dynamic_manager_user_config config; // Input/Output: dynamic manager config
 };

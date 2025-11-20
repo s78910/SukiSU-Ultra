@@ -180,9 +180,11 @@
     <string name="color_pink">Pink</string>
     <string name="color_brown">Brown</string>
     <!-- Customize -->
-    <string name="home_susfs_version">SuSFS Version</string>
+    <string name="hook_type">Hook Type</string>
     <string name="manual_hook">Manual Hook</string>
     <string name="inline_hook">Inline Hook</string>
+    <string name="tracepoint_hook">Tracepoint Hook</string>
+    <string name="home_susfs_version">SuSFS Version</string>
     <string name="multi_manager_list">Active Manager</string>
     <string name="default_signature">SukiSU</string>
     <string name="dynamic_managerature">Dynamic</string>
@@ -325,6 +327,7 @@
     <string name="horizon_kernel_summary">Flash AnyKernel3 format kernel zip</string>
     <!-- kpm -->
     <string name="kpm_title">KPM</string>
+    <string name="settings_kpm_summary">Manage kernel modules with KPM</string>
     <string name="kpm_empty">No installed kernel modules at this time</string>
     <string name="kpm_version">Version</string>
     <string name="kpm_author">Author</string>

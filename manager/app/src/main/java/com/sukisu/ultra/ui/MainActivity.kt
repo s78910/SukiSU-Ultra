@@ -1,7 +1,6 @@
 package com.sukisu.ultra.ui
 
 import android.content.SharedPreferences
-import androidx.compose.ui.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.rememberNavController
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -47,13 +47,11 @@ import kotlinx.coroutines.launch
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ui.component.BottomBar
 import com.sukisu.ultra.ui.screen.HomePager
-import com.sukisu.ultra.ui.screen.KpmScreen
 import com.sukisu.ultra.ui.screen.ModulePager
 import com.sukisu.ultra.ui.screen.SettingPager
 import com.sukisu.ultra.ui.screen.SuperUserPager
 import com.sukisu.ultra.ui.theme.KernelSUTheme
 import com.sukisu.ultra.ui.util.install
-import com.sukisu.ultra.ui.util.rememberKpmAvailable
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -94,6 +92,7 @@ class MainActivity : ComponentActivity() {
                         android.graphics.Color.TRANSPARENT
                     ) { darkMode },
                 )
+
                 val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                     when (key) {
                         "color_mode" -> colorMode = prefs.getInt("color_mode", 0)
@@ -161,11 +160,7 @@ val LocalHandlePageChange = compositionLocalOf<(Int) -> Unit> { error("No handle
 fun MainScreen(navController: DestinationsNavigator) {
     val activity = LocalActivity.current
     val coroutineScope = rememberCoroutineScope()
-    
-    val isKpmAvailable = rememberKpmAvailable()
-    val pageCount = if (isKpmAvailable) 5 else 4
-    
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { pageCount })
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val hazeState = remember { HazeState() }
     val hazeStyle = HazeStyle(
         backgroundColor = MiuixTheme.colorScheme.background,
@@ -193,7 +188,7 @@ fun MainScreen(navController: DestinationsNavigator) {
     ) {
         Scaffold(
             bottomBar = {
-                BottomBar(hazeState, hazeStyle, isKpmAvailable)
+                BottomBar(hazeState, hazeStyle)
             },
         ) { innerPadding ->
             HorizontalPager(
@@ -202,24 +197,11 @@ fun MainScreen(navController: DestinationsNavigator) {
                 beyondViewportPageCount = 2,
                 userScrollEnabled = false
             ) {
-                when {
-                    isKpmAvailable -> {
-                        when (it) {
-                            0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
-                            1 -> KpmScreen(bottomInnerPadding = innerPadding.calculateBottomPadding())
-                            2 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
-                            3 -> ModulePager(navController, innerPadding.calculateBottomPadding())
-                            4 -> SettingPager(navController, innerPadding.calculateBottomPadding())
-                        }
-                    }
-                    else -> {
-                        when (it) {
-                            0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
-                            1 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
-                            2 -> ModulePager(navController, innerPadding.calculateBottomPadding())
-                            3 -> SettingPager(navController, innerPadding.calculateBottomPadding())
-                        }
-                    }
+                when (it) {
+                    0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
+                    1 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
+                    2 -> ModulePager(navController, innerPadding.calculateBottomPadding())
+                    3 -> SettingPager(navController, innerPadding.calculateBottomPadding())
                 }
             }
         }
