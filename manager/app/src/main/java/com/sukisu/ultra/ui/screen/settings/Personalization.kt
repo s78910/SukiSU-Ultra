@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.screen
+package com.sukisu.ultra.ui.screen.settings
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility

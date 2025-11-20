@@ -1,14 +1,6 @@
 package com.sukisu.ultra.ui.screen
 
 import android.content.Context
-import android.content.SharedPreferences
-import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -21,11 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ContactPage
@@ -35,19 +23,16 @@ import androidx.compose.material.icons.rounded.DeveloperMode
 import androidx.compose.material.icons.rounded.EnhancedEncryption
 import androidx.compose.material.icons.rounded.Fence
 import androidx.compose.material.icons.rounded.FolderDelete
-import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RemoveCircle
 import androidx.compose.material.icons.rounded.RemoveModerator
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -65,7 +50,7 @@ import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestin
 import com.ramcosta.composedestinations.generated.destinations.AppProfileTemplateScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.LogViewerDestination
 import com.ramcosta.composedestinations.generated.destinations.PersonalizationDestination
-import com.ramcosta.composedestinations.generated.destinations.UmountManagerDestination
+import com.ramcosta.composedestinations.generated.destinations.ToolsDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -74,23 +59,11 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.ConfirmResult
-import com.sukisu.ultra.ui.component.DynamicManagerCard
 import com.sukisu.ultra.ui.component.KsuIsValid
 import com.sukisu.ultra.ui.component.SendLogDialog
 import com.sukisu.ultra.ui.component.UninstallDialog
-import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.rememberLoadingDialog
-import com.sukisu.ultra.ui.util.cleanRuntimeEnvironment
 import com.sukisu.ultra.ui.util.execKsud
-import com.sukisu.ultra.ui.util.getUidMultiUserScan
-import com.sukisu.ultra.ui.util.readUidScannerFile
-import com.sukisu.ultra.ui.util.setUidAutoScan
-import com.sukisu.ultra.ui.util.setUidMultiUserScan
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -236,6 +209,33 @@ fun SettingPager(
                             }
                         }
                     )
+                }
+
+                KsuIsValid {
+                    val toolsTitle = stringResource(id = R.string.settings_tools)
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        SuperArrow(
+                            title = toolsTitle,
+                            summary = stringResource(id = R.string.settings_tools_summary),
+                            leftAction = {
+                                Icon(
+                                    Icons.Rounded.DeveloperMode,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = toolsTitle,
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = {
+                                navigator.navigate(ToolsDestination) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
                 }
 
                 KsuIsValid {
@@ -529,24 +529,6 @@ fun SettingPager(
                 }
 
                 KsuIsValid {
-                    DynamicManagerCard()
-                }
-
-                KsuIsValid {
-                    val context = LocalContext.current
-                    val scope = rememberCoroutineScope()
-                    val prefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
-
-                    Card(
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        UidScannerSection(prefs = prefs, scope = scope, context = context)
-                    }
-                }
-
-                KsuIsValid {
                     val lkmMode = Natives.isLkmMode
                     if (lkmMode) {
                         Card(
@@ -597,28 +579,6 @@ fun SettingPager(
                             }
                         )
                     }
-                    KsuIsValid {
-                        val lkmMode = Natives.isLkmMode
-                        if (lkmMode) {
-                            val umontManager = stringResource(id = R.string.umount_path_manager)
-                            SuperArrow(
-                                title = umontManager,
-                                leftAction = {
-                                    Icon(
-                                        Icons.Rounded.FolderDelete,
-                                        modifier = Modifier.padding(end = 16.dp),
-                                        contentDescription = umontManager,
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                onClick = {
-                                    navigator.navigate(UmountManagerDestination) {
-                                    }
-                                }
-                            )
-                        }
-                    }
-
                     SuperArrow(
                         title = stringResource(id = R.string.send_log),
                         leftAction = {
@@ -675,151 +635,4 @@ enum class UninstallType(val icon: ImageVector, val title: Int, val message: Int
         R.string.settings_restore_stock_image_message
     ),
     NONE(Icons.Rounded.Adb, 0, 0)
-}
-
-@Composable
-fun UidScannerSection(
-    prefs: SharedPreferences,
-    scope: CoroutineScope,
-    context: Context
-) {
-    val realAuto = Natives.isUidScannerEnabled()
-    val realMulti = getUidMultiUserScan()
-
-    var autoOn by remember { mutableStateOf(realAuto) }
-    var multiOn by remember { mutableStateOf(realMulti) }
-
-    LaunchedEffect(Unit) {
-        autoOn = realAuto
-        multiOn = realMulti
-        prefs.edit {
-            putBoolean("uid_auto_scan", autoOn)
-            putBoolean("uid_multi_user_scan", multiOn)
-        }
-    }
-
-    SuperSwitch(
-        title = stringResource(R.string.uid_auto_scan_title),
-        summary = stringResource(R.string.uid_auto_scan_summary),
-        leftAction = {
-            Icon(
-                Icons.Filled.Scanner,
-                modifier = Modifier.padding(end = 16.dp),
-                contentDescription = stringResource(R.string.uid_auto_scan_title),
-                tint = colorScheme.onBackground
-            )
-        },
-        checked = autoOn,
-        onCheckedChange = { target ->
-            autoOn = target
-            if (!target) multiOn = false
-
-            scope.launch(Dispatchers.IO) {
-                setUidAutoScan(target)
-                val actual = Natives.isUidScannerEnabled() || readUidScannerFile()
-                withContext(Dispatchers.Main) {
-                    autoOn = actual
-                    if (!actual) multiOn = false
-                    prefs.edit {
-                        putBoolean("uid_auto_scan", actual)
-                        putBoolean("uid_multi_user_scan", multiOn)
-                    }
-                    if (actual != target) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.uid_scanner_setting_failed),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            }
-        }
-    )
-
-    AnimatedVisibility(
-        visible = autoOn,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-    ) {
-        SuperSwitch(
-            title = stringResource(R.string.uid_multi_user_scan_title),
-            summary = stringResource(R.string.uid_multi_user_scan_summary),
-            leftAction = {
-                Icon(
-                    Icons.Filled.Groups,
-                    modifier = Modifier.padding(end = 16.dp),
-                    contentDescription = stringResource(R.string.uid_multi_user_scan_title),
-                    tint = colorScheme.onBackground
-                )
-            },
-            checked = multiOn,
-            onCheckedChange = { target ->
-                scope.launch(Dispatchers.IO) {
-                    val ok = setUidMultiUserScan(target)
-                    withContext(Dispatchers.Main) {
-                        if (ok) {
-                            multiOn = target
-                            prefs.edit { putBoolean("uid_multi_user_scan", target) }
-                        } else {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.uid_scanner_setting_failed),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        )
-    }
-
-    AnimatedVisibility(
-        visible = autoOn,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-    ) {
-        val confirmDialog = rememberConfirmDialog()
-        SuperArrow(
-            title = stringResource(R.string.clean_runtime_environment),
-            summary = stringResource(R.string.clean_runtime_environment_summary),
-            leftAction = {
-                Icon(
-                    Icons.Filled.CleaningServices,
-                    modifier = Modifier.padding(end = 16.dp),
-                    contentDescription = stringResource(R.string.clean_runtime_environment),
-                    tint = colorScheme.onBackground
-                )
-            },
-            onClick = {
-                scope.launch {
-                    if (confirmDialog.awaitConfirm(
-                            title = context.getString(R.string.clean_runtime_environment),
-                            content = context.getString(R.string.clean_runtime_environment_confirm)
-                        ) == ConfirmResult.Confirmed
-                    ) {
-                        if (cleanRuntimeEnvironment()) {
-                            autoOn = false
-                            multiOn = false
-                            prefs.edit {
-                                putBoolean("uid_auto_scan", false)
-                                putBoolean("uid_multi_user_scan", false)
-                            }
-                            Natives.setUidScannerEnabled(false)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.clean_runtime_environment_success),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.clean_runtime_environment_failed),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        )
-    }
 }
