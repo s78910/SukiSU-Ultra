@@ -168,31 +168,6 @@ fun SettingPager(
                         .padding(top = 12.dp)
                         .fillMaxWidth(),
                 ) {
-                    val personalization = stringResource(id = R.string.personalization)
-                    SuperArrow(
-                        title = personalization,
-                        summary = stringResource(id = R.string.personalization_summary),
-                        leftAction = {
-                            Icon(
-                                Icons.Rounded.Palette,
-                                modifier = Modifier.padding(end = 16.dp),
-                                contentDescription = personalization,
-                                tint = colorScheme.onBackground
-                            )
-                        },
-                        onClick = {
-                            navigator.navigate(PersonalizationDestination) {
-                                launchSingleTop = true
-                            }
-                        }
-                    )
-                }
-
-                Card(
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .fillMaxWidth(),
-                ) {
                     SuperSwitch(
                         title = stringResource(id = R.string.settings_check_update),
                         summary = stringResource(id = R.string.settings_check_update_summary),
@@ -238,6 +213,31 @@ fun SettingPager(
                     }
                 }
 
+                Card(
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .fillMaxWidth(),
+                ) {
+                    val personalization = stringResource(id = R.string.personalization)
+                    SuperArrow(
+                        title = personalization,
+                        summary = stringResource(id = R.string.personalization_summary),
+                        leftAction = {
+                            Icon(
+                                Icons.Rounded.Palette,
+                                modifier = Modifier.padding(end = 16.dp),
+                                contentDescription = personalization,
+                                tint = colorScheme.onBackground
+                            )
+                        },
+                        onClick = {
+                            navigator.navigate(PersonalizationDestination) {
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+
                 KsuIsValid {
                     Card(
                         modifier = Modifier
@@ -266,7 +266,6 @@ fun SettingPager(
                 }
 
                 KsuIsValid {
-
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)

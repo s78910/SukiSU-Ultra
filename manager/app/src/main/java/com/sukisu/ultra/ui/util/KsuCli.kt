@@ -10,6 +10,9 @@ import android.os.SystemClock
 import android.provider.OpenableColumns
 import android.system.Os
 import android.util.Log
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ShellUtils
@@ -719,4 +722,19 @@ fun applyUmountConfigToKernel(): Boolean {
     val result = ShellUtils.fastCmdResult(shell, cmd)
     Log.i(TAG, "apply umount config to kernel result: $result")
     return result
+}
+
+// 检查 KPM 版本是否可用
+@Composable
+fun rememberKpmAvailable(): Boolean {
+    val kpmVersion by produceState(initialValue = "") {
+        value = withContext(Dispatchers.IO) {
+            try {
+                getKpmVersion()
+            } catch (_: Exception) {
+                ""
+            }
+        }
+    }
+    return kpmVersion.isNotEmpty() && !kpmVersion.contains("Error", ignoreCase = true)
 }

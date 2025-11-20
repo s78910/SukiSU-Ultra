@@ -25,13 +25,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import com.sukisu.ultra.ui.util.getKpmVersion
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.rememberNavController
@@ -55,6 +51,7 @@ import com.sukisu.ultra.ui.screen.SettingPager
 import com.sukisu.ultra.ui.screen.SuperUserPager
 import com.sukisu.ultra.ui.theme.KernelSUTheme
 import com.sukisu.ultra.ui.util.install
+import com.sukisu.ultra.ui.util.rememberKpmAvailable
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -149,18 +146,7 @@ fun MainScreen(navController: DestinationsNavigator) {
     val activity = LocalActivity.current
     val coroutineScope = rememberCoroutineScope()
     
-    // 检查 KPM 版本是否可用
-    val kpmVersion by produceState(initialValue = "") {
-        value = withContext(Dispatchers.IO) {
-            try {
-                getKpmVersion()
-            } catch (e: Exception) {
-                ""
-            }
-        }
-    }
-    
-    val isKpmAvailable = kpmVersion.isNotEmpty() && !kpmVersion.contains("Error", ignoreCase = true)
+    val isKpmAvailable = rememberKpmAvailable()
     val pageCount = if (isKpmAvailable) 5 else 4
     
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { pageCount })

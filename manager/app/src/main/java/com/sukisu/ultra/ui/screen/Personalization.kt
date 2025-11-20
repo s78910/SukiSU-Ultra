@@ -1,6 +1,5 @@
 package com.sukisu.ultra.ui.screen
 
-import android.app.Activity
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.WindowInsets

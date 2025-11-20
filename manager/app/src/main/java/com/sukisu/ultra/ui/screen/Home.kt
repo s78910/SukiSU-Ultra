@@ -148,6 +148,8 @@ fun HomePager(
                 val lkmMode = ksuVersion?.let {
                     if (kernelVersion.isGKI()) Natives.isLkmMode else null
                 }
+                
+                val isKpmAvailable = rememberKpmAvailable()
 
                 Column(
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -175,12 +177,12 @@ fun HomePager(
                         },
                         onClickSuperuser = {
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(1)
+                                pagerState.animateScrollToPage(getSuperuserPageIndex(isKpmAvailable))
                             }
                         },
                         onclickModule = {
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(2)
+                                pagerState.animateScrollToPage(getModulePageIndex(isKpmAvailable))
                             }
                         }
                     )
@@ -708,4 +710,12 @@ fun getManagerVersion(context: Context): Pair<String, Long> {
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)!!
     val versionCode = PackageInfoCompat.getLongVersionCode(packageInfo)
     return Pair(packageInfo.versionName!!, versionCode)
+}
+
+fun getSuperuserPageIndex(isKpmAvailable: Boolean): Int {
+    return if (isKpmAvailable) 2 else 1
+}
+
+fun getModulePageIndex(isKpmAvailable: Boolean): Int {
+    return if (isKpmAvailable) 3 else 2
 }
