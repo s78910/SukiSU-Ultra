@@ -1,15 +1,14 @@
 package com.sukisu.ultra.ui.kernelFlash
 
-import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Environment
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -19,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.platform.LocalContext
@@ -27,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.edit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -43,12 +40,14 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.icon.icons.useful.Save
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.io.File
@@ -66,6 +65,15 @@ private object KernelFlashStateHolder {
     var currentKpmPatchEnabled: Boolean = false
     var currentKpmUndoPatch: Boolean = false
     var isFlashing = false
+    
+    fun clear() {
+        currentState = null
+        currentUri = null
+        currentSlot = null
+        currentKpmPatchEnabled = false
+        currentKpmUndoPatch = false
+        isFlashing = false
+    }
 }
 
 @Destination<RootGraph>
@@ -78,12 +86,6 @@ fun KernelFlashScreen(
     kpmUndoPatch: Boolean = false
 ) {
     val context = LocalContext.current
-
-    val shouldAutoExit = remember {
-        val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
-        sharedPref.getBoolean("auto_exit_after_flash", false)
-    }
-
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     var logText by rememberSaveable { mutableStateOf("") }
@@ -109,17 +111,27 @@ fun KernelFlashScreen(
     }
 
     val flashState by horizonKernelState.state.collectAsState()
+    val activity = LocalActivity.current
 
     val onFlashComplete = {
         showFloatAction = true
         KernelFlashStateHolder.isFlashing = false
+    }
+    
+    // 如果是从外部打开的内核刷写，延迟1.5秒后自动退出
+    LaunchedEffect(flashState.isCompleted, flashState.error) {
+        if (flashState.isCompleted && flashState.error.isEmpty()) {
+            val intent = activity?.intent
+            val isFromExternalIntent = intent?.action?.let { action ->
+                action == Intent.ACTION_VIEW ||
+                action == Intent.ACTION_SEND ||
+                action == Intent.ACTION_SEND_MULTIPLE
+            } ?: false
 
-        if (shouldAutoExit) {
-            scope.launch {
+            if (isFromExternalIntent) {
                 delay(1500)
-                val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
-                sharedPref.edit { remove("auto_exit_after_flash") }
-                (context as? ComponentActivity)?.finish()
+                KernelFlashStateHolder.clear()
+                activity.finish()
             }
         }
     }
@@ -170,26 +182,17 @@ fun KernelFlashScreen(
     val onBack: () -> Unit = {
         if (!flashState.isFlashing || flashState.isCompleted || flashState.error.isNotEmpty()) {
             if (flashState.isCompleted || flashState.error.isNotEmpty()) {
-                KernelFlashStateHolder.currentState = null
-                KernelFlashStateHolder.currentUri = null
-                KernelFlashStateHolder.currentSlot = null
-                KernelFlashStateHolder.currentKpmPatchEnabled = false
-                KernelFlashStateHolder.currentKpmUndoPatch = false
-                KernelFlashStateHolder.isFlashing = false
+                KernelFlashStateHolder.clear()
             }
             navigator.popBackStack()
         }
     }
 
-    DisposableEffect(shouldAutoExit) {
+    // 清理状态
+    DisposableEffect(Unit) {
         onDispose {
-            if (shouldAutoExit) {
-                KernelFlashStateHolder.currentState = null
-                KernelFlashStateHolder.currentUri = null
-                KernelFlashStateHolder.currentSlot = null
-                KernelFlashStateHolder.currentKpmPatchEnabled = false
-                KernelFlashStateHolder.currentKpmUndoPatch = false
-                KernelFlashStateHolder.isFlashing = false
+            if (flashState.isCompleted || flashState.error.isNotEmpty()) {
+                KernelFlashStateHolder.clear()
             }
         }
     }
@@ -274,14 +277,14 @@ private fun FlashProgressIndicator(
     kpmPatchEnabled: Boolean = false,
     kpmUndoPatch: Boolean = false
 ) {
-    val progressColor = when {
+    val statusColor = when {
         flashState.error.isNotEmpty() -> colorScheme.error
-        flashState.isCompleted -> colorScheme.secondary
+        flashState.isCompleted -> colorScheme.primary
         else -> colorScheme.primary
     }
 
     val progress = animateFloatAsState(
-        targetValue = flashState.progress,
+        targetValue = flashState.progress.coerceIn(0f, 1f),
         label = "FlashProgress"
     )
 
@@ -306,8 +309,9 @@ private fun FlashProgressIndicator(
                         flashState.isCompleted -> stringResource(R.string.flash_success)
                         else -> stringResource(R.string.flashing)
                     },
-                    fontWeight = FontWeight.Bold,
-                    color = progressColor
+                    fontSize = MiuixTheme.textStyles.title4.fontSize,
+                    fontWeight = FontWeight.Medium,
+                    color = statusColor
                 )
 
                 when {
@@ -322,7 +326,7 @@ private fun FlashProgressIndicator(
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
-                            tint = colorScheme.secondary
+                            tint = colorScheme.primary
                         )
                     }
                 }
@@ -330,67 +334,44 @@ private fun FlashProgressIndicator(
 
             // KPM状态显示
             if (kpmPatchEnabled || kpmUndoPatch) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = if (kpmUndoPatch) stringResource(R.string.kpm_undo_patch_mode)
                     else stringResource(R.string.kpm_patch_mode),
-                    color = colorScheme.secondary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (flashState.currentStep.isNotEmpty()) {
-                Text(
-                    text = flashState.currentStep,
+                    fontSize = MiuixTheme.textStyles.body2.fontSize,
                     color = colorScheme.onSurfaceVariantSummary
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            val progressFraction = progress.value.coerceIn(0f, 1f)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(colorScheme.surfaceVariant)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(progressFraction)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(progressColor)
+            if (flashState.currentStep.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = flashState.currentStep,
+                    fontSize = MiuixTheme.textStyles.body2.fontSize,
+                    color = colorScheme.onSurfaceVariantSummary
                 )
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LinearProgressIndicator(
+                progress = progress.value,
+                modifier = Modifier.fillMaxWidth()
+            )
+
             if (flashState.error.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null,
-                        tint = colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = flashState.error,
+                    fontSize = MiuixTheme.textStyles.body2.fontSize,
                     color = colorScheme.onErrorContainer,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(12.dp)
                         .background(
-                            colorScheme.errorContainer.copy(alpha = 0.8f)
+                            colorScheme.errorContainer
                         )
-                        .padding(8.dp)
+                        .padding(12.dp)
                 )
             }
         }

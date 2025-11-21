@@ -368,4 +368,12 @@
     <string name="allowlist_restore_summary_picker">选择备份文件进行导入</string>
     <string name="allowlist_restore_success">还原成功,重启生效</string>
     <string name="allowlist_restore_failed">还原失败</string>
+    <!-- Zip File Type Labels -->
+    <string name="zip_type_module"> (模块)</string>
+    <string name="zip_type_kernel"> (内核)</string>
+    <string name="zip_type_unknown"> (未知)</string>
+    <string name="zip_file_unknown">unknown.zip</string>
+    <!-- Zip Install Prompts -->
+    <string name="kernel_install_prompt_with_name">将安装以下内核：%1$s</string>
+    <string name="mixed_install_prompt_with_name">将安装以下文件：%1$s</string>
 </resources>

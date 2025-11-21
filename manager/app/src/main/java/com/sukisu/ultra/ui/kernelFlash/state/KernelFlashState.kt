@@ -8,9 +8,10 @@ import androidx.documentfile.provider.DocumentFile
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.kernelFlash.util.AssetsUtil
 import com.sukisu.ultra.ui.kernelFlash.util.RemoteToolsDownloader
+import com.sukisu.ultra.ui.util.getRootShell
 import com.sukisu.ultra.ui.util.install
 import com.sukisu.ultra.ui.util.rootAvailable
-import com.topjohnwu.superuser.Shell
+import com.topjohnwu.superuser.ShellUtils
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -73,10 +74,6 @@ class HorizonKernelState {
 
     fun completeFlashing() {
         _state.update { it.copy(isCompleted = true, progress = 1f) }
-    }
-
-    fun reset() {
-        _state.value = FlashState()
     }
 }
 
@@ -157,7 +154,12 @@ class HorizonKernelWorker(
             if (isAbDevice && slot != null) {
                 state.updateStep(context.getString(R.string.horizon_getting_original_slot))
                 state.updateProgress(0.72f)
-                originalSlot = runCommandGetOutput("getprop ro.boot.slot_suffix")
+                originalSlot = try {
+                    val shell = getRootShell()
+                    ShellUtils.fastCmd(shell, "getprop ro.boot.slot_suffix").trim()
+                } catch (_: Exception) {
+                    null
+                }
 
                 state.updateStep(context.getString(R.string.horizon_setting_target_slot))
                 state.updateProgress(0.74f)
@@ -308,7 +310,12 @@ class HorizonKernelWorker(
             }
 
             // 查找Image文件
-            val findImageResult = runCommandGetOutput("find $extractDir -name '*Image*' -type f")
+            val findImageResult = try {
+                val shell = getRootShell()
+                ShellUtils.fastCmd(shell, "find $extractDir -name '*Image*' -type f").trim()
+            } catch (_: Exception) {
+                throw IOException(context.getString(R.string.kpm_image_file_not_found))
+            }
             if (findImageResult.isBlank()) {
                 throw IOException(context.getString(R.string.kpm_image_file_not_found))
             }
@@ -398,11 +405,16 @@ class HorizonKernelWorker(
 
     // 检查设备是否为AB分区设备
     private fun isAbDevice(): Boolean {
-        val abUpdate = runCommandGetOutput("getprop ro.build.ab_update")
-        if (!abUpdate.toBoolean()) return false
+        return try {
+            val shell = getRootShell()
+            val abUpdate = ShellUtils.fastCmd(shell, "getprop ro.build.ab_update").trim()
+            if (!abUpdate.toBoolean()) return false
 
-        val slotSuffix = runCommandGetOutput("getprop ro.boot.slot_suffix")
-        return slotSuffix.isNotEmpty()
+            val slotSuffix = ShellUtils.fastCmd(shell, "getprop ro.boot.slot_suffix").trim()
+            slotSuffix.isNotEmpty()
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun cleanup() {
@@ -429,7 +441,12 @@ class HorizonKernelWorker(
 
     @SuppressLint("StringFormatInvalid")
     private fun patch() {
-        val kernelVersion = runCommandGetOutput("cat /proc/version")
+        val kernelVersion = try {
+            val shell = getRootShell()
+            ShellUtils.fastCmd(shell, "cat /proc/version")
+        } catch (_: Exception) {
+            ""
+        }
         val versionRegex = """\d+\.\d+\.\d+""".toRegex()
         val version = kernelVersion.let { versionRegex.find(it) }?.value ?: ""
         val toolName = if (version.isNotEmpty()) {
@@ -447,7 +464,9 @@ class HorizonKernelWorker(
         val toolPath = "${context.filesDir.absolutePath}/mkbootfs"
         AssetsUtil.exportFiles(context, "$toolName-mkbootfs", toolPath)
         state.addLog("${context.getString(R.string.kernel_version_log, version)} ${context.getString(R.string.tool_version_log, toolName)}")
-        runCommand(false, "sed -i '/chmod -R 755 tools bin;/i cp -f $toolPath \$AKHOME/tools;' $binaryPath")
+        runCommand(false,
+            $$"sed -i '/chmod -R 755 tools bin;/i cp -f $$toolPath $AKHOME/tools;' $$binaryPath"
+        )
     }
 
     private fun flash() {
@@ -516,9 +535,5 @@ class HorizonKernelWorker(
         } finally {
             process.destroy()
         }
-    }
-
-    private fun runCommandGetOutput(cmd: String): String {
-        return Shell.cmd(cmd).exec().out.joinToString("\n").trim()
     }
 }

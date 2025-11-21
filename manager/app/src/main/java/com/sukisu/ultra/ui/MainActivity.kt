@@ -39,6 +39,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -105,6 +106,8 @@ class MainActivity : ComponentActivity() {
 
             KernelSUTheme(colorMode = colorMode, keyColor = keyColor) {
                 val navController = rememberNavController()
+                val navigator = navController.rememberDestinationsNavigator()
+                val initialIntent = remember { intent }
 
                 Scaffold {
                     DestinationsNavHost(
@@ -146,6 +149,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+                HandleZipFileIntent(initialIntent, navigator)
             }
         }
     }

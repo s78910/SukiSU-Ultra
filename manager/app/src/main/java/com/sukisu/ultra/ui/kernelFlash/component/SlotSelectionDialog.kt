@@ -6,12 +6,17 @@ import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.util.getRootShell
+import com.topjohnwu.superuser.ShellUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -35,11 +40,13 @@ fun SlotSelectionDialog(
     var selectedSlot by remember { mutableStateOf<String?>(null) }
     val showDialog = remember { mutableStateOf(show) }
 
+    val context = LocalContext.current
+    
     LaunchedEffect(show) {
         showDialog.value = show
         if (show) {
             try {
-                currentSlot = getCurrentSlot()
+                currentSlot = withContext(Dispatchers.IO) { getCurrentSlot() }
                 // 设置默认选择为当前槽位
                 selectedSlot = when (currentSlot) {
                     "a" -> "a"
@@ -48,7 +55,7 @@ fun SlotSelectionDialog(
                 }
                 errorMessage = null
             } catch (e: Exception) {
-                errorMessage = e.message
+                errorMessage = context.getString(R.string.operation_failed)
                 currentSlot = null
             }
         }
@@ -85,9 +92,9 @@ fun SlotSelectionDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp, vertical = 8.dp),
-                        text = "Error: $errorMessage",
+                        text = errorMessage ?: context.getString(R.string.operation_failed),
                         fontSize = MiuixTheme.textStyles.body2.fontSize,
-                        color = colorScheme.primary,
+                        color = colorScheme.error,
                         textAlign = TextAlign.Center
                     )
                 } else {
@@ -97,7 +104,7 @@ fun SlotSelectionDialog(
                             .padding(horizontal = 24.dp, vertical = 8.dp),
                         text = stringResource(
                             id = R.string.current_slot,
-                            currentSlot ?: "Unknown"
+                            currentSlot?.uppercase() ?: context.getString(R.string.not_supported)
                         ),
                         fontSize = MiuixTheme.textStyles.body2.fontSize,
                         color = colorScheme.onSurfaceVariantSummary,
@@ -194,25 +201,16 @@ data class SlotOption(
 )
 
 // Utility function to get current slot
-private fun getCurrentSlot(): String? {
-    return runCommandGetOutput()?.let {
-        if (it.startsWith("_")) it.substring(1) else it
-    }
-}
-
-private fun runCommandGetOutput(): String? {
-    val cmd = "getprop ro.boot.slot_suffix"
+private suspend fun getCurrentSlot(): String? {
     return try {
-        val process = ProcessBuilder("su").start()
-        process.outputStream.bufferedWriter().use { writer ->
-            writer.write("$cmd\n")
-            writer.write("exit\n")
-            writer.flush()
-        }
-        process.inputStream.bufferedReader().use { reader ->
-            reader.readText().trim()
-        }
-    } catch (_: Exception) {
+        val shell = getRootShell()
+        val result = ShellUtils.fastCmd(shell, "getprop ro.boot.slot_suffix").trim()
+        if (result.startsWith("_")) {
+            result.substring(1)
+        } else {
+            result
+        }.takeIf { it.isNotEmpty() }
+    } catch (e: Exception) {
         null
     }
 }

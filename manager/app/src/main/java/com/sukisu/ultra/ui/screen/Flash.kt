@@ -1,5 +1,6 @@
 package com.sukisu.ultra.ui.screen
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.os.Parcelable
@@ -37,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.dropUnlessResumed
+import kotlinx.coroutines.delay
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -115,6 +118,7 @@ fun FlashScreen(
     var showFloatAction by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val activity = LocalActivity.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
     var flashing by rememberSaveable {
@@ -145,6 +149,23 @@ fun FlashScreen(
                     showFloatAction = true
                 }
                 flashing = if (code == 0) FlashingStatus.SUCCESS else FlashingStatus.FAILED
+            }
+        }
+    }
+
+    // 如果是从外部打开的模块安装，延迟1秒后自动退出
+    LaunchedEffect(flashing, flashIt) {
+        if (flashing == FlashingStatus.SUCCESS && flashIt is FlashIt.FlashModules) {
+            val intent = activity?.intent
+            val isFromExternalIntent = intent?.action?.let { action ->
+                action == Intent.ACTION_VIEW ||
+                action == Intent.ACTION_SEND ||
+                action == Intent.ACTION_SEND_MULTIPLE
+            } ?: false
+
+            if (isFromExternalIntent) {
+                delay(1000)
+                activity.finish()
             }
         }
     }

@@ -362,7 +362,7 @@ fun InstallScreen(
                 
                 // AnyKernel3 刷写
                 (installMethod as? InstallMethod.HorizonKernel)?.let { method ->
-                    if (method.slot != null) {
+                    if (isAbDevice && method.slot != null) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -374,11 +374,13 @@ fun InstallScreen(
                                     if (method.slot == "a") stringResource(id = R.string.slot_a)
                                     else stringResource(id = R.string.slot_b)
                                 ),
-                                onClick = {},
+                                onClick = {
+                                    anyKernel3State.onReopenSlotDialog(method)
+                                },
                                 leftAction = {
                                     Icon(
                                         Icons.Filled.SdStorage,
-                                        tint = colorScheme.onSurface,
+                                        tint = colorScheme.primary,
                                         modifier = Modifier.padding(end = 16.dp),
                                         contentDescription = null
                                     )
@@ -388,32 +390,33 @@ fun InstallScreen(
                     }
                     
                     // KPM 状态显示
-                    if (kpmPatchOption != KpmPatchOption.FOLLOW_KERNEL) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp),
-                        ) {
-                            SuperArrow(
-                                title = when (kpmPatchOption) {
-                                    KpmPatchOption.PATCH_KPM -> stringResource(R.string.kpm_patch_enabled)
-                                    KpmPatchOption.UNDO_PATCH_KPM -> stringResource(R.string.kpm_undo_patch_enabled)
-                                    else -> ""
-                                },
-                                onClick = {},
-                                leftAction = {
-                                    Icon(
-                                        Icons.Filled.Security,
-                                        tint = if (kpmPatchOption == KpmPatchOption.PATCH_KPM)
-                                            colorScheme.primary 
-                                        else 
-                                            colorScheme.secondary,
-                                        modifier = Modifier.padding(end = 16.dp),
-                                        contentDescription = null
-                                    )
-                                }
-                            )
-                        }
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
+                    ) {
+                        SuperArrow(
+                            title = when (kpmPatchOption) {
+                                KpmPatchOption.PATCH_KPM -> stringResource(R.string.kpm_patch_enabled)
+                                KpmPatchOption.UNDO_PATCH_KPM -> stringResource(R.string.kpm_undo_patch_enabled)
+                                KpmPatchOption.FOLLOW_KERNEL -> stringResource(R.string.kpm_follow_kernel_file)
+                            },
+                            onClick = {
+                                anyKernel3State.onReopenKpmDialog(method)
+                            },
+                            leftAction = {
+                                Icon(
+                                    Icons.Filled.Security,
+                                    tint = when (kpmPatchOption) {
+                                        KpmPatchOption.PATCH_KPM -> colorScheme.primary
+                                        KpmPatchOption.UNDO_PATCH_KPM -> colorScheme.secondary
+                                        KpmPatchOption.FOLLOW_KERNEL -> colorScheme.onSurfaceVariantSummary
+                                    },
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = null
+                                )
+                            }
+                        )
                     }
                 }
                 Button(

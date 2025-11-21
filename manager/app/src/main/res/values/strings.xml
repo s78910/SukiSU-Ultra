@@ -376,4 +376,12 @@
     <string name="allowlist_restore_summary_picker">Choose a backup file to import</string>
     <string name="allowlist_restore_success">Restore succeeded</string>
     <string name="allowlist_restore_failed">Restore failed</string>
+    <!-- Zip File Type Labels -->
+    <string name="zip_type_module"> (Module)</string>
+    <string name="zip_type_kernel"> (Kernel)</string>
+    <string name="zip_type_unknown"> (Unknown)</string>
+    <string name="zip_file_unknown">unknown.zip</string>
+    <!-- Zip Install Prompts -->
+    <string name="kernel_install_prompt_with_name">The following kernels will be installed: %1$s</string>
+    <string name="mixed_install_prompt_with_name">The following files will be installed: %1$s</string>
 </resources>

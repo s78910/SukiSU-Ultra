@@ -51,7 +51,9 @@ data class AnyKernel3State(
     val onSlotSelected: (String) -> Unit,
     val onDismissSlotDialog: () -> Unit,
     val onOptionSelected: (KpmPatchOption) -> Unit,
-    val onDismissPatchDialog: () -> Unit
+    val onDismissPatchDialog: () -> Unit,
+    val onReopenSlotDialog: (InstallMethod.HorizonKernel) -> Unit,
+    val onReopenKpmDialog: (InstallMethod.HorizonKernel) -> Unit
 )
 
 @Composable
@@ -69,7 +71,7 @@ fun rememberAnyKernel3State(
     val onHorizonKernelSelected: (InstallMethod.HorizonKernel) -> Unit = { method ->
         val uri = method.uri
         if (uri != null) {
-            if (isAbDevice) {
+            if (isAbDevice && method.slot == null) {
                 tempKernelUri = uri
                 showSlotSelectionDialog = true
             } else {
@@ -78,9 +80,22 @@ fun rememberAnyKernel3State(
             }
         }
     }
+    
+    val onReopenSlotDialog: (InstallMethod.HorizonKernel) -> Unit = { method ->
+        val uri = method.uri
+        if (uri != null && isAbDevice) {
+            tempKernelUri = uri
+            showSlotSelectionDialog = true
+        }
+    }
+    
+    val onReopenKpmDialog: (InstallMethod.HorizonKernel) -> Unit = { method ->
+        installMethodState.value = method
+        showKpmPatchDialog = true
+    }
 
     val onSlotSelected: (String) -> Unit = { slot ->
-        val uri = tempKernelUri
+        val uri = tempKernelUri ?: (installMethodState.value as? InstallMethod.HorizonKernel)?.uri
         if (uri != null) {
             installMethodState.value = InstallMethod.HorizonKernel(
                 uri = uri,
@@ -95,7 +110,6 @@ fun rememberAnyKernel3State(
 
     val onDismissSlotDialog = {
         showSlotSelectionDialog = false
-        tempKernelUri = null
     }
 
     val onOptionSelected: (KpmPatchOption) -> Unit = { option ->
@@ -135,7 +149,9 @@ fun rememberAnyKernel3State(
         onSlotSelected = onSlotSelected,
         onDismissSlotDialog = onDismissSlotDialog,
         onOptionSelected = onOptionSelected,
-        onDismissPatchDialog = onDismissPatchDialog
+        onDismissPatchDialog = onDismissPatchDialog,
+        onReopenSlotDialog = onReopenSlotDialog,
+        onReopenKpmDialog = onReopenKpmDialog
     )
 }
 
