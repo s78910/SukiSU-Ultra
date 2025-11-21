@@ -332,8 +332,7 @@ fun SettingPager(
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                        colors = wallpaperCardColors(),
+                            .fillMaxWidth()
                     ) {
                         val modeItems = listOf(
                             stringResource(id = R.string.settings_mode_default),

@@ -38,8 +38,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.susfs.component.*
-import com.sukisu.ultra.ui.theme.wallpaperCardColors
-import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager
 import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.launch
@@ -421,7 +419,6 @@ fun SuSFSConfigScreen(
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = wallpaperCardColors()
                     ) {
                         Column(
                             modifier = Modifier.padding(12.dp),
@@ -967,7 +964,6 @@ fun SuSFSConfigScreen(
 
     // 主界面布局
     Scaffold(
-        containerColor = wallpaperContainerColor(),
         topBar = {
             TopAppBar(
                 modifier = Modifier.hazeEffect(hazeState) {
@@ -1021,8 +1017,8 @@ fun SuSFSConfigScreen(
                         Card(
                             modifier = Modifier
                                 .clickable { selectedTab = tab },
-                            colors = wallpaperCardColors(
-                                background = if (isSelected) {
+                            colors = CardDefaults.defaultColors(
+                                if (isSelected) {
                                     colorScheme.primaryContainer
                                 } else {
                                     colorScheme.surfaceVariant.copy(alpha = 0.3f)
@@ -1379,9 +1375,6 @@ fun BasicSettingsContent(
         // 说明卡片
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = wallpaperCardColors(
-                background = colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            )
         ) {
             Column(
                 modifier = Modifier.padding(14.dp),
@@ -1445,9 +1438,6 @@ fun BasicSettingsContent(
         // 当前值显示
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = wallpaperCardColors(
-                background = colorScheme.surfaceVariant.copy(alpha = 0.2f)
-            )
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
@@ -1474,7 +1464,6 @@ fun BasicSettingsContent(
         // 开机自启动开关
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = wallpaperCardColors()
         ) {
             SuperSwitch(
                 title = stringResource(R.string.susfs_autostart_title),
@@ -1500,7 +1489,6 @@ fun BasicSettingsContent(
         // 隐藏BL脚本开关
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = wallpaperCardColors()
         ) {
             SuperSwitch(
                 title = stringResource(R.string.hide_bl_script),
@@ -1522,7 +1510,6 @@ fun BasicSettingsContent(
         // 清理残留脚本开关
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = wallpaperCardColors()
         ) {
             SuperSwitch(
                 title = stringResource(R.string.cleanup_residue),
@@ -1544,7 +1531,6 @@ fun BasicSettingsContent(
         // AVC日志欺骗开关
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = wallpaperCardColors()
         ) {
             SuperSwitch(
                 title = stringResource(R.string.avc_log_spoofing),
@@ -1567,7 +1553,6 @@ fun BasicSettingsContent(
         if (isAbDevice) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = wallpaperCardColors()
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
@@ -1640,9 +1625,6 @@ fun BasicSettingsContent(
             Card(
                 onClick = onReset,
                 modifier = Modifier.fillMaxWidth(),
-                colors = wallpaperCardColors(
-                    background = colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                ),
                 cornerRadius = 8.dp
             ) {
                 Row(
@@ -1716,8 +1698,8 @@ fun SlotInfoDialog(
                         slotInfoList.forEach { slotInfo ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = wallpaperCardColors(
-                                    background = if (slotInfo.slotName == currentActiveSlot) {
+                                colors = CardDefaults.defaultColors(
+                                    if (slotInfo.slotName == currentActiveSlot) {
                                         colorScheme.primary.copy(alpha = 0.1f)
                                     } else {
                                         colorScheme.surface.copy(alpha = 0.5f)
