@@ -51,6 +51,15 @@ class SuperUserViewModel : ViewModel() {
             val appDetail = appList.find { it.packageName == packageName }
             return appDetail?.packageInfo?.applicationInfo?.loadIcon(context.packageManager)
         }
+
+        @JvmStatic
+        fun getAppsSafely(): List<AppInfo> {
+            return try {
+                synchronized(appsLock) { apps }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
     }
 
 

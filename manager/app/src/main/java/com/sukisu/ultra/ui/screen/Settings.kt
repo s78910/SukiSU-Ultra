@@ -24,10 +24,10 @@ import androidx.compose.material.icons.rounded.DeveloperMode
 import androidx.compose.material.icons.rounded.EnhancedEncryption
 import androidx.compose.material.icons.rounded.Fence
 import androidx.compose.material.icons.rounded.FolderDelete
-import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RemoveCircle
 import androidx.compose.material.icons.rounded.RemoveModerator
 import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.runtime.Composable
@@ -54,6 +54,7 @@ import com.ramcosta.composedestinations.generated.destinations.AppProfileTemplat
 import com.ramcosta.composedestinations.generated.destinations.LogViewerDestination
 import com.ramcosta.composedestinations.generated.destinations.KpmScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PersonalizationDestination
+import com.ramcosta.composedestinations.generated.destinations.SuSFSConfigScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ToolsDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import dev.chrisbanes.haze.HazeState
@@ -301,6 +302,34 @@ fun SettingPager(
                             },
                             onClick = {
                                 navigator.navigate(KpmScreenDestination) {
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
+                }
+
+                KsuIsValid {
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                        colors = wallpaperCardColors(),
+                    ) {
+                        val susfsTitle = stringResource(id = R.string.susfs_config_title)
+                        SuperArrow(
+                            title = susfsTitle,
+                            summary = stringResource(id = R.string.susfs_config_summary),
+                            leftAction = {
+                                Icon(
+                                    Icons.Rounded.Settings,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = susfsTitle,
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = {
+                                navigator.navigate(SuSFSConfigScreenDestination) {
                                     launchSingleTop = true
                                 }
                             }
