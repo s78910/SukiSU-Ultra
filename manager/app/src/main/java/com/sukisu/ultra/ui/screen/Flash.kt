@@ -58,7 +58,6 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KeyEventBlocker
 import com.sukisu.ultra.ui.util.FlashResult
 import com.sukisu.ultra.ui.util.LkmSelection
-import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import com.sukisu.ultra.ui.util.flashModule
 import com.sukisu.ultra.ui.util.installBoot
 import com.sukisu.ultra.ui.util.reboot
@@ -172,7 +171,6 @@ fun FlashScreen(
     }
 
     Scaffold(
-        containerColor = wallpaperContainerColor(),
         topBar = {
             TopBar(
                 flashing,

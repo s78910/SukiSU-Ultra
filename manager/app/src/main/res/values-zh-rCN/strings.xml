@@ -5,6 +5,7 @@
     <string name="home_click_to_install">点击安装</string>
     <string name="home_working">工作中</string>
     <string name="home_working_version">版本：%d</string>
+    <string name="home_superuser_count">超级用户数：%d</string>
     <string name="home_unsupported">不支持</string>
     <string name="home_unsupported_reason">内核上未检测到 KernelSU 驱动程序，内核错误？</string>
     <string name="home_kernel">内核版本</string>
@@ -46,6 +47,7 @@
     <string name="safe_mode">安全模式</string>
     <string name="reboot_to_apply">重启生效</string>
     <string name="module_magisk_conflict">因与 Magisk 有冲突，所有模块不可用！</string>
+    <string name="home_module_count">模块数：%d</string>
     <string name="home_learn_kernelsu">了解 KernelSU</string>
     <string name="home_learn_kernelsu_url">https://kernelsu.org/zh_CN/guide/what-is-kernelsu.html</string>
     <string name="home_click_to_learn_kernelsu">了解如何安装 KernelSU 以及如何开发模块</string>
@@ -56,6 +58,10 @@
     <string name="profile_template">模版</string>
     <string name="profile_custom">自定义</string>
     <string name="profile_name">名称</string>
+    <string name="profile_namespace">命名空间</string>
+    <string name="profile_namespace_inherited">继承</string>
+    <string name="profile_namespace_global">全局</string>
+    <string name="profile_namespace_individual">私有</string>
     <string name="profile_groups">组</string>
     <string name="profile_capabilities">权能</string>
     <string name="profile_selinux_context">SELinux</string>
@@ -88,6 +94,7 @@
     <string name="app_profile_template_save">保存</string>
     <string name="app_profile_template_delete">删除</string>
     <string name="app_profile_template_view">查看模版</string>
+    <string name="app_profile_template_readonly">只读</string>
     <string name="app_profile_template_id_exist">模版 ID 已存在！</string>
     <string name="app_profile_import_export">导入/导出</string>
     <string name="app_profile_import_from_clipboard">从剪切板导入</string>
@@ -186,6 +193,7 @@
     <string name="log_viewer_search">搜索</string>
     <string name="log_viewer_clear_logs">清空日志</string>
     <string name="log_viewer_clear_logs_confirm">确定要清空选中的日志文件吗？此操作无法撤销。</string>
+    <string name="log_viewer_logs_cleared">日志清空成功</string>
     <string name="log_viewer_filter_type">按类型筛选</string>
     <string name="log_viewer_all_types">所有类型</string>
     <string name="log_viewer_showing_entries">显示 %1$d / %2$d 条记录</string>
@@ -194,6 +202,7 @@
     <string name="log_viewer_refresh">刷新</string>
     <string name="log_viewer_raw_log">原始日志</string>
     <string name="log_viewer_search_placeholder">按 UID、命令或详情搜索…</string>
+    <string name="log_viewer_clear_search">清除搜索</string>
     <string name="log_viewer_view_logs">查看 KernelSU 超级用户访问日志</string>
     <string name="log_viewer_exclude_subtypes">排除子类型</string>
     <string name="log_viewer_exclude_current_app">当前应用</string>
@@ -211,6 +220,7 @@
     <string name="enable_dynamic_manager">启用动态管理器</string>
     <string name="signature_size">动态管理器签名大小</string>
     <string name="signature_hash">动态管理器签名哈希</string>
+    <string name="hash_must_be_64_chars">哈希必须是 64 个 16 进制字符</string>
     <string name="dynamic_manager_set_success">动态管理器配置设置成功</string>
     <string name="dynamic_manager_set_failed">设置动态管理器配置失败</string>
     <string name="invalid_sign_config">无效的管理器配置</string>
@@ -228,12 +238,14 @@
     <string name="clean_runtime_environment_failed">运行环境清理失败</string>
     <!-- umount Manager -->
     <string name="umount_path_manager">Umount 路径管理</string>
+    <string name="umount_path_manager_summary">管理内核卸载路径</string>
     <string name="umount_path_restart_notice">添加或删除路径后需要重启设备才能生效。系统会在下次启动时应用新的配置。</string>
     <string name="add_umount_path">添加 Umount 路径</string>
     <string name="mount_path">挂载路径</string>
     <string name="umount_flags">卸载标志</string>
     <string name="umount_flags_hint">0=正常卸载, 8=MNT_DETACH, -1=自动</string>
     <string name="flags">标志</string>
+    <string name="default_entry">默认条目</string>
     <string name="confirm_delete">确认删除</string>
     <string name="confirm_delete_umount_path">确定要删除路径 %s 吗？</string>
     <string name="umount_path_added">路径已添加，重启后生效</string>
@@ -248,17 +260,9 @@
     <!-- Personalization Settings -->
     <string name="personalization">个性化</string>
     <string name="personalization_summary">自定义应用外观和主题</string>
-    <string name="settings_wallpaper">自定义壁纸</string>
-    <string name="settings_wallpaper_summary">选择一张图片作为应用背景。</string>
-    <string name="settings_wallpaper_summary_selected">已应用壁纸</string>
-    <string name="settings_wallpaper_replace">更换</string>
-    <string name="settings_wallpaper_remove">移除</string>
-    <string name="settings_wallpaper_opacity_label">壁纸透明度：%1$d%%</string>
-    <string name="settings_wallpaper_mode">壁纸缩放</string>
-    <string name="settings_wallpaper_mode_summary">选择壁纸如何适配背景</string>
-    <string name="settings_wallpaper_mode_fill">填充</string>
-    <string name="settings_wallpaper_mode_stretch">拉伸</string>
-    <string name="settings_wallpaper_mode_fit">适应</string>
+    <string name="theme_settings">主题设置</string>
+    <string name="theme_mode">主题模式</string>
+    <string name="theme_mode_summary">选择应用的显示主题</string>
     <!-- Kernel Flash Progress Related -->
     <string name="horizon_flash_complete">刷入完成</string>
     <string name="horizon_preparing">准备中…</string>
@@ -280,14 +284,20 @@
     <string name="horizon_copy_failed">复制失败</string>
     <string name="horizon_unknown_error">未知错误</string>
     <string name="flash_failed_message">刷入失败</string>
+    <string name="Lkm_install_methods">LKM 修复/安装</string>
+    <string name="GKI_install_methods">刷入 AnyKernel3</string>
     <string name="kernel_version_log">内核版本：%1$s</string>
     <string name="tool_version_log">使用的修补工具：%1$s</string>
+    <string name="configuration">配置</string>
+    <string name="app_settings">应用程序设置</string>
     <string name="tools">工具</string>
     <string name="root_required">需要root权限</string>
     <string name="kpm_patch_options">KPM 补丁</string>
     <string name="kpm_patch_description">用于添加额外的KPM功能</string>
     <string name="enable_kpm_patch">KPM 补丁</string>
+    <string name="kpm_patch_switch_description">在刷入前对内核镜像应用KPM补丁</string>
     <string name="enable_kpm_undo_patch">KPM 撤销补丁</string>
+    <string name="kpm_undo_patch_switch_description">撤销之前应用的KPM补丁</string>
     <string name="kpm_patch_enabled">KPM 补丁已启用</string>
     <string name="kpm_undo_patch_enabled">KPM 撤销补丁已启用</string>
     <string name="kpm_patch_mode">KPM 补丁模式</string>
@@ -305,6 +315,7 @@
     <string name="kpm_undo_patch_failed">KPM 撤销补丁失败</string>
     <string name="kpm_patch_operation_failed">KPM 补丁操作失败: %s</string>
     <string name="kpm_follow_kernel_file">跟随内核</string>
+    <string name="kpm_follow_kernel_description">原样使用内核，不进行任何KPM修改</string>
     <string name="kernel_flashing">内核刷入</string>
     <string name="horizon_kernel">AnyKernel3 内核</string>
     <string name="horizon_kernel_summary">刷入AnyKernel3格式的内核zip包</string>
@@ -320,11 +331,18 @@
     <string name="kpm_install_failed">kpm 模块加载失败</string>
     <string name="kpm_args">参数</string>
     <string name="kpm_control">执行</string>
+    <string name="home_kpm_version">KPM 版本</string>
     <string name="close_notice">关闭</string>
     <string name="kernel_module_notice">以下内核模块功能由 KernelPatch 开发，并经过修改后加入了 SukiSU Ultra 的内核模块功能</string>
+    <string name="home_ContributionCard_kernelsu">SukiSU Ultra 期待</string>
     <string name="kpm_control_success">成功</string>
     <string name="kpm_control_failed">失败</string>
+    <string name="home_click_to_ContributionCard_kernelsu">SukiSU Ultra 在未来将是 KSU 的相对独立分支，但我们仍然感谢官方 KernelSU 和 MKSU 等的贡献！</string>
     <string name="not_supported">不支持</string>
+    <string name="supported">支持</string>
+    <string name="kernel_patched">内核未修补</string>
+    <string name="kernel_not_enabled">内核未配置</string>
+    <string name="custom_settings">自定义设置</string>
     <string name="kpm_install_mode">KPM 安装</string>
     <string name="kpm_install_mode_load">加载</string>
     <string name="kpm_install_mode_embed">嵌入</string>

@@ -27,8 +27,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.util.*
-import com.sukisu.ultra.ui.theme.wallpaperCardColors
-import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -208,7 +206,6 @@ fun LogViewer(navigator: DestinationsNavigator) {
     }
 
     Scaffold(
-        containerColor = wallpaperContainerColor(),
         topBar = {
             TopAppBar(
                 title = stringResource(R.string.log_viewer_title),
@@ -387,8 +384,7 @@ private fun LogControlPanel(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
-        colors = wallpaperCardColors()
+            .padding(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM)
     ) {
         Column {
             SuperArrow(
@@ -576,8 +572,7 @@ private fun LogEntryCard(entry: LogEntry) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = { expanded = !expanded },
-        colors = wallpaperCardColors()
+        onClick = { expanded = !expanded }
     ) {
         Column(
             modifier = Modifier.padding(SPACING_LARGE)

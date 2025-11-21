@@ -53,8 +53,6 @@ import com.sukisu.ultra.ui.component.ConfirmResult
 import com.sukisu.ultra.ui.component.DynamicManagerCard
 import com.sukisu.ultra.ui.component.KsuIsValid
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
-import com.sukisu.ultra.ui.theme.wallpaperCardColors
-import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import com.sukisu.ultra.ui.util.cleanRuntimeEnvironment
 import com.sukisu.ultra.ui.util.getUidMultiUserScan
 import com.sukisu.ultra.ui.util.readUidScannerFile
@@ -103,7 +101,6 @@ fun Tools(
     val prefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
 
     Scaffold(
-        containerColor = wallpaperContainerColor(),
         topBar = {
             TopAppBar(
                 modifier = Modifier.hazeEffect(hazeState) {
@@ -146,7 +143,6 @@ fun Tools(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
-                        colors = wallpaperCardColors(),
                     ) {
                         UidScannerSection(prefs = prefs, scope = scope, context = context)
                     }
@@ -157,7 +153,6 @@ fun Tools(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
-                        colors = wallpaperCardColors(),
                     ) {
                         val lkmMode = Natives.isLkmMode
                         if (lkmMode) {
@@ -352,7 +347,6 @@ fun SelinuxToggleSection(
         modifier = Modifier
             .padding(top = 12.dp)
             .fillMaxWidth(),
-        colors = wallpaperCardColors(),
     ) {
         val statusLabel = getSELinuxStatus()
         SuperSwitch(
@@ -463,7 +457,6 @@ private fun AllowlistBackupSection(
         modifier = Modifier
             .padding(vertical = 12.dp)
             .fillMaxWidth(),
-        colors = wallpaperCardColors(),
     ) {
         SuperArrow(
             title = stringResource(R.string.allowlist_backup_title),

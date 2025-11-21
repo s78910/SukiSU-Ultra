@@ -26,8 +26,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -54,9 +52,6 @@ import com.sukisu.ultra.ui.screen.ModulePager
 import com.sukisu.ultra.ui.screen.SettingPager
 import com.sukisu.ultra.ui.screen.SuperUserPager
 import com.sukisu.ultra.ui.theme.KernelSUTheme
-import com.sukisu.ultra.ui.theme.LocalWallpaperState
-import com.sukisu.ultra.ui.theme.wallpaperContainerColor
-import com.sukisu.ultra.ui.theme.wallpaperTransitionAlpha
 import com.sukisu.ultra.ui.util.install
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -75,14 +70,6 @@ class MainActivity : ComponentActivity() {
             val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
             var colorMode by remember { mutableIntStateOf(prefs.getInt("color_mode", 0)) }
             var keyColorInt by remember { mutableIntStateOf(prefs.getInt("key_color", 0)) }
-            val wallpaperUriPref = prefs.getString("wallpaper_uri", null)
-            var wallpaperUri by remember { mutableStateOf(wallpaperUriPref) }
-            var wallpaperAlpha by remember {
-                mutableFloatStateOf(prefs.getFloat("wallpaper_alpha", 0f))
-            }
-            var wallpaperScaleMode by remember {
-                mutableIntStateOf(prefs.getInt("wallpaper_scale_mode", 0))
-            }
             val keyColor = remember(keyColorInt) { if (keyColorInt == 0) null else Color(keyColorInt) }
 
             val darkMode = when (colorMode) {
@@ -110,29 +97,18 @@ class MainActivity : ComponentActivity() {
                     when (key) {
                         "color_mode" -> colorMode = prefs.getInt("color_mode", 0)
                         "key_color" -> keyColorInt = prefs.getInt("key_color", 0)
-                        "wallpaper_uri" -> wallpaperUri = prefs.getString("wallpaper_uri", null)
-                        "wallpaper_alpha" -> wallpaperAlpha = prefs.getFloat("wallpaper_alpha", 0f)
-                        "wallpaper_scale_mode" -> wallpaperScaleMode = prefs.getInt("wallpaper_scale_mode", 0)
                     }
                 }
                 prefs.registerOnSharedPreferenceChangeListener(listener)
                 onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
             }
 
-            KernelSUTheme(
-                colorMode = colorMode,
-                keyColor = keyColor,
-                wallpaperUri = wallpaperUri,
-                wallpaperAlpha = wallpaperAlpha,
-                wallpaperScaleMode = wallpaperScaleMode
-            ) {
+            KernelSUTheme(colorMode = colorMode, keyColor = keyColor) {
                 val navController = rememberNavController()
                 val navigator = navController.rememberDestinationsNavigator()
                 val initialIntent = remember { intent }
 
-                Scaffold(
-                    containerColor = wallpaperContainerColor()
-                ) {
+                Scaffold {
                     DestinationsNavHost(
                         modifier = Modifier,
                         navGraph = NavGraphs.root,
@@ -189,12 +165,9 @@ fun MainScreen(navController: DestinationsNavigator) {
     val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val hazeState = remember { HazeState() }
-    val wallpaperState = LocalWallpaperState.current
-    val hazeBackgroundAlpha = wallpaperTransitionAlpha(wallpaperState.surfaceAlpha)
-    val hazeTintAlpha = wallpaperTransitionAlpha(0.8f * wallpaperState.surfaceAlpha)
     val hazeStyle = HazeStyle(
-        backgroundColor = MiuixTheme.colorScheme.background.copy(alpha = hazeBackgroundAlpha),
-        tint = HazeTint(MiuixTheme.colorScheme.background.copy(alpha = hazeTintAlpha))
+        backgroundColor = MiuixTheme.colorScheme.background,
+        tint = HazeTint(MiuixTheme.colorScheme.background.copy(0.8f))
     )
     val handlePageChange: (Int) -> Unit = remember(pagerState, coroutineScope) {
         { page ->
@@ -217,7 +190,6 @@ fun MainScreen(navController: DestinationsNavigator) {
         LocalHandlePageChange provides handlePageChange
     ) {
         Scaffold(
-            containerColor = wallpaperContainerColor(),
             bottomBar = {
                 BottomBar(hazeState, hazeStyle)
             },

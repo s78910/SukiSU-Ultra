@@ -5,6 +5,8 @@
     <string name="home_click_to_install">Clicca per installare</string>
     <string name="home_working">In esecuzione</string>
     <string name="home_working_version">Versione: %d</string>
+    <string name="home_superuser_count">Applicazioni con accesso root: %d</string>
+    <string name="home_module_count">Moduli installati: %d</string>
     <string name="home_unsupported">Non supportato</string>
     <string name="home_unsupported_reason">KernelSU ora supporta solo i kernel GKI</string>
     <string name="home_kernel">Kernel</string>
@@ -50,7 +52,11 @@
     <string name="home_support_content">KernelSU è, e sempre sarà, gratuito e open source. Puoi comunque mostrarci il tuo apprezzamento facendo una donazione.</string>
     <string name="about_source_code"><![CDATA[Visualizza il codice sorgente su %1$s<br/>Unisciti al nostro canale %2$s]]></string>
     <string name="profile_name">Nome profilo</string>
+    <string name="profile_namespace">Spazio dei nomi del mount</string>
+    <string name="profile_namespace_global">Globale</string>
     <string name="profile_groups">Gruppi</string>
+    <string name="profile_namespace_inherited">Ereditato</string>
+    <string name="profile_namespace_individual">Individuale</string>
     <string name="profile_default">Predefinito</string>
     <string name="profile_custom">Personalizzato</string>
     <string name="profile_template">Modello</string>
@@ -79,6 +85,7 @@
     <string name="app_profile_template_id_invalid">Identificativo modello non valido</string>
     <string name="app_profile_template_name">Nome</string>
     <string name="app_profile_template_view">Visualizza modello</string>
+    <string name="app_profile_template_readonly">Sola lettura</string>
     <string name="app_profile_template_id_exist">L\'identificatore del modello è già in uso!</string>
     <string name="app_profile_import_export">Importa/Esporta</string>
     <string name="app_profile_import_from_clipboard">Importa dagli appunti</string>

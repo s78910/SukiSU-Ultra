@@ -70,8 +70,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import com.sukisu.ultra.ui.theme.wallpaperCardColors
-import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -348,7 +346,6 @@ fun KpmScreen(
     )
 
     Scaffold(
-        containerColor = wallpaperContainerColor(),
         topBar = {
             searchStatus.TopAppBarAnim(hazeState = hazeState, hazeStyle = hazeStyle) {
                 TopAppBar(
@@ -698,8 +695,7 @@ private fun KpmList(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                        colors = wallpaperCardColors()
+                            .padding(horizontal = 12.dp, vertical = 12.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -870,7 +866,6 @@ private fun KpmModuleItem(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
-        colors = wallpaperCardColors(),
         insideMargin = PaddingValues(16.dp)
     ) {
         Row(

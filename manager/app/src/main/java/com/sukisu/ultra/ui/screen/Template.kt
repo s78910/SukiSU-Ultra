@@ -101,8 +101,6 @@ import top.yukonga.miuix.kmp.icon.icons.useful.Copy
 import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import com.sukisu.ultra.ui.theme.wallpaperCardColors
-import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -171,7 +169,6 @@ fun AppProfileTemplateScreen(
     )
 
     Scaffold(
-        containerColor = wallpaperContainerColor(),
         topBar = {
             val clipboardManager = LocalClipboardManager.current
             val context = LocalContext.current
@@ -313,7 +310,6 @@ private fun TemplateItem(
 ) {
     Card(
         modifier = Modifier.padding(bottom = 12.dp),
-        colors = wallpaperCardColors(),
         onClick = {
             navigator.navigate(TemplateEditorScreenDestination(template, !template.local)) {
                 popUpTo(TemplateEditorScreenDestination) {
