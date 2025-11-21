@@ -95,6 +95,8 @@ import top.yukonga.miuix.kmp.icon.icons.useful.Edit
 import top.yukonga.miuix.kmp.icon.icons.useful.Move
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -248,6 +250,7 @@ fun InstallScreen(
     )
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopBar(
                 onBack = dropUnlessResumed { navigator.popBackStack() },
@@ -275,6 +278,7 @@ fun InstallScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth(),
+                    colors = wallpaperCardColors(),
                 ) {
                     SelectInstallMethod(
                         onSelected = { method ->
@@ -296,6 +300,7 @@ fun InstallScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
+                        colors = wallpaperCardColors(),
                     ) {
                         val isOta = installMethod is InstallMethod.DirectInstallToInactiveSlot
                         val suffix = produceState(initialValue = "", isOta) {
@@ -338,6 +343,7 @@ fun InstallScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
+                        colors = wallpaperCardColors(),
                     ) {
                         SuperArrow(
                             title = stringResource(id = R.string.install_upload_lkm_file),
@@ -367,6 +373,7 @@ fun InstallScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
+                            colors = wallpaperCardColors(),
                         ) {
                             SuperArrow(
                                 title = stringResource(
@@ -394,6 +401,7 @@ fun InstallScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
+                        colors = wallpaperCardColors(),
                     ) {
                         SuperArrow(
                             title = when (kpmPatchOption) {

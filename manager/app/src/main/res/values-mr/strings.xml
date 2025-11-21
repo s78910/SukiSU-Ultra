@@ -5,8 +5,6 @@
     <string name="home_click_to_install">इंस्टॉल साठी क्लिक करा</string>
     <string name="home_working">कार्यरत</string>
     <string name="home_working_version">आवृत्ती: %d</string>
-    <string name="home_module_count">मॉड्यूल्स: %d</string>
-    <string name="home_superuser_count">सुपरयूझर: %d</string>
     <string name="home_unsupported">असमर्थित</string>
     <string name="home_unsupported_reason">KernelSU आता फक्त GKI कर्नलचे समर्थन करते</string>
     <string name="home_kernel">कर्नल</string>
@@ -52,15 +50,11 @@
     <string name="home_support_content">KernelSU विनामूल्य आणि मुक्त स्रोत आहे, आणि नेहमीच असेल. तथापि, देणगी देऊन तुम्ही आम्हाला दाखवू शकता की तुमची काळजी आहे.</string>
     <string name="home_support_title">आम्हाला पाठिंबा द्या</string>
     <string name="profile_custom">कस्टम</string>
-    <string name="profile_namespace">माउंट नेमस्पेस</string>
     <string name="profile_default">डीफॉल्ट</string>
     <string name="profile_template">साचा</string>
-    <string name="profile_namespace_individual">वैयक्तिक</string>
     <string name="profile_capabilities">क्षमता</string>
     <string name="about_source_code">%1$s वर स्रोत कोड पहा<br/>आमच्या %2$s चॅनेलमध्ये सामील व्हा</string>
     <string name="profile_name">प्रोफाइल नाव</string>
-    <string name="profile_namespace_inherited">इनहेरीटेड</string>
-    <string name="profile_namespace_global">जागतिक</string>
     <string name="profile_groups">गट</string>
     <string name="profile_selinux_context">SELinux संदर्भ</string>
     <string name="profile_umount_modules">उमाउंट मॉड्यूल्स</string>

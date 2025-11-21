@@ -37,6 +37,7 @@ import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.extra.SuperSwitch
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
 
 @Composable
 fun DynamicManagerCard() {
@@ -44,6 +45,7 @@ fun DynamicManagerCard() {
         modifier = Modifier
             .padding(top = 12.dp)
             .fillMaxWidth(),
+        colors = wallpaperCardColors(),
     ) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()

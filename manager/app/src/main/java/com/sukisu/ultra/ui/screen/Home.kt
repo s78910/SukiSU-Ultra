@@ -93,6 +93,8 @@ import top.yukonga.miuix.kmp.icon.icons.useful.Save
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -118,6 +120,7 @@ fun HomePager(
     val themeMode = prefs.getInt("color_mode", 0)
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopBar(
                 kernelVersion = kernelVersion,
@@ -407,6 +410,7 @@ private fun StatusCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
+                            colors = wallpaperCardColors(),
                             insideMargin = PaddingValues(16.dp),
                             onClick = { onClickSuperuser() },
                             showIndication = true,
@@ -437,6 +441,7 @@ private fun StatusCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
+                            colors = wallpaperCardColors(),
                             insideMargin = PaddingValues(16.dp),
                             onClick = { onclickModule() },
                             showIndication = true,
@@ -471,6 +476,7 @@ private fun StatusCard(
                     onClick = {
                         if (kernelVersion.isGKI()) onClickInstall()
                     },
+                    colors = wallpaperCardColors(),
                     showIndication = true,
                     pressFeedbackType = PressFeedbackType.Sink
                 ) {
@@ -495,6 +501,7 @@ private fun StatusCard(
                     onClick = {
                         if (kernelVersion.isGKI()) onClickInstall()
                     },
+                    colors = wallpaperCardColors(),
                     showIndication = true,
                     pressFeedbackType = PressFeedbackType.Sink
                 ) {
@@ -560,6 +567,7 @@ fun LearnMoreCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
+        colors = wallpaperCardColors(),
     ) {
         BasicComponent(
             title = stringResource(R.string.home_learn_kernelsu),
@@ -586,6 +594,7 @@ fun DonateCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
+        colors = wallpaperCardColors(),
     ) {
         BasicComponent(
             title = stringResource(R.string.home_support_title),
@@ -610,14 +619,14 @@ fun DonateCard() {
 private fun InfoCard() {
     val manualHookText = stringResource(R.string.manual_hook)
     val inlineHookText = stringResource(R.string.inline_hook)
-    val TracepointHookText = stringResource(R.string.tracepoint_hook)
+    val tracepointHookText = stringResource(R.string.tracepoint_hook)
     val unknownHookText = stringResource(R.string.selinux_status_unknown)
     val susfsInfo = rememberSusfsInfo(manualHookText, inlineHookText)
     val isSusfsSupported = susfsInfo.status == SusfsStatus.Supported
-    val hookTypeLabel = remember(manualHookText, inlineHookText, TracepointHookText) {
+    val hookTypeLabel = remember(manualHookText, inlineHookText, tracepointHookText) {
         val localized = when (val rawType = Natives.getHookType()) {
             "Manual" -> manualHookText
-            "Tracepoint" -> TracepointHookText
+            "Tracepoint" -> tracepointHookText
             else -> rawType
         }
         localized.ifBlank { unknownHookText }
@@ -647,7 +656,9 @@ private fun InfoCard() {
     val uname = Os.uname()
     val managerVersion = getManagerVersion(context)
 
-    Card {
+    Card(
+        colors = wallpaperCardColors(),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

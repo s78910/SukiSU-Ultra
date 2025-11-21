@@ -24,6 +24,8 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.ConfirmResult
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import com.sukisu.ultra.ui.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -87,6 +89,7 @@ fun UmountManager(navigator: DestinationsNavigator) {
     }
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopAppBar(
                 title = stringResource(R.string.umount_path_manager),
@@ -133,7 +136,8 @@ fun UmountManager(navigator: DestinationsNavigator) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(SPACING_LARGE)
+                    .padding(SPACING_LARGE),
+                colors = wallpaperCardColors()
             ) {
                 Row(
                     modifier = Modifier.padding(SPACING_LARGE),
@@ -309,7 +313,8 @@ fun UmountPathCard(
     val context = LocalContext.current
 
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = wallpaperCardColors()
     ) {
         Row(
             modifier = Modifier

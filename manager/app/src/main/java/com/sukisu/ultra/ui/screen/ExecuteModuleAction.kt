@@ -60,6 +60,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.icon.icons.useful.Save
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import java.io.File
 import java.text.SimpleDateFormat
@@ -109,6 +110,7 @@ fun ExecuteModuleActionScreen(navigator: DestinationsNavigator, moduleId: String
     }
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopBar(
                 onBack = dropUnlessResumed {

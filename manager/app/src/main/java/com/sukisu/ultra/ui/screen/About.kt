@@ -46,6 +46,8 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import com.sukisu.ultra.BuildConfig
 import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -82,6 +84,7 @@ fun AboutScreen(navigator: DestinationsNavigator) {
     val result = extractLinks(htmlString)
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopAppBar(
                 modifier = Modifier.hazeEffect(hazeState) {
@@ -154,7 +157,8 @@ fun AboutScreen(navigator: DestinationsNavigator) {
             }
             item {
                 Card(
-                    modifier = Modifier.padding(bottom = 12.dp)
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    colors = wallpaperCardColors()
                 ) {
                     result.forEach {
                         SuperArrow(

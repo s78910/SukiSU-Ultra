@@ -61,6 +61,8 @@ import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.icon.icons.useful.Confirm
 import top.yukonga.miuix.kmp.icon.icons.useful.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -96,6 +98,7 @@ fun TemplateEditorScreen(
     }
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             val saveTemplateFailed = stringResource(id = R.string.app_profile_template_save_failed)
             val idConflictError = stringResource(id = R.string.app_profile_template_id_exist)
@@ -164,6 +167,7 @@ fun TemplateEditorScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp),
+                    colors = wallpaperCardColors(),
                 ) {
                     var errorHint by remember {
                         mutableStateOf(false)

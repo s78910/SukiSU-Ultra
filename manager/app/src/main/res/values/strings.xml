@@ -6,8 +6,6 @@
     <string name="home_click_to_install">Click to install</string>
     <string name="home_working">Working</string>
     <string name="home_working_version">Version: %d</string>
-    <string name="home_superuser_count">Superusers: %d</string>
-    <string name="home_module_count">Modules: %d</string>
     <string name="home_unsupported">Unsupported</string>
     <string name="home_unsupported_reason">No KernelSU driver detected on your kernel, wrong kernel?</string>
     <string name="home_kernel">Kernel version</string>
@@ -63,10 +61,6 @@
     <string name="profile_template">Template</string>
     <string name="profile_custom">Custom</string>
     <string name="profile_name">Profile name</string>
-    <string name="profile_namespace">Mount namespace</string>
-    <string name="profile_namespace_inherited">Inherited</string>
-    <string name="profile_namespace_global">Global</string>
-    <string name="profile_namespace_individual">Individual</string>
     <string name="profile_groups">Groups</string>
     <string name="profile_capabilities">Capabilities</string>
     <string name="profile_selinux_context">SELinux context</string>
@@ -99,7 +93,6 @@
     <string name="app_profile_template_save">Save</string>
     <string name="app_profile_template_delete">Delete</string>
     <string name="app_profile_template_view">View template</string>
-    <string name="app_profile_template_readonly">Read only</string>
     <string name="app_profile_template_id_exist">Template ID already exists!</string>
     <string name="app_profile_import_export">Import/Export</string>
     <string name="app_profile_import_from_clipboard">Import from clipboard</string>
@@ -199,7 +192,6 @@
     <string name="log_viewer_search">Search</string>
     <string name="log_viewer_clear_logs">Clear Logs</string>
     <string name="log_viewer_clear_logs_confirm">Are you sure you want to clear the selected log file? This action cannot be undone.</string>
-    <string name="log_viewer_logs_cleared">Logs cleared successfully</string>
     <string name="log_viewer_filter_type">Filter by Type</string>
     <string name="log_viewer_all_types">All Types</string>
     <string name="log_viewer_showing_entries">Showing %1$d of %2$d entries</string>
@@ -208,7 +200,6 @@
     <string name="log_viewer_refresh">Refresh</string>
     <string name="log_viewer_raw_log">Raw Log</string>
     <string name="log_viewer_search_placeholder">Search by UID, command, or details…</string>
-    <string name="log_viewer_clear_search">Clear search</string>
     <string name="log_viewer_view_logs">View KernelSU superuser access logs</string>
     <string name="log_viewer_exclude_subtypes">Exclude sub-types</string>
     <string name="log_viewer_exclude_current_app">Current App</string>
@@ -226,7 +217,6 @@
     <string name="enable_dynamic_manager">Enable Dynamic Manager</string>
     <string name="signature_size">Dynamic Manager Signature Size</string>
     <string name="signature_hash">Dynamic Manager Signature Hash</string>
-    <string name="hash_must_be_64_chars">Hash must be 64 hexadecimal characters</string>
     <string name="dynamic_manager_set_success">Dynamic Manager configuration set successfully</string>
     <string name="dynamic_manager_set_failed">Failed to set dynamic Manager configuration</string>
     <string name="invalid_sign_config">Invalid Manager configuration</string>
@@ -245,14 +235,12 @@
     <string name="clean_runtime_environment_failed">Failed to clean runtime environment</string>
     <!-- umount Manager -->
     <string name="umount_path_manager">Umount Path Management</string>
-    <string name="umount_path_manager_summary">Manage kernel unmount paths</string>
     <string name="umount_path_restart_notice">A reboot is required for changes to take effect. The system will apply the new configuration on the next boot.</string>
     <string name="add_umount_path">Add Umount Path</string>
     <string name="mount_path">Mount Path</string>
     <string name="umount_flags">Unmount Flags</string>
     <string name="umount_flags_hint">0=Normal unmount, 8=MNT_DETACH, -1=Auto</string>
     <string name="flags">Flags</string>
-    <string name="default_entry">Default Entry</string>
     <string name="confirm_delete">Confirm Delete</string>
     <string name="confirm_delete_umount_path">Are you sure you want to delete the path %s?</string>
     <string name="umount_path_added">Path added, will take effect after reboot</string>
@@ -268,9 +256,17 @@
     <!-- Personalization Settings -->
     <string name="personalization">Personalization</string>
     <string name="personalization_summary">Customize the app\'s appearance and theme</string>
-    <string name="theme_settings">Theme Settings</string>
-    <string name="theme_mode">Theme Mode</string>
-    <string name="theme_mode_summary">Select the app\'s display theme</string>
+    <string name="settings_wallpaper">Custom wallpaper</string>
+    <string name="settings_wallpaper_summary">Choose an image as the app background.</string>
+    <string name="settings_wallpaper_summary_selected">Wallpaper applied</string>
+    <string name="settings_wallpaper_replace">Replace</string>
+    <string name="settings_wallpaper_remove">Remove</string>
+    <string name="settings_wallpaper_opacity_label">Wallpaper transparency: %1$d%%</string>
+    <string name="settings_wallpaper_mode">Wallpaper scaling</string>
+    <string name="settings_wallpaper_mode_summary">Choose how the wallpaper should fit the background.</string>
+    <string name="settings_wallpaper_mode_fill">Fill</string>
+    <string name="settings_wallpaper_mode_stretch">Stretch</string>
+    <string name="settings_wallpaper_mode_fit">Fit</string>
     <!-- Kernel Flash Progress Related -->
     <string name="horizon_flash_complete">Flash Complete</string>
     <string name="horizon_preparing">Preparing…</string>
@@ -292,20 +288,14 @@
     <string name="horizon_copy_failed">Copy failed</string>
     <string name="horizon_unknown_error">Unknown error</string>
     <string name="flash_failed_message">Flash failed</string>
-    <string name="Lkm_install_methods">LKM repair/installation</string>
-    <string name="GKI_install_methods">Flashing AnyKernel3</string>
     <string name="kernel_version_log">Kernel version：%1$s</string>
     <string name="tool_version_log">Using the patching tool：%1$s</string>
-    <string name="configuration">Configure</string>
-    <string name="app_settings">Application Settings</string>
     <string name="tools">Tools</string>
     <string name="root_required">Requires root privileges</string>
     <string name="kpm_patch_options">KPM Patch</string>
     <string name="kpm_patch_description">For adding additional KPM features</string>
     <string name="enable_kpm_patch">KPM Patch</string>
-    <string name="kpm_patch_switch_description">Apply KPM patch to kernel image before flashing</string>
     <string name="enable_kpm_undo_patch">KPM Undo Patch</string>
-    <string name="kpm_undo_patch_switch_description">Undo previously applied KPM patch</string>
     <string name="kpm_patch_enabled">KPM patch enabled</string>
     <string name="kpm_undo_patch_enabled">KPM undo patch enabled</string>
     <string name="kpm_patch_mode">KPM Patch Mode</string>
@@ -323,7 +313,6 @@
     <string name="kpm_undo_patch_failed">KPM undo patch failed</string>
     <string name="kpm_patch_operation_failed">KPM patch operation failed: %s</string>
     <string name="kpm_follow_kernel_file">Follow Kernel</string>
-    <string name="kpm_follow_kernel_description">Use kernel as-is without any KPM modifications</string>
     <string name="kernel_flashing">Kernel Flashing</string>
     <string name="horizon_kernel">AnyKernel3 Kernel</string>
     <string name="horizon_kernel_summary">Flash AnyKernel3 format kernel zip</string>
@@ -340,18 +329,11 @@
     <string name="kpm_install_failed">Load of kpm module failed</string>
     <string name="kpm_args">Parameters</string>
     <string name="kpm_control">Execute</string>
-    <string name="home_kpm_version">KPM Version</string>
     <string name="close_notice">Close</string>
     <string name="kernel_module_notice">The following kernel module functions were developed by KernelPatch and modified to include the kernel module functions of SukiSU Ultra</string>
-    <string name="home_ContributionCard_kernelsu">SukiSU Ultra Look forward to</string>
     <string name="kpm_control_success">Success</string>
     <string name="kpm_control_failed">Failed</string>
-    <string name="home_click_to_ContributionCard_kernelsu">SukiSU Ultra will be a relatively independent branch of KSU in the future, but we still appreciate the official KernelSU and MKSU etc. for their contributions!</string>
     <string name="not_supported">Unsupported</string>
-    <string name="supported">Supported</string>
-    <string name="kernel_patched">Kernel not patched</string>
-    <string name="kernel_not_enabled">Kernel not configured</string>
-    <string name="custom_settings">Custom settings</string>
     <string name="kpm_install_mode">KPM Install</string>
     <string name="kpm_install_mode_load">Load</string>
     <string name="kpm_install_mode_embed">Embed</string>

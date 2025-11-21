@@ -79,6 +79,8 @@ import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperDropdown
 import top.yukonga.miuix.kmp.extra.SuperSwitch
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -103,6 +105,7 @@ fun SettingPager(
     val isKpmAvailable = rememberKpmAvailable()
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopAppBar(
                 modifier = Modifier.hazeEffect(hazeState) {
@@ -148,6 +151,7 @@ fun SettingPager(
                     modifier = Modifier
                         .padding(top = 12.dp)
                         .fillMaxWidth(),
+                    colors = wallpaperCardColors(),
                 ) {
                     SuperSwitch(
                         title = stringResource(id = R.string.settings_check_update),
@@ -198,6 +202,7 @@ fun SettingPager(
                     modifier = Modifier
                         .padding(top = 12.dp)
                         .fillMaxWidth(),
+                    colors = wallpaperCardColors(),
                 ) {
                     val personalization = stringResource(id = R.string.personalization)
                     SuperArrow(
@@ -225,6 +230,7 @@ fun SettingPager(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
+                        colors = wallpaperCardColors(),
                     ) {
                         SuperArrow(
                             title = toolsTitle,
@@ -251,6 +257,7 @@ fun SettingPager(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
+                        colors = wallpaperCardColors(),
                     ) {
                         val profileTemplate = stringResource(id = R.string.settings_profile_template)
                         SuperArrow(
@@ -278,6 +285,7 @@ fun SettingPager(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
+                        colors = wallpaperCardColors(),
                     ) {
                         val kpmTitle = stringResource(id = R.string.kpm_title)
                         SuperArrow(
@@ -305,6 +313,7 @@ fun SettingPager(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
+                        colors = wallpaperCardColors(),
                     ) {
                         val modeItems = listOf(
                             stringResource(id = R.string.settings_mode_default),
@@ -555,6 +564,7 @@ fun SettingPager(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
+                        colors = wallpaperCardColors(),
                     ) {
                         var umountChecked by rememberSaveable { mutableStateOf(Natives.isDefaultUmountModules()) }
                         SuperSwitch(
@@ -606,6 +616,7 @@ fun SettingPager(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth(),
+                            colors = wallpaperCardColors(),
                         ) {
                             val uninstall = stringResource(id = R.string.settings_uninstall)
                             SuperArrow(
@@ -631,6 +642,7 @@ fun SettingPager(
                     modifier = Modifier
                         .padding(vertical = 12.dp)
                         .fillMaxWidth(),
+                    colors = wallpaperCardColors(),
                 ) {
                     if (isSuLogEnabled) {
                         val sulog = stringResource(id = R.string.log_viewer_view_logs)

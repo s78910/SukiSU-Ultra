@@ -98,6 +98,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.icons.useful.ImmersionMore
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -138,6 +140,7 @@ fun SuperUserPager(
     )
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             searchStatus.TopAppBarAnim(hazeState = hazeState, hazeStyle = hazeStyle) {
                 TopAppBar(
@@ -394,7 +397,8 @@ private fun SimpleAppItem(
         )
         Card(
             modifier = Modifier
-                .padding(start = 6.dp, end = 12.dp, bottom = 6.dp)
+                .padding(start = 6.dp, end = 12.dp, bottom = 6.dp),
+            colors = wallpaperCardColors()
         ) {
             BasicComponent(
                 title = app.label,
@@ -501,6 +505,7 @@ private fun GroupItem(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
+        colors = wallpaperCardColors(),
         onClick = onClickPrimary,
         onLongPress = if (group.apps.size > 1) onToggleExpand else null,
         pressFeedbackType = PressFeedbackType.Sink,

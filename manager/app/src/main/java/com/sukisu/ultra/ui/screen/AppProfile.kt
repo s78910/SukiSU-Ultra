@@ -95,6 +95,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.icon.icons.useful.ImmersionMore
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -144,6 +146,7 @@ fun AppProfileScreen(
     }
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopBar(
                 onBack = dropUnlessResumed { navigator.popBackStack() },
@@ -264,6 +267,7 @@ private fun AppProfileInner(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
+            colors = wallpaperCardColors(),
             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(
@@ -362,6 +366,7 @@ private fun AppProfileInner(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp),
+            colors = wallpaperCardColors(),
         ) {
             SuperSwitch(
                 leftAction = {
@@ -449,6 +454,7 @@ private fun AppProfileInner(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .padding(bottom = if (rootMode != Mode.Default) 12.dp else 0.dp),
+                colors = wallpaperCardColors(),
             ) {
                 AnimatedVisibility(
                     visible = rootMode == Mode.Template,
@@ -485,6 +491,7 @@ private fun AppProfileInner(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .padding(bottom = if (nonRootMode != Mode.Default) 12.dp else 0.dp),
+                colors = wallpaperCardColors(),
             ) {
                 AnimatedVisibility(
                     visible = nonRootMode == Mode.Custom,
@@ -511,6 +518,7 @@ private fun AppProfileInner(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .padding(bottom = 12.dp),
+                colors = wallpaperCardColors(),
             ) {
                 Spacer(Modifier.height(3.dp))
                 affectedApps.forEach { app ->
@@ -654,6 +662,7 @@ private fun ProfileBox(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
+        colors = wallpaperCardColors(),
     ) {
         SuperDropdown(
             title = stringResource(R.string.profile),

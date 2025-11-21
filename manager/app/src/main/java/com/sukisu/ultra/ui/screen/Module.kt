@@ -141,6 +141,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.ImmersionMore
 import top.yukonga.miuix.kmp.icon.icons.useful.Undo
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -393,6 +395,7 @@ fun ModulePager(
     )
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             searchStatus.TopAppBarAnim(hazeState = hazeState, hazeStyle = hazeStyle) {
                 TopAppBar(
@@ -929,6 +932,7 @@ fun ModuleItem(
         modifier = Modifier
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
+        colors = wallpaperCardColors(),
         insideMargin = PaddingValues(16.dp)
     ) {
         Row(

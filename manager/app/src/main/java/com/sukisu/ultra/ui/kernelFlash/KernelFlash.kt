@@ -31,6 +31,8 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KeyEventBlocker
 import com.sukisu.ultra.ui.util.reboot
+import com.sukisu.ultra.ui.theme.wallpaperCardColors
+import com.sukisu.ultra.ui.theme.wallpaperContainerColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -206,6 +208,7 @@ fun KernelFlashScreen(
     }
 
     Scaffold(
+        containerColor = wallpaperContainerColor(),
         topBar = {
             TopBar(
                 flashState = flashState,
@@ -247,6 +250,7 @@ fun KernelFlashScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(wallpaperContainerColor())
                 .padding(it)
                 .scrollEndHaptic(),
         ) {
@@ -291,7 +295,8 @@ private fun FlashProgressIndicator(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        colors = wallpaperCardColors()
     ) {
         Column(
             modifier = Modifier

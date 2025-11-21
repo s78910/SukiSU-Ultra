@@ -3,7 +3,6 @@
     <string name="home_click_to_install">Klikni za namestitev</string>
     <string name="home_working">V obdelavi</string>
     <string name="home_working_version">Verzija: %d</string>
-    <string name="home_superuser_count">Superuporabniki: %d</string>
     <string name="home_unsupported_reason">KernelSU podpira samo GKI kernele</string>
     <string name="home_kernel">Kernel</string>
     <string name="home_manager_version">Verzija upravitelja</string>
@@ -33,10 +32,6 @@
     <string name="about_source_code">Glej odprto kodo na %1$s<br/>Pridružite se našem %2$s kanalu</string>
     <string name="profile_default">Privzeto</string>
     <string name="profile_template">Predloga</string>
-    <string name="profile_namespace">Imenski prostor vmestitve</string>
-    <string name="profile_namespace_inherited">Podedovano</string>
-    <string name="profile_namespace_global">Globalno</string>
-    <string name="profile_namespace_individual">Pozameznik</string>
     <string name="profile_capabilities">Zmožnosti</string>
     <string name="profile_umount_modules">Izvrzi module</string>
     <string name="settings_umount_modules_default">Po privzetem izvrzi module</string>
@@ -48,7 +43,6 @@
     <string name="module_changelog">Dnevnik sprememb</string>
     <string name="settings_profile_template">Predloga za aplikacijski profil</string>
     <string name="home">Domov</string>
-    <string name="home_module_count">Moduli: %d</string>
     <string name="home_unsupported">Ne podpira</string>
     <string name="superuser">SuperUporabnik</string>
     <string name="module_failed_to_enable">Napaka pri omogočanju modula: %s</string>
@@ -87,7 +81,6 @@
     <string name="app_profile_template_description">Opis</string>
     <string name="app_profile_template_save">Shrani</string>
     <string name="app_profile_template_delete">Odstrani</string>
-    <string name="app_profile_template_readonly">le za branje</string>
     <string name="app_profile_template_id_exist">id predloge že obstaja!</string>
     <string name="app_profile_import_from_clipboard">Uvoz iz odložišča</string>
     <string name="app_profile_export_to_clipboard">Izvoz v odložišče</string>
