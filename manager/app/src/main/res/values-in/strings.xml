@@ -5,8 +5,6 @@
     <string name="home_click_to_install">Klik untuk menginstal</string>
     <string name="home_working">Berfungsi</string>
     <string name="home_working_version">Versi: %d</string>
-    <string name="home_superuser_count">SuperUser: %d</string>
-    <string name="home_module_count">Modul: %d</string>
     <string name="home_unsupported">Tidak didukung</string>
     <string name="home_unsupported_reason">KernelSU saat ini hanya mendukung kernel GKI.</string>
     <string name="home_kernel">Versi kernel</string>
@@ -56,10 +54,6 @@
     <string name="profile_template">Templat</string>
     <string name="profile_custom">Khusus</string>
     <string name="profile_name">Nama profil</string>
-    <string name="profile_namespace">Gunakan Namespace</string>
-    <string name="profile_namespace_inherited">Diwariskan</string>
-    <string name="profile_namespace_global">Universal</string>
-    <string name="profile_namespace_individual">Individual</string>
     <string name="profile_groups">Kelompok</string>
     <string name="profile_capabilities">Kemampuan</string>
     <string name="profile_selinux_context">Konteks SELinux</string>
@@ -101,7 +95,6 @@
     <string name="app_profile_template_delete">Hapus</string>
     <string name="app_profile_template_import_empty">Papan klip kosong!</string>
     <string name="app_profile_template_view">Lihat templat</string>
-    <string name="app_profile_template_readonly">readonly</string>
     <string name="enable_web_debugging">Debugging WebView</string>
     <string name="enable_web_debugging_summary">Dapat digunakan untuk mendebug antarmuka web (WebUI). Harap aktifkan hanya saat diperlukan.</string>
     <string name="select_file_tip">%1$s image partisi terekomendasi</string>

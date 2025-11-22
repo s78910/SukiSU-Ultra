@@ -149,13 +149,13 @@ fun Tools(
 
                     DynamicManagerCard()
 
-                    Card(
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        val lkmMode = Natives.isLkmMode
-                        if (lkmMode) {
+                    val lkmMode = Natives.isLkmMode
+                    if (lkmMode) {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
                             val umontManager = stringResource(id = R.string.umount_path_manager)
                             SuperArrow(
                                 title = umontManager,
@@ -168,8 +168,7 @@ fun Tools(
                                     )
                                 },
                                 onClick = {
-                                    navigator.navigate(UmountManagerDestination) {
-                                    }
+                                    navigator.navigate(UmountManagerDestination)
                                 }
                             )
                         }

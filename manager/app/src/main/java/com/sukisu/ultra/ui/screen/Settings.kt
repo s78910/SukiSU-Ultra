@@ -70,6 +70,7 @@ import com.sukisu.ultra.ui.component.UninstallDialog
 import com.sukisu.ultra.ui.component.rememberLoadingDialog
 import com.sukisu.ultra.ui.util.execKsud
 import com.sukisu.ultra.ui.util.getFeatureStatus
+import com.sukisu.ultra.ui.util.getSuSFSFeatures
 import com.sukisu.ultra.ui.util.rememberKpmAvailable
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -302,29 +303,33 @@ fun SettingPager(
                 }
 
                 KsuIsValid {
-                    Card(
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        val susfsTitle = stringResource(id = R.string.susfs_config_title)
-                        SuperArrow(
-                            title = susfsTitle,
-                            summary = stringResource(id = R.string.susfs_config_summary),
-                            leftAction = {
-                                Icon(
-                                    Icons.Rounded.Settings,
-                                    modifier = Modifier.padding(end = 16.dp),
-                                    contentDescription = susfsTitle,
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            onClick = {
-                                navigator.navigate(SuSFSConfigScreenDestination) {
-                                    launchSingleTop = true
+                    val rawFeature = getSuSFSFeatures()
+                    val supported = rawFeature.isNotEmpty() && !rawFeature.startsWith("[-]")
+                    if (supported) {
+                        Card(
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .fillMaxWidth(),
+                        ) {
+                            val susfsTitle = stringResource(id = R.string.susfs_config_title)
+                            SuperArrow(
+                                title = susfsTitle,
+                                summary = stringResource(id = R.string.susfs_config_summary),
+                                leftAction = {
+                                    Icon(
+                                        Icons.Rounded.Settings,
+                                        modifier = Modifier.padding(end = 16.dp),
+                                        contentDescription = susfsTitle,
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                onClick = {
+                                    navigator.navigate(SuSFSConfigScreenDestination) {
+                                        launchSingleTop = true
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
 

@@ -14,9 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
 import androidx.core.content.edit
 import com.sukisu.ultra.ui.util.getRootShell
 import com.sukisu.ultra.ui.util.getSuSFSVersion
@@ -27,13 +24,12 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * SuSFS 配置管理器
- * 用于管理SuSFS相关的配置和命令执行
- */
 object SuSFSManager {
     private const val PREFS_NAME = "susfs_config"
     private const val KEY_UNAME_VALUE = "uname_value"
@@ -57,20 +53,16 @@ object SuSFSManager {
     private const val KEY_UMOUNT_FOR_ZYGOTE_ISO_SERVICE = "umount_for_zygote_iso_service"
     private const val KEY_ENABLE_AVC_LOG_SPOOFING = "enable_avc_log_spoofing"
 
-
     // 常量
-    private const val SUSFS_BINARY_TARGET_NAME = "ksu_susfs"
     private const val DEFAULT_UNAME = "default"
     private const val DEFAULT_BUILD_TIME = "default"
-    private const val MODULE_ID = "susfs_manager"
-    private const val MODULE_PATH = "/data/adb/modules/$MODULE_ID"
     const val MAX_SUSFS_VERSION = "2.0.0"
     private const val BACKUP_FILE_EXTENSION = ".susfs_backup"
     private const val MEDIA_DATA_PATH = "/data/media/0/Android/data"
     private const val CGROUP_UID_PATH_PREFIX = "/sys/fs/cgroup/uid_"
+    private const val SUSFS_BINARY_TARGET_NAME = "ksu_susfs"
 
     data class SlotInfo(val slotName: String, val uname: String, val buildTime: String)
-    data class CommandResult(val isSuccess: Boolean, val output: String, val errorOutput: String = "")
     data class EnabledFeature(
         val name: String,
         val isEnabled: Boolean,
@@ -89,9 +81,6 @@ object SuSFSManager {
         }
     }
 
-    /**
-     * 应用信息数据类
-     */
     data class AppInfo(
         val packageName: String,
         val appName: String,
@@ -99,9 +88,6 @@ object SuSFSManager {
         val isSystemApp: Boolean
     )
 
-    /**
-     * 备份数据类
-     */
     data class BackupData(
         val version: String,
         val timestamp: Long,
@@ -153,9 +139,6 @@ object SuSFSManager {
         }
     }
 
-    /**
-     * 模块配置数据类
-     */
     data class ModuleConfig(
         val targetPath: String,
         val unameValue: String,
@@ -197,25 +180,49 @@ object SuSFSManager {
     private fun getPrefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    private fun getSuSFSVersionUse(context: Context): String = try {
-        val version = getSuSFSVersion()
-        val binaryName = "${SUSFS_BINARY_TARGET_NAME}_${version.removePrefix("v")}"
-        if (isBinaryAvailable(context, binaryName)) {
-            version
-        } else {
+    private fun getSuSFSBinaryName(): String {
+        val version = try {
+            getSuSFSVersion()
+        } catch (_: Exception) {
             MAX_SUSFS_VERSION
         }
-    } catch (_: Exception) {
-        MAX_SUSFS_VERSION
+        val versionSuffix = version.removePrefix("v")
+        return "${SUSFS_BINARY_TARGET_NAME}_$versionSuffix"
     }
 
-    fun isBinaryAvailable(context: Context, binaryName: String): Boolean = try {
-        context.assets.open(binaryName).use { true }
-    } catch (_: IOException) { false }
+    fun getSuSFSTargetPath(): String = "/data/adb/ksu/bin/$SUSFS_BINARY_TARGET_NAME"
 
-    private fun getSuSFSBinaryName(context: Context): String = "${SUSFS_BINARY_TARGET_NAME}_${getSuSFSVersionUse(context).removePrefix("v")}"
+    suspend fun copyBinaryFromAssets(context: Context): String? = withContext(Dispatchers.IO) {
+        try {
+            val binaryName = getSuSFSBinaryName()
+            val targetPath = getSuSFSTargetPath()
+            val tempFile = File(context.cacheDir, binaryName)
 
-    private fun getSuSFSTargetPath(): String = "/data/adb/ksu/bin/$SUSFS_BINARY_TARGET_NAME"
+            context.assets.open(binaryName).use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            val shell = Shell.getShell()
+            val success = shell.newJob()
+                .add("cp '${tempFile.absolutePath}' '$targetPath'")
+                .add("chmod 755 '$targetPath'")
+                .exec().isSuccess
+            
+            tempFile.delete()
+
+            if (success && shell.newJob().add("test -f '$targetPath'").exec().isSuccess) {
+                targetPath
+            } else {
+                null
+            }
+        } catch (e: IOException) {
+            Log.e("SuSFSManager", "Failed to copy binary", e)
+            null
+        }
+    }
+
 
     private fun runCmd(shell: Shell, cmd: String): String {
         return shell.newJob()
@@ -225,16 +232,31 @@ object SuSFSManager {
             .joinToString("\n")
     }
 
-    private fun runCmdWithResult(cmd: String): CommandResult {
+    private fun runCmdWithResult(cmd: String): SuSFSModuleManager.CommandResult {
         val result = Shell.getShell().newJob().add(cmd).exec()
-        return CommandResult(result.isSuccess, result.out.joinToString("\n"), result.err.joinToString("\n"))
+        return SuSFSModuleManager.CommandResult(result.isSuccess, result.out.joinToString("\n"), result.err.joinToString("\n"))
+    }
+
+    private suspend fun executeSusfsCommandDirect(context: Context, command: String): SuSFSModuleManager.CommandResult = withContext(Dispatchers.IO) {
+        try {
+            val binaryPath = copyBinaryFromAssets(context) ?: return@withContext SuSFSModuleManager.CommandResult(
+                false, "", context.getString(R.string.susfs_binary_not_found)
+            )
+            val shell = Shell.getShell()
+            val result = shell.newJob().add("$binaryPath $command").exec()
+            SuSFSModuleManager.CommandResult(
+                isSuccess = result.isSuccess,
+                output = result.out.joinToString("\n"),
+                errorOutput = result.err.joinToString("\n")
+            )
+        } catch (e: Exception) {
+            Log.e("SuSFSManager", "Command execution failed", e)
+            SuSFSModuleManager.CommandResult(false, "", e.message ?: "Unknown error")
+        }
     }
 
 
-    /**
-     * 获取当前模块配置
-     */
-    private fun getCurrentModuleConfig(context: Context): ModuleConfig {
+    fun getCurrentModuleConfig(context: Context): ModuleConfig {
         return ModuleConfig(
             targetPath = getSuSFSTargetPath(),
             unameValue = getUnameValue(context),
@@ -285,6 +307,9 @@ object SuSFSManager {
 
     fun getExecuteInPostFsData(context: Context): Boolean =
         getPrefs(context).getBoolean(KEY_EXECUTE_IN_POST_FS_DATA, false)
+
+    fun saveExecuteInPostFsData(context: Context, enabled: Boolean) =
+        getPrefs(context).edit { putBoolean(KEY_EXECUTE_IN_POST_FS_DATA, enabled) }
 
     // SUS挂载隐藏控制
     fun saveHideSusMountsForAllProcs(context: Context, hideForAll: Boolean) =
@@ -609,21 +634,26 @@ object SuSFSManager {
 
     // 还原配置到SharedPreferences
     private fun restoreConfigurations(context: Context, configurations: Map<String, Any>) {
-        val prefs = getPrefs(context)
-        prefs.edit {
-            configurations.forEach { (key, value) ->
-                when (value) {
-                    is String -> putString(key, value)
-                    is Boolean -> putBoolean(key, value)
-                    is Set<*> -> {
-                        @Suppress("UNCHECKED_CAST")
-                        putStringSet(key, value as Set<String>)
+        try {
+            val prefs = getPrefs(context)
+            prefs.edit {
+                configurations.forEach { (key, value) ->
+                    when (value) {
+                        is String -> putString(key, value)
+                        is Boolean -> putBoolean(key, value)
+                        is Set<*> -> {
+                            @Suppress("UNCHECKED_CAST")
+                            putStringSet(key, value as Set<String>)
+                        }
+                        is Int -> putInt(key, value)
+                        is Long -> putLong(key, value)
+                        is Float -> putFloat(key, value)
                     }
-                    is Int -> putInt(key, value)
-                    is Long -> putLong(key, value)
-                    is Float -> putFloat(key, value)
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
         }
     }
 
@@ -688,108 +718,25 @@ object SuSFSManager {
         }
     }
 
-    // 二进制文件管理
-    private suspend fun copyBinaryFromAssets(context: Context): String? = withContext(Dispatchers.IO) {
-        try {
-            val binaryName = getSuSFSBinaryName(context)
-            val targetPath = getSuSFSTargetPath()
-            val tempFile = File(context.cacheDir, binaryName)
-
-            context.assets.open(binaryName).use { input ->
-                FileOutputStream(tempFile).use { output ->
-                    input.copyTo(output)
-                }
-            }
-
-            val success = runCmdWithResult("cp '${tempFile.absolutePath}' '$targetPath' && chmod 755 '$targetPath'").isSuccess
-            tempFile.delete()
-
-            if (success && runCmdWithResult("test -f '$targetPath'").isSuccess) targetPath else null
-        } catch (e: IOException) {
-            e.printStackTrace()
-            null
-        }
-    }
-
     // 命令执行
-    private suspend fun executeSusfsCommand(context: Context, command: String): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val binaryPath = copyBinaryFromAssets(context) ?: run {
-                showToast(context, context.getString(R.string.susfs_binary_not_found))
-                return@withContext false
-            }
-
-            val result = runCmdWithResult("$binaryPath $command")
-
-            if (!result.isSuccess) {
-                showToast(context, "${context.getString(R.string.susfs_command_failed)}\n${result.output}\n${result.errorOutput}")
-            }
-
-            result.isSuccess
-        } catch (e: Exception) {
-            e.printStackTrace()
-            showToast(context, context.getString(R.string.susfs_command_error, e.message ?: "Unknown error"))
-            false
+    private suspend fun executeSusfsCommand(context: Context, command: String): Boolean {
+        val result = executeSusfsCommandDirect(context, command)
+        if (!result.isSuccess) {
+            showToast(context, "${context.getString(R.string.susfs_command_failed)}\n${result.output}\n${result.errorOutput}")
         }
+        return result.isSuccess
     }
 
-    private suspend fun executeSusfsCommandWithOutput(context: Context, command: String): CommandResult = withContext(Dispatchers.IO) {
-        try {
-            val binaryPath = copyBinaryFromAssets(context) ?: return@withContext CommandResult(
-                false, "", context.getString(R.string.susfs_binary_not_found)
-            )
-            runCmdWithResult("$binaryPath $command")
-        } catch (e: Exception) {
-            e.printStackTrace()
-            CommandResult(false, "", e.message ?: "Unknown error")
-        }
+    private suspend fun executeSusfsCommandWithOutput(context: Context, command: String): SuSFSModuleManager.CommandResult {
+        return executeSusfsCommandDirect(context, command)
     }
 
     private suspend fun showToast(context: Context, message: String) = withContext(Dispatchers.Main) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
-    /**
-     * 模块管理
-     */
     private suspend fun updateMagiskModule(context: Context): Boolean {
-        return removeMagiskModule() && createMagiskModule(context)
-    }
-
-    /**
-     * 模块创建方法
-     */
-    private suspend fun createMagiskModule(context: Context): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val config = getCurrentModuleConfig(context)
-
-            // 创建模块目录
-            if (!runCmdWithResult("mkdir -p $MODULE_PATH").isSuccess) return@withContext false
-
-            // 创建module.prop
-            val moduleProp = ScriptGenerator.generateModuleProp(MODULE_ID)
-            if (!runCmdWithResult("cat > $MODULE_PATH/module.prop << 'EOF'\n$moduleProp\nEOF").isSuccess) return@withContext false
-
-            // 生成并创建所有脚本文件
-            val scripts = ScriptGenerator.generateAllScripts(config)
-
-            scripts.all { (filename, content) ->
-                runCmdWithResult("cat > $MODULE_PATH/$filename << 'EOF'\n$content\nEOF").isSuccess &&
-                        runCmdWithResult("chmod 755 $MODULE_PATH/$filename").isSuccess
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-    private suspend fun removeMagiskModule(): Boolean = withContext(Dispatchers.IO) {
-        try {
-            runCmdWithResult("rm -rf $MODULE_PATH").isSuccess
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
+        return SuSFSModuleManager.updateMagiskModule(context)
     }
 
     // 功能状态获取
@@ -1398,9 +1345,6 @@ object SuSFSManager {
         return success
     }
 
-    /**
-     * 自启动配置检查
-     */
     fun hasConfigurationForAutoStart(context: Context): Boolean {
         val config = getCurrentModuleConfig(context)
         return config.hasAutoStartConfig() || runBlocking {
@@ -1408,9 +1352,6 @@ object SuSFSManager {
         }
     }
 
-    /**
-     * 自启动配置方法
-     */
     suspend fun configureAutoStart(context: Context, enabled: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
             if (enabled) {
@@ -1427,16 +1368,16 @@ object SuSFSManager {
                     }
                 }
 
-                val success = createMagiskModule(context)
+                val success = SuSFSModuleManager.createMagiskModule(context)
                 if (success) {
                     setAutoStartEnabled(context, true)
-                    showToast(context, context.getString(R.string.susfs_autostart_enabled_success, MODULE_PATH))
+                    showToast(context, context.getString(R.string.susfs_autostart_enabled_success, SuSFSModuleManager.getModulePath()))
                 } else {
                     showToast(context, context.getString(R.string.susfs_autostart_enable_failed))
                 }
                 success
             } else {
-                val success = removeMagiskModule()
+                val success = SuSFSModuleManager.removeMagiskModule()
                 if (success) {
                     setAutoStartEnabled(context, false)
                     showToast(context, context.getString(R.string.susfs_autostart_disabled_success))

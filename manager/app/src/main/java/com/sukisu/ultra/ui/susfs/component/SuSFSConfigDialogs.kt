@@ -42,18 +42,320 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.extra.SuperDialog
-import top.yukonga.miuix.kmp.extra.SuperDropdown
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.extra.SuperSwitch
 
-/**
- * 添加路径对话框
- */
+
+// 应用信息缓存
+object AppInfoCache {
+    private val appInfoMap = mutableMapOf<String, CachedAppInfo>()
+
+    data class CachedAppInfo(
+        val appName: String,
+        val packageInfo: PackageInfo?,
+        val drawable: Drawable?,
+        val timestamp: Long = System.currentTimeMillis()
+    )
+
+    fun getAppInfo(packageName: String): CachedAppInfo? {
+        return appInfoMap[packageName]
+    }
+
+    fun putAppInfo(packageName: String, appInfo: CachedAppInfo) {
+        appInfoMap[packageName] = appInfo
+    }
+
+    fun clearCache() {
+        appInfoMap.clear()
+    }
+
+    fun getAppInfoFromSuperUser(packageName: String): CachedAppInfo? {
+        val superUserApp = SuperUserViewModel.getAppsSafely().find { it.packageName == packageName }
+        return superUserApp?.let { app ->
+            CachedAppInfo(
+                appName = app.label,
+                packageInfo = app.packageInfo,
+                drawable = null
+            )
+        }
+    }
+}
+
+@Composable
+fun AppIcon(
+    packageName: String,
+    packageInfo: PackageInfo? = null,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var iconBitmap by remember(packageName, packageInfo) { mutableStateOf<ImageBitmap?>(null) }
+    var isLoadingIcon by remember(packageName, packageInfo) { mutableStateOf(true) }
+
+    LaunchedEffect(packageName, packageInfo) {
+        isLoadingIcon = true
+        iconBitmap = null
+
+        withContext(Dispatchers.IO) {
+            try {
+                val drawable = when {
+                    packageInfo != null -> {
+                        packageInfo.applicationInfo?.loadIcon(context.packageManager)
+                    }
+                    else -> {
+                        val cachedInfo = AppInfoCache.getAppInfo(packageName)
+                        if (cachedInfo?.drawable != null) {
+                            cachedInfo.drawable
+                        } else if (cachedInfo?.packageInfo != null) {
+                            cachedInfo.packageInfo.applicationInfo?.loadIcon(context.packageManager)
+                        } else {
+                            // 尝试从 PackageManager 获取
+                            try {
+                                val packageManager = context.packageManager
+                                val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+                                val icon = packageManager.getApplicationIcon(applicationInfo)
+                                // 更新缓存
+                                val newCachedInfo = AppInfoCache.CachedAppInfo(
+                                    appName = packageName,
+                                    packageInfo = null,
+                                    drawable = icon
+                                )
+                                AppInfoCache.putAppInfo(packageName, newCachedInfo)
+                                icon
+                            } catch (e: Exception) {
+                                Log.d("AppIcon", "获取应用图标失败: $packageName", e)
+                                null
+                            }
+                        }
+                    }
+                }
+
+                iconBitmap = drawable?.toBitmap()?.asImageBitmap()
+            } catch (e: Exception) {
+                Log.d("AppIcon", "获取应用图标失败: $packageName", e)
+            } finally {
+                isLoadingIcon = false
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (iconBitmap == null) colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                else androidx.compose.ui.graphics.Color.Transparent
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (iconBitmap != null) {
+            Image(
+                bitmap = iconBitmap!!,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else if (!isLoadingIcon) {
+            // 显示占位图标
+            Icon(
+                imageVector = Icons.Default.Android,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+fun AppPathGroupCard(
+    packageName: String,
+    paths: List<String>,
+    onDeleteGroup: () -> Unit,
+    onEditGroup: (() -> Unit)? = null,
+    isLoading: Boolean
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var superUserApps by remember { mutableStateOf(SuperUserViewModel.getAppsSafely()) }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { SuperUserViewModel.apps }
+            .distinctUntilChanged()
+            .collect { _ ->
+                superUserApps = SuperUserViewModel.getAppsSafely()
+            }
+    }
+
+    var cachedAppInfo by remember(packageName, superUserApps.size) {
+        mutableStateOf(AppInfoCache.getAppInfo(packageName))
+    }
+    var isLoadingAppInfo by remember(packageName, superUserApps.size) { mutableStateOf(false) }
+
+    LaunchedEffect(packageName, superUserApps.size) {
+        if (cachedAppInfo == null || superUserApps.isNotEmpty()) {
+            isLoadingAppInfo = true
+            coroutineScope.launch {
+                try {
+                    val superUserAppInfo = AppInfoCache.getAppInfoFromSuperUser(packageName)
+
+                    if (superUserAppInfo != null) {
+                        val packageManager = context.packageManager
+                        val drawable = try {
+                            superUserAppInfo.packageInfo?.applicationInfo?.let {
+                                packageManager.getApplicationIcon(it)
+                            }
+                        } catch (_: Exception) {
+                            null
+                        }
+
+                        val newCachedInfo = AppInfoCache.CachedAppInfo(
+                            appName = superUserAppInfo.appName,
+                            packageInfo = superUserAppInfo.packageInfo,
+                            drawable = drawable
+                        )
+
+                        AppInfoCache.putAppInfo(packageName, newCachedInfo)
+                        cachedAppInfo = newCachedInfo
+                    } else {
+                        val packageManager = context.packageManager
+                        val appInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_META_DATA)
+
+                        val appName = try {
+                            appInfo.applicationInfo?.let {
+                                packageManager.getApplicationLabel(it).toString()
+                            } ?: packageName
+                        } catch (_: Exception) {
+                            packageName
+                        }
+
+                        val drawable = try {
+                            appInfo.applicationInfo?.let {
+                                packageManager.getApplicationIcon(it)
+                            }
+                        } catch (_: Exception) {
+                            null
+                        }
+
+                        val newCachedInfo = AppInfoCache.CachedAppInfo(
+                            appName = appName,
+                            packageInfo = appInfo,
+                            drawable = drawable
+                        )
+
+                        AppInfoCache.putAppInfo(packageName, newCachedInfo)
+                        cachedAppInfo = newCachedInfo
+                    }
+                } catch (_: Exception) {
+                    val newCachedInfo = AppInfoCache.CachedAppInfo(
+                        appName = packageName,
+                        packageInfo = null,
+                        drawable = null
+                    )
+                    AppInfoCache.putAppInfo(packageName, newCachedInfo)
+                    cachedAppInfo = newCachedInfo
+                } finally {
+                    isLoadingAppInfo = false
+                }
+            }
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.defaultColors(
+            color = colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 应用图标
+                AppIcon(
+                    packageName = packageName,
+                    packageInfo = cachedAppInfo?.packageInfo,
+                    modifier = Modifier.size(32.dp)
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    val displayName = cachedAppInfo?.appName?.ifEmpty { packageName } ?: packageName
+                    Text(
+                        text = displayName,
+                        style = MiuixTheme.textStyles.title2,
+                        fontWeight = FontWeight.Medium,
+                        color = colorScheme.onSurface
+                    )
+                    if (!isLoadingAppInfo && cachedAppInfo?.appName?.isNotEmpty() == true &&
+                        cachedAppInfo?.appName != packageName) {
+                        Text(
+                            text = packageName,
+                            style = MiuixTheme.textStyles.body2,
+                            color = colorScheme.onSurfaceVariantSummary
+                        )
+                    }
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (onEditGroup != null) {
+                        IconButton(
+                            onClick = onEditGroup,
+                            enabled = !isLoading
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit),
+                                tint = colorScheme.primary
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = onDeleteGroup,
+                        enabled = !isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.delete),
+                            tint = colorScheme.error
+                        )
+                    }
+                }
+            }
+
+            // 显示所有路径
+            Spacer(modifier = Modifier.height(8.dp))
+
+            paths.forEach { path ->
+                Text(
+                    text = path,
+                    style = MiuixTheme.textStyles.body2,
+                    color = colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .padding(8.dp)
+                )
+
+                if (path != paths.last()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun AddPathDialog(
     showDialog: Boolean,
@@ -73,79 +375,33 @@ fun AddPathDialog(
         }
     }
 
-    val showDialogState = remember { mutableStateOf(showDialog) }
-    
-    LaunchedEffect(showDialog) {
-        showDialogState.value = showDialog
-    }
-
-    if (showDialogState.value) {
-        SuperDialog(
-            show = showDialogState,
-            title = stringResource(titleRes),
-            onDismissRequest = {
-                onDismiss()
-                newPath = ""
-            },
-            content = {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TextField(
-                        value = newPath,
-                        onValueChange = { value -> newPath = value },
-                        label = stringResource(labelRes),
-                        useLabelAsPlaceholder = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoading
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        TextButton(
-                            text = stringResource(android.R.string.cancel),
-                            onClick = {
-                                onDismiss()
-                                newPath = ""
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp)
-                        )
-                        Button(
-                            onClick = {
-                                if (newPath.isNotBlank()) {
-                                    onConfirm(newPath.trim())
-                                    newPath = ""
-                                }
-                            },
-                            enabled = newPath.isNotBlank() && !isLoading,
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
-                        ) {
-                            Text(
-                                text = stringResource(if (initialValue.isNotEmpty()) R.string.susfs_save else R.string.add),
-                                style = MiuixTheme.textStyles.body2,
-                                maxLines = 2
-                            )
-                        }
-                    }
-                }
+    UniversalDialog(
+        showDialog = showDialog,
+        onDismiss = onDismiss,
+        onConfirm = {
+            if (newPath.isNotBlank()) {
+                onConfirm(newPath.trim())
+                true
+            } else {
+                false
             }
-        )
-    }
+        },
+        titleRes = titleRes,
+        isLoading = isLoading,
+        fields = listOf(
+            DialogField.TextField(
+                value = newPath,
+                onValueChange = { newPath = it },
+                labelRes = labelRes,
+                enabled = !isLoading
+            )
+        ),
+        confirmTextRes = if (initialValue.isNotEmpty()) R.string.susfs_save else R.string.add,
+        isConfirmEnabled = newPath.isNotBlank() && !isLoading,
+        onReset = { newPath = "" }
+    )
 }
 
-/**
- * 快捷添加应用路径对话框
- */
 @Composable
 fun AddAppPathDialog(
     showDialog: Boolean,
@@ -362,8 +618,7 @@ fun AddAppPathDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        TextButton(
-                            text = stringResource(R.string.cancel),
+                        Button(
                             onClick = {
                                 onDismiss()
                                 selectedApps = setOf()
@@ -372,8 +627,13 @@ fun AddAppPathDialog(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp)
-                        )
+                                .padding(vertical = 8.dp),
+                            cornerRadius = 8.dp
+                        ) {
+                            Text(
+                                text = stringResource(R.string.cancel)
+                            )
+                        }
                         Button(
                             onClick = {
                                 if (selectedApps.isNotEmpty()) {
@@ -390,9 +650,7 @@ fun AddAppPathDialog(
                             cornerRadius = 8.dp
                         ) {
                             Text(
-                                text = stringResource(R.string.add),
-                                style = MiuixTheme.textStyles.body2,
-                                maxLines = 2
+                                text = stringResource(R.string.add)
                             )
                         }
                     }
@@ -402,98 +660,6 @@ fun AddAppPathDialog(
     }
 }
 
-
-/**
- * 应用图标组件
- */
-@Composable
-fun AppIcon(
-    packageName: String,
-    packageInfo: PackageInfo? = null,
-    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    var iconBitmap by remember(packageName, packageInfo) { mutableStateOf<ImageBitmap?>(null) }
-    var isLoadingIcon by remember(packageName, packageInfo) { mutableStateOf(true) }
-
-    LaunchedEffect(packageName, packageInfo) {
-        isLoadingIcon = true
-        iconBitmap = null
-        
-        withContext(Dispatchers.IO) {
-            try {
-                val drawable = when {
-                    packageInfo != null -> {
-                        packageInfo.applicationInfo?.loadIcon(context.packageManager)
-                    }
-                    else -> {
-                        val cachedInfo = AppInfoCache.getAppInfo(packageName)
-                        if (cachedInfo?.drawable != null) {
-                            cachedInfo.drawable
-                        } else if (cachedInfo?.packageInfo != null) {
-                            cachedInfo.packageInfo.applicationInfo?.loadIcon(context.packageManager)
-                        } else {
-                            // 尝试从 PackageManager 获取
-                            try {
-                                val packageManager = context.packageManager
-                                val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
-                                val icon = packageManager.getApplicationIcon(applicationInfo)
-                                // 更新缓存
-                                val newCachedInfo = AppInfoCache.CachedAppInfo(
-                                    appName = packageName,
-                                    packageInfo = null,
-                                    drawable = icon
-                                )
-                                AppInfoCache.putAppInfo(packageName, newCachedInfo)
-                                icon
-                            } catch (e: Exception) {
-                                Log.d("AppIcon", "获取应用图标失败: $packageName", e)
-                                null
-                            }
-                        }
-                    }
-                }
-                
-                iconBitmap = drawable?.toBitmap()?.asImageBitmap()
-            } catch (e: Exception) {
-                Log.d("AppIcon", "获取应用图标失败: $packageName", e)
-            } finally {
-                isLoadingIcon = false
-            }
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(
-                if (iconBitmap == null) colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                else androidx.compose.ui.graphics.Color.Transparent
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        if (iconBitmap != null) {
-            Image(
-                bitmap = iconBitmap!!,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else if (!isLoadingIcon) {
-            // 显示占位图标
-            Icon(
-                imageVector = Icons.Default.Android,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f)
-            )
-        }
-    }
-}
-
-
-/**
- * 添加尝试卸载对话框
- */
 @Composable
 fun AddTryUmountDialog(
     showDialog: Boolean,
@@ -514,92 +680,47 @@ fun AddTryUmountDialog(
         }
     }
 
-    val showDialogState = remember { mutableStateOf(showDialog) }
-    
-    LaunchedEffect(showDialog) {
-        showDialogState.value = showDialog
-    }
-
     val umountModeItems = listOf(
         stringResource(R.string.susfs_umount_mode_normal),
         stringResource(R.string.susfs_umount_mode_detach)
     )
 
-    if (showDialogState.value) {
-        SuperDialog(
-            show = showDialogState,
-            title = stringResource(if (initialPath.isNotEmpty()) R.string.susfs_edit_try_umount else R.string.susfs_add_try_umount),
-            onDismissRequest = {
-                onDismiss()
-                newUmountPath = ""
-                newUmountMode = 0
-            },
-            content = {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TextField(
-                        value = newUmountPath,
-                        onValueChange = { newUmountPath = it },
-                        label = stringResource(R.string.susfs_path_label),
-                        useLabelAsPlaceholder = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoading
-                    )
-
-                    SuperDropdown(
-                        title = stringResource(R.string.susfs_umount_mode_label),
-                        summary = umountModeItems[newUmountMode],
-                        items = umountModeItems,
-                        selectedIndex = newUmountMode,
-                        onSelectedIndexChange = { newUmountMode = it },
-                        enabled = !isLoading
-                    )
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        TextButton(
-                            text = stringResource(R.string.cancel),
-                            onClick = {
-                                onDismiss()
-                                newUmountPath = ""
-                                newUmountMode = 0
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp)
-                        )
-                        Button(
-                            onClick = {
-                                if (newUmountPath.isNotBlank()) {
-                                    onConfirm(newUmountPath.trim(), newUmountMode)
-                                    newUmountPath = ""
-                                    newUmountMode = 0
-                                }
-                            },
-                            enabled = newUmountPath.isNotBlank() && !isLoading,
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
-                        ) {
-                            Text(
-                                text = stringResource(if (initialPath.isNotEmpty()) R.string.susfs_save else R.string.add),
-                                style = MiuixTheme.textStyles.body2,
-                                maxLines = 2
-                            )
-                        }
-                    }
-                }
+    UniversalDialog(
+        showDialog = showDialog,
+        onDismiss = onDismiss,
+        onConfirm = {
+            if (newUmountPath.isNotBlank()) {
+                onConfirm(newUmountPath.trim(), newUmountMode)
+                true
+            } else {
+                false
             }
-        )
-    }
+        },
+        titleRes = if (initialPath.isNotEmpty()) R.string.susfs_edit_try_umount else R.string.susfs_add_try_umount,
+        isLoading = isLoading,
+        fields = listOf(
+            DialogField.TextField(
+                value = newUmountPath,
+                onValueChange = { newUmountPath = it },
+                labelRes = R.string.susfs_path_label,
+                enabled = !isLoading
+            ),
+            DialogField.Dropdown(
+                titleRes = R.string.susfs_umount_mode_label,
+                summary = umountModeItems[newUmountMode],
+                items = umountModeItems,
+                selectedIndex = newUmountMode,
+                onSelectedIndexChange = { newUmountMode = it },
+                enabled = !isLoading
+            )
+        ),
+        confirmTextRes = if (initialPath.isNotEmpty()) R.string.susfs_save else R.string.add,
+        isConfirmEnabled = newUmountPath.isNotBlank() && !isLoading,
+        onReset = {
+            newUmountPath = ""
+            newUmountMode = 0
+        }
+    )
 }
 
 /**
@@ -664,405 +785,206 @@ fun AddKstatStaticallyDialog(
         }
     }
 
-    val showDialogState = remember { mutableStateOf(showDialog) }
-    
-    LaunchedEffect(showDialog) {
-        showDialogState.value = showDialog
+    val resetFields = {
+        newKstatPath = ""
+        newKstatIno = ""
+        newKstatDev = ""
+        newKstatNlink = ""
+        newKstatSize = ""
+        newKstatAtime = ""
+        newKstatAtimeNsec = ""
+        newKstatMtime = ""
+        newKstatMtimeNsec = ""
+        newKstatCtime = ""
+        newKstatCtimeNsec = ""
+        newKstatBlocks = ""
+        newKstatBlksize = ""
     }
 
-    if (showDialogState.value) {
-        SuperDialog(
-            show = showDialogState,
-            title = stringResource(if (initialConfig.isNotEmpty()) R.string.edit_kstat_statically_title else R.string.add_kstat_statically_title),
-            onDismissRequest = {
-                onDismiss()
-                // 清空所有字段
-                newKstatPath = ""
-                newKstatIno = ""
-                newKstatDev = ""
-                newKstatNlink = ""
-                newKstatSize = ""
-                newKstatAtime = ""
-                newKstatAtimeNsec = ""
-                newKstatMtime = ""
-                newKstatMtimeNsec = ""
-                newKstatCtime = ""
-                newKstatCtimeNsec = ""
-                newKstatBlocks = ""
-                newKstatBlksize = ""
-            },
-            content = {
-                Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+    UniversalDialog(
+        showDialog = showDialog,
+        onDismiss = onDismiss,
+        onConfirm = {
+            if (newKstatPath.isNotBlank()) {
+                onConfirm(
+                    newKstatPath.trim(),
+                    newKstatIno.trim().ifBlank { "default" },
+                    newKstatDev.trim().ifBlank { "default" },
+                    newKstatNlink.trim().ifBlank { "default" },
+                    newKstatSize.trim().ifBlank { "default" },
+                    newKstatAtime.trim().ifBlank { "default" },
+                    newKstatAtimeNsec.trim().ifBlank { "default" },
+                    newKstatMtime.trim().ifBlank { "default" },
+                    newKstatMtimeNsec.trim().ifBlank { "default" },
+                    newKstatCtime.trim().ifBlank { "default" },
+                    newKstatCtimeNsec.trim().ifBlank { "default" },
+                    newKstatBlocks.trim().ifBlank { "default" },
+                    newKstatBlksize.trim().ifBlank { "default" }
+                )
+                true
+            } else {
+                false
+            }
+        },
+        titleRes = if (initialConfig.isNotEmpty()) R.string.edit_kstat_statically_title else R.string.add_kstat_statically_title,
+        isLoading = isLoading,
+        fields = listOf(
+            DialogField.CustomContent {
+                TextField(
+                    value = newKstatPath,
+                    onValueChange = { newKstatPath = it },
+                    label = stringResource(R.string.file_or_directory_path_label),
+                    useLabelAsPlaceholder = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TextField(
-                        value = newKstatPath,
-                        onValueChange = { newKstatPath = it },
-                        label = stringResource(R.string.file_or_directory_path_label),
+                        value = newKstatIno,
+                        onValueChange = { newKstatIno = it },
+                        label = "ino",
                         useLabelAsPlaceholder = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.weight(1f),
                         enabled = !isLoading
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextField(
-                            value = newKstatIno,
-                            onValueChange = { newKstatIno = it },
-                            label = "ino",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                        TextField(
-                            value = newKstatDev,
-                            onValueChange = { newKstatDev = it },
-                            label = "dev",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextField(
-                            value = newKstatNlink,
-                            onValueChange = { newKstatNlink = it },
-                            label = "nlink",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                        TextField(
-                            value = newKstatSize,
-                            onValueChange = { newKstatSize = it },
-                            label = "size",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextField(
-                            value = newKstatAtime,
-                            onValueChange = { newKstatAtime = it },
-                            label = "atime",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                        TextField(
-                            value = newKstatAtimeNsec,
-                            onValueChange = { newKstatAtimeNsec = it },
-                            label = "atime_nsec",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextField(
-                            value = newKstatMtime,
-                            onValueChange = { newKstatMtime = it },
-                            label = "mtime",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                        TextField(
-                            value = newKstatMtimeNsec,
-                            onValueChange = { newKstatMtimeNsec = it },
-                            label = "mtime_nsec",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextField(
-                            value = newKstatCtime,
-                            onValueChange = { newKstatCtime = it },
-                            label = "ctime",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                        TextField(
-                            value = newKstatCtimeNsec,
-                            onValueChange = { newKstatCtimeNsec = it },
-                            label = "ctime_nsec",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TextField(
-                            value = newKstatBlocks,
-                            onValueChange = { newKstatBlocks = it },
-                            label = "blocks",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                        TextField(
-                            value = newKstatBlksize,
-                            onValueChange = { newKstatBlksize = it },
-                            label = "blksize",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                    }
-
-                    Text(
-                        text = stringResource(R.string.hint_use_default_value),
-                        style = MiuixTheme.textStyles.body2,
-                        color = colorScheme.onSurfaceVariantSummary
+                    TextField(
+                        value = newKstatDev,
+                        onValueChange = { newKstatDev = it },
+                        label = "dev",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
                     )
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        TextButton(
-                            text = stringResource(R.string.cancel),
-                            onClick = {
-                                onDismiss()
-                                // 清空所有字段
-                                newKstatPath = ""
-                                newKstatIno = ""
-                                newKstatDev = ""
-                                newKstatNlink = ""
-                                newKstatSize = ""
-                                newKstatAtime = ""
-                                newKstatAtimeNsec = ""
-                                newKstatMtime = ""
-                                newKstatMtimeNsec = ""
-                                newKstatCtime = ""
-                                newKstatCtimeNsec = ""
-                                newKstatBlocks = ""
-                                newKstatBlksize = ""
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp)
-                        )
-                        Button(
-                            onClick = {
-                                if (newKstatPath.isNotBlank()) {
-                                    onConfirm(
-                                        newKstatPath.trim(),
-                                        newKstatIno.trim().ifBlank { "default" },
-                                        newKstatDev.trim().ifBlank { "default" },
-                                        newKstatNlink.trim().ifBlank { "default" },
-                                        newKstatSize.trim().ifBlank { "default" },
-                                        newKstatAtime.trim().ifBlank { "default" },
-                                        newKstatAtimeNsec.trim().ifBlank { "default" },
-                                        newKstatMtime.trim().ifBlank { "default" },
-                                        newKstatMtimeNsec.trim().ifBlank { "default" },
-                                        newKstatCtime.trim().ifBlank { "default" },
-                                        newKstatCtimeNsec.trim().ifBlank { "default" },
-                                        newKstatBlocks.trim().ifBlank { "default" },
-                                        newKstatBlksize.trim().ifBlank { "default" }
-                                    )
-                                    // 清空所有字段
-                                    newKstatPath = ""
-                                    newKstatIno = ""
-                                    newKstatDev = ""
-                                    newKstatNlink = ""
-                                    newKstatSize = ""
-                                    newKstatAtime = ""
-                                    newKstatAtimeNsec = ""
-                                    newKstatMtime = ""
-                                    newKstatMtimeNsec = ""
-                                    newKstatCtime = ""
-                                    newKstatCtimeNsec = ""
-                                    newKstatBlocks = ""
-                                    newKstatBlksize = ""
-                                }
-                            },
-                            enabled = newKstatPath.isNotBlank() && !isLoading,
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
-                        ) {
-                            Text(
-                                text = stringResource(if (initialConfig.isNotEmpty()) R.string.susfs_save else R.string.add),
-                                style = MiuixTheme.textStyles.body2,
-                                maxLines = 2
-                            )
-                        }
-                    }
                 }
-            }
-        )
-    }
-}
 
-/**
- * 确认对话框
- */
-@Composable
-fun ConfirmDialog(
-    showDialog: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    titleRes: Int,
-    messageRes: Int,
-    isLoading: Boolean = false
-) {
-    val showDialogState = remember { mutableStateOf(showDialog) }
-    
-    LaunchedEffect(showDialog) {
-        showDialogState.value = showDialog
-    }
-
-    if (showDialogState.value) {
-        SuperDialog(
-            show = showDialogState,
-            title = stringResource(titleRes),
-            onDismissRequest = onDismiss,
-            content = {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = stringResource(messageRes),
-                        style = MiuixTheme.textStyles.body2
+                    TextField(
+                        value = newKstatNlink,
+                        onValueChange = { newKstatNlink = it },
+                        label = "nlink",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        TextButton(
-                            text = stringResource(R.string.cancel),
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp)
-                        )
-                        Button(
-                            onClick = onConfirm,
-                            enabled = !isLoading,
-                            modifier = Modifier
-                                .weight(1f)
-                                .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
-                        ) {
-                            Text(
-                                text = stringResource(R.string.confirm),
-                                style = MiuixTheme.textStyles.body2,
-                                maxLines = 2
-                            )
-                        }
-                    }
+                    TextField(
+                        value = newKstatSize,
+                        onValueChange = { newKstatSize = it },
+                        label = "size",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
                 }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextField(
+                        value = newKstatAtime,
+                        onValueChange = { newKstatAtime = it },
+                        label = "atime",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                    TextField(
+                        value = newKstatAtimeNsec,
+                        onValueChange = { newKstatAtimeNsec = it },
+                        label = "atime_nsec",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextField(
+                        value = newKstatMtime,
+                        onValueChange = { newKstatMtime = it },
+                        label = "mtime",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                    TextField(
+                        value = newKstatMtimeNsec,
+                        onValueChange = { newKstatMtimeNsec = it },
+                        label = "mtime_nsec",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextField(
+                        value = newKstatCtime,
+                        onValueChange = { newKstatCtime = it },
+                        label = "ctime",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                    TextField(
+                        value = newKstatCtimeNsec,
+                        onValueChange = { newKstatCtimeNsec = it },
+                        label = "ctime_nsec",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextField(
+                        value = newKstatBlocks,
+                        onValueChange = { newKstatBlocks = it },
+                        label = "blocks",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                    TextField(
+                        value = newKstatBlksize,
+                        onValueChange = { newKstatBlksize = it },
+                        label = "blksize",
+                        useLabelAsPlaceholder = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    )
+                }
+
+                Text(
+                    text = stringResource(R.string.hint_use_default_value),
+                    style = MiuixTheme.textStyles.body2,
+                    color = colorScheme.onSurfaceVariantSummary
+                )
             }
-        )
-    }
-}
-
-// 应用信息缓存
-object AppInfoCache {
-    private val appInfoMap = mutableMapOf<String, CachedAppInfo>()
-
-    data class CachedAppInfo(
-        val appName: String,
-        val packageInfo: PackageInfo?,
-        val drawable: Drawable?,
-        val timestamp: Long = System.currentTimeMillis()
-    )
-
-    fun getAppInfo(packageName: String): CachedAppInfo? {
-        return appInfoMap[packageName]
-    }
-
-    fun putAppInfo(packageName: String, appInfo: CachedAppInfo) {
-        appInfoMap[packageName] = appInfo
-    }
-
-    fun clearCache() {
-        appInfoMap.clear()
-    }
-
-    fun getAppInfoFromSuperUser(packageName: String): CachedAppInfo? {
-        val superUserApp = SuperUserViewModel.getAppsSafely().find { it.packageName == packageName }
-        return superUserApp?.let { app ->
-            CachedAppInfo(
-                appName = app.label,
-                packageInfo = app.packageInfo,
-                drawable = null
-            )
-        }
-    }
-}
-
-/**
- * 空状态显示组件
- */
-@Composable
-fun EmptyStateCard(
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(
-            color = colorScheme.surfaceVariant.copy(alpha = 0.15f)
         ),
-        cornerRadius = 8.dp
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = message,
-                style = MiuixTheme.textStyles.body1,
-                color = colorScheme.onSurfaceVariantSummary,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
+        confirmTextRes = if (initialConfig.isNotEmpty()) R.string.susfs_save else R.string.add,
+        isConfirmEnabled = newKstatPath.isNotBlank() && !isLoading,
+        scrollable = true,
+        onReset = resetFields
+    )
 }
 
-/**
- * 路径项目卡片组件
- */
 @Composable
 fun PathItemCard(
     path: String,
@@ -1149,9 +1071,6 @@ fun PathItemCard(
     }
 }
 
-/**
- * Kstat配置项目卡片组件
- */
 @Composable
 fun KstatConfigItemCard(
     config: String,
@@ -1348,9 +1267,6 @@ fun AddKstatPathItemCard(
     }
 }
 
-/**
- * 启用功能状态卡片组件
- */
 @Composable
 fun FeatureStatusCard(
     feature: SuSFSManager.EnabledFeature,
@@ -1392,28 +1308,18 @@ fun FeatureStatusCard(
                         color = colorScheme.onSurfaceVariantSummary
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.susfs_enable_log_label),
-                            style = MiuixTheme.textStyles.body1,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Switch(
-                            checked = logEnabled,
-                            onCheckedChange = { logEnabled = it }
-                        )
-                    }
+                    SuperSwitch(
+                        title = stringResource(R.string.susfs_enable_log_label),
+                        summary = "",
+                        checked = logEnabled,
+                        onCheckedChange = { checked -> logEnabled = checked }
+                    )
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        TextButton(
-                            text = stringResource(R.string.cancel),
+                        Button(
                             onClick = {
                                 // 恢复原始状态
                                 logEnabled = SuSFSManager.getEnableLogState(context)
@@ -1422,8 +1328,13 @@ fun FeatureStatusCard(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp)
-                        )
+                                .padding(vertical = 8.dp),
+                            cornerRadius = 8.dp
+                        ) {
+                            Text(
+                                text = stringResource(R.string.cancel)
+                            )
+                        }
                         Button(
                             onClick = {
                                 coroutineScope.launch {
@@ -1440,9 +1351,7 @@ fun FeatureStatusCard(
                             cornerRadius = 8.dp
                         ) {
                             Text(
-                                text = stringResource(R.string.susfs_apply),
-                                style = MiuixTheme.textStyles.body2,
-                                maxLines = 2
+                                text = stringResource(R.string.susfs_apply)
                             )
                         }
                     }
@@ -1522,9 +1431,6 @@ fun FeatureStatusCard(
     }
 }
 
-/**
- * SUS挂载隐藏控制卡片组件
- */
 @Composable
 fun SusMountHidingControlCard(
     hideSusMountsForAllProcs: Boolean,
@@ -1538,7 +1444,7 @@ fun SusMountHidingControlCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // 标题行
@@ -1568,39 +1474,26 @@ fun SusMountHidingControlCard(
                 lineHeight = 16.sp
             )
 
-            // 控制开关行
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurface
+            // 控制开关
+            SuperSwitch(
+                title = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
+                summary = if (hideSusMountsForAllProcs) {
+                    stringResource(R.string.susfs_hide_mounts_for_all_procs_enabled_description)
+                } else {
+                    stringResource(R.string.susfs_hide_mounts_for_all_procs_disabled_description)
+                },
+                leftAction = {
+                    Icon(
+                        if (hideSusMountsForAllProcs) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        modifier = Modifier.padding(end = 16.dp),
+                        contentDescription = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
+                        tint = colorScheme.onBackground
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (hideSusMountsForAllProcs) {
-                            stringResource(R.string.susfs_hide_mounts_for_all_procs_enabled_description)
-                        } else {
-                            stringResource(R.string.susfs_hide_mounts_for_all_procs_disabled_description)
-                        },
-                        style = MiuixTheme.textStyles.body2,
-                        color = colorScheme.onSurfaceVariantSummary,
-                        lineHeight = 14.sp
-                    )
-                }
-                Switch(
-                    checked = hideSusMountsForAllProcs,
-                    onCheckedChange = onToggleHiding,
-                    enabled = !isLoading
-                )
-            }
+                },
+                checked = hideSusMountsForAllProcs,
+                onCheckedChange = onToggleHiding,
+                enabled = !isLoading
+            )
 
             // 当前设置显示
             Text(
@@ -1631,259 +1524,6 @@ fun SusMountHidingControlCard(
                     color = colorScheme.onSurfaceVariantSummary,
                     lineHeight = 18.sp,
                     modifier = Modifier.padding(12.dp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * 应用路径分组卡片
- */
-@Composable
-fun AppPathGroupCard(
-    packageName: String,
-    paths: List<String>,
-    onDeleteGroup: () -> Unit,
-    onEditGroup: (() -> Unit)? = null,
-    isLoading: Boolean
-) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    var superUserApps by remember { mutableStateOf(SuperUserViewModel.getAppsSafely()) }
-
-    LaunchedEffect(Unit) {
-        snapshotFlow { SuperUserViewModel.apps }
-            .distinctUntilChanged()
-            .collect { _ ->
-                superUserApps = SuperUserViewModel.getAppsSafely()
-            }
-    }
-
-    var cachedAppInfo by remember(packageName, superUserApps.size) {
-        mutableStateOf(AppInfoCache.getAppInfo(packageName))
-    }
-    var isLoadingAppInfo by remember(packageName, superUserApps.size) { mutableStateOf(false) }
-
-    LaunchedEffect(packageName, superUserApps.size) {
-        if (cachedAppInfo == null || superUserApps.isNotEmpty()) {
-            isLoadingAppInfo = true
-            coroutineScope.launch {
-                try {
-                    val superUserAppInfo = AppInfoCache.getAppInfoFromSuperUser(packageName)
-
-                    if (superUserAppInfo != null) {
-                        val packageManager = context.packageManager
-                        val drawable = try {
-                            superUserAppInfo.packageInfo?.applicationInfo?.let {
-                                packageManager.getApplicationIcon(it)
-                            }
-                        } catch (_: Exception) {
-                            null
-                        }
-
-                        val newCachedInfo = AppInfoCache.CachedAppInfo(
-                            appName = superUserAppInfo.appName,
-                            packageInfo = superUserAppInfo.packageInfo,
-                            drawable = drawable
-                        )
-
-                        AppInfoCache.putAppInfo(packageName, newCachedInfo)
-                        cachedAppInfo = newCachedInfo
-                    } else {
-                        val packageManager = context.packageManager
-                        val appInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_META_DATA)
-
-                        val appName = try {
-                            appInfo.applicationInfo?.let {
-                                packageManager.getApplicationLabel(it).toString()
-                            } ?: packageName
-                        } catch (_: Exception) {
-                            packageName
-                        }
-
-                        val drawable = try {
-                            appInfo.applicationInfo?.let {
-                                packageManager.getApplicationIcon(it)
-                            }
-                        } catch (_: Exception) {
-                            null
-                        }
-
-                        val newCachedInfo = AppInfoCache.CachedAppInfo(
-                            appName = appName,
-                            packageInfo = appInfo,
-                            drawable = drawable
-                        )
-
-                        AppInfoCache.putAppInfo(packageName, newCachedInfo)
-                        cachedAppInfo = newCachedInfo
-                    }
-                } catch (_: Exception) {
-                    val newCachedInfo = AppInfoCache.CachedAppInfo(
-                        appName = packageName,
-                        packageInfo = null,
-                        drawable = null
-                    )
-                    AppInfoCache.putAppInfo(packageName, newCachedInfo)
-                    cachedAppInfo = newCachedInfo
-                } finally {
-                    isLoadingAppInfo = false
-                }
-            }
-        }
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(
-            color = colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 应用图标
-                AppIcon(
-                    packageName = packageName,
-                    packageInfo = cachedAppInfo?.packageInfo,
-                    modifier = Modifier.size(32.dp)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    val displayName = cachedAppInfo?.appName?.ifEmpty { packageName } ?: packageName
-                    Text(
-                        text = displayName,
-                        style = MiuixTheme.textStyles.title2,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.onSurface
-                    )
-                    if (!isLoadingAppInfo && cachedAppInfo?.appName?.isNotEmpty() == true &&
-                        cachedAppInfo?.appName != packageName) {
-                        Text(
-                            text = packageName,
-                            style = MiuixTheme.textStyles.body2,
-                            color = colorScheme.onSurfaceVariantSummary
-                        )
-                    }
-                }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (onEditGroup != null) {
-                        IconButton(
-                            onClick = onEditGroup,
-                            enabled = !isLoading
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = stringResource(R.string.edit),
-                                tint = colorScheme.primary
-                            )
-                        }
-                    }
-                    IconButton(
-                        onClick = onDeleteGroup,
-                        enabled = !isLoading
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.delete),
-                            tint = colorScheme.error
-                        )
-                    }
-                }
-            }
-
-            // 显示所有路径
-            Spacer(modifier = Modifier.height(8.dp))
-
-            paths.forEach { path ->
-                Text(
-                    text = path,
-                    style = MiuixTheme.textStyles.body2,
-                    color = colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            RoundedCornerShape(6.dp)
-                        )
-                        .padding(8.dp)
-                )
-
-                if (path != paths.last()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-            }
-        }
-    }
-}
-
-/**
- * 分组标题组件
- */
-@Composable
-fun SectionHeader(
-    title: String,
-    subtitle: String?,
-    icon: ImageVector,
-    count: Int
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(
-            color = colorScheme.surfaceVariant.copy(alpha = 0.25f)
-        ),
-        cornerRadius = 8.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = colorScheme.primary,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.Medium,
-                    color = colorScheme.onSurface
-                )
-                subtitle?.let {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = it,
-                        style = MiuixTheme.textStyles.body2,
-                        color = colorScheme.onSurfaceVariantSummary
-                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(colorScheme.primaryContainer)
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
-            ) {
-                Text(
-                    text = count.toString(),
-                    style = MiuixTheme.textStyles.body2,
-                    color = colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Medium
                 )
             }
         }

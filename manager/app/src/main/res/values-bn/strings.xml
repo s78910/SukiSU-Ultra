@@ -5,8 +5,6 @@
     <string name="home_click_to_install">ইনস্টল করার জন্য ক্লিক করুন</string>
     <string name="home_working"> ওয়ার্কিং</string>
     <string name="home_working_version">ওয়ার্কিং সংস্করণ: %d</string>
-    <string name="home_superuser_count">সুপার ইউজার: %d</string>
-    <string name="home_module_count">মডিউল: %d</string>
     <string name="home_unsupported">অসমর্থিত</string>
     <string name="home_unsupported_reason">KernelSU শুধুমাত্র GKI কার্নেল সমর্থন করে</string>
     <string name="home_kernel">কার্নেল</string>
@@ -52,15 +50,12 @@
     <string name="home_support_content">কার্নেলএসইউ বিনামূল্যে এবং ওপেন সোর্স, এবং সবসময় থাকবে। আপনি সবসময় একটি অনুদান দিয়ে আপনার কৃতজ্ঞতা প্রদর্শন করতে পারেন.</string>
     <string name="about_source_code"><![CDATA[Bekijk source code op %1$s<br/>আমাদের %2$s চ্যানেল মার্জ করুন]]></string>
     <string name="profile_name">প্রফাইলের নাম</string>
-    <string name="profile_namespace">নেমস্পেস মাউন্ট</string>
     <string name="profile_groups">গ্রুপস</string>
     <string name="profile_capabilities">যোগ্যতা</string>
     <string name="profile_selinux_context">এসই লিনাক্স কনটেক্সট</string>
     <string name="profile_default">ডিফল্ট</string>
     <string name="profile_template">টেমপ্লেট</string>
     <string name="profile_custom">কাস্টম</string>
-    <string name="profile_namespace_global">গ্লোবাল</string>
-    <string name="profile_namespace_individual">আলাদাভাবে</string>
     <string name="profile_umount_modules">আনমাউন্ট মোডিউল</string>
     <string name="require_kernel_version">ম্যানেজার সঠিকভাবে কাজ করার জন্য বর্তমান KernelSU সংস্করণ %d খুবই কম। অনুগ্রহ করে %d বা উচ্চতর সংস্করণে আপগ্রেড করুন!</string>
     <string name="save_log">লগ সংরক্ষণ করুন</string>

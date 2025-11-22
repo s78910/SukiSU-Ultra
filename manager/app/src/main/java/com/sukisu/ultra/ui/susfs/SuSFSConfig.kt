@@ -1,9 +1,6 @@
 package com.sukisu.ultra.ui.susfs
 
 import android.annotation.SuppressLint
-import android.content.Context
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +12,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -38,16 +36,20 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.susfs.component.*
+import com.sukisu.ultra.ui.susfs.content.BasicSettingsContent
+import com.sukisu.ultra.ui.susfs.content.EnabledFeaturesContent
+import com.sukisu.ultra.ui.susfs.content.KstatConfigContent
+import com.sukisu.ultra.ui.susfs.content.PathSettingsContent
+import com.sukisu.ultra.ui.susfs.content.SusLoopPathsContent
+import com.sukisu.ultra.ui.susfs.content.SusMapsContent
+import com.sukisu.ultra.ui.susfs.content.SusMountsContent
+import com.sukisu.ultra.ui.susfs.content.SusPathsContent
+import com.sukisu.ultra.ui.susfs.content.TryUmountContent
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager
 import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.extra.SuperDialog
-import top.yukonga.miuix.kmp.extra.SuperDropdown
-import top.yukonga.miuix.kmp.extra.SuperSwitch
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -55,13 +57,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
-/**
- * 标签页枚举类
- */
 enum class SuSFSTab(val displayNameRes: Int) {
     BASIC_SETTINGS(R.string.susfs_tab_basic_settings),
     SUS_PATHS(R.string.susfs_tab_sus_paths),
@@ -80,9 +76,6 @@ enum class SuSFSTab(val displayNameRes: Int) {
     }
 }
 
-/**
- * SuSFS配置界面
- */
 @SuppressLint("SdCardPath", "AutoboxingStateCreation")
 @Destination<RootGraph>
 @Composable
@@ -167,12 +160,6 @@ fun SuSFSConfigScreen(
     var showResetUmountsDialog by remember { mutableStateOf(false) }
     var showResetKstatDialog by remember { mutableStateOf(false) }
 
-    // 备份还原相关状态
-    var showBackupDialog by remember { mutableStateOf(false) }
-    var showRestoreDialog by remember { mutableStateOf(false) }
-    var showRestoreConfirmDialog by remember { mutableStateOf(false) }
-    var selectedBackupFile by remember { mutableStateOf<String?>(null) }
-    var backupInfo by remember { mutableStateOf<SuSFSManager.BackupData?>(null) }
 
     var isNavigating by remember { mutableStateOf(false) }
 
@@ -186,62 +173,6 @@ fun SuSFSConfigScreen(
     }
 
 
-    // 文件选择器
-    val backupFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri?.let { fileUri ->
-            val fileName = SuSFSManager.getDefaultBackupFileName()
-            val tempFile = File(context.cacheDir, fileName)
-            coroutineScope.launch {
-                isLoading = true
-                val success = SuSFSManager.createBackup(context, tempFile.absolutePath)
-                if (success) {
-                    try {
-                        context.contentResolver.openOutputStream(fileUri)?.use { outputStream ->
-                            tempFile.inputStream().use { inputStream ->
-                                inputStream.copyTo(outputStream)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                    tempFile.delete()
-                }
-                isLoading = false
-                showBackupDialog = false
-            }
-        }
-    }
-
-    val restoreFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { fileUri ->
-            coroutineScope.launch {
-                try {
-                    val tempFile = File(context.cacheDir, "temp_restore.susfs_backup")
-                    context.contentResolver.openInputStream(fileUri)?.use { inputStream ->
-                        tempFile.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                    }
-
-                    // 验证备份文件
-                    val backup = SuSFSManager.validateBackupFile(tempFile.absolutePath)
-                    if (backup != null) {
-                        selectedBackupFile = tempFile.absolutePath
-                        backupInfo = backup
-                        showRestoreConfirmDialog = true
-                    }
-                    tempFile.deleteOnExit()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                showRestoreDialog = false
-            }
-        }
-    }
 
     // 加载启用功能状态
     fun loadEnabledFeatures() {
@@ -311,256 +242,6 @@ fun SuSFSConfigScreen(
         }
     }
 
-    // 备份对话框
-    val showBackupDialogState = remember { mutableStateOf(showBackupDialog) }
-    LaunchedEffect(showBackupDialog) {
-        showBackupDialogState.value = showBackupDialog
-    }
-    if (showBackupDialog) {
-        SuperDialog(
-            show = showBackupDialogState,
-            title = stringResource(R.string.susfs_backup_title),
-            onDismissRequest = { showBackupDialog = false },
-            content = {
-                Text(stringResource(R.string.susfs_backup_description))
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = { showBackupDialog = false },
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp)
-                    )
-                    TextButton(
-                        text = stringResource(R.string.susfs_backup_create),
-                        onClick = {
-                            val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                            val timestamp = dateFormat.format(Date())
-                            backupFileLauncher.launch("SuSFS_Config_$timestamp.susfs_backup")
-                        },
-                        enabled = !isLoading,
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
-                }
-            }
-        )
-    }
-
-    // 还原对话框
-    val showRestoreDialogState = remember { mutableStateOf(showRestoreDialog) }
-    LaunchedEffect(showRestoreDialog) {
-        showRestoreDialogState.value = showRestoreDialog
-    }
-    if (showRestoreDialog) {
-        SuperDialog(
-            show = showRestoreDialogState,
-            title = stringResource(R.string.susfs_restore_title),
-            onDismissRequest = { showRestoreDialog = false },
-            content = {
-                Text(stringResource(R.string.susfs_restore_description))
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = { showRestoreDialog = false },
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp)
-                    )
-                    TextButton(
-                        text = stringResource(R.string.susfs_restore_select_file),
-                        onClick = {
-                            restoreFileLauncher.launch(arrayOf("application/json", "*/*"))
-                        },
-                        enabled = !isLoading,
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
-                }
-            }
-        )
-    }
-
-    // 还原确认对话框
-    val showRestoreConfirmDialogState = remember { mutableStateOf(showRestoreConfirmDialog && backupInfo != null) }
-    LaunchedEffect(showRestoreConfirmDialog, backupInfo) {
-        showRestoreConfirmDialogState.value = showRestoreConfirmDialog && backupInfo != null
-    }
-    if (showRestoreConfirmDialog && backupInfo != null) {
-        SuperDialog(
-            show = showRestoreConfirmDialogState,
-            title = stringResource(R.string.susfs_restore_confirm_title),
-            onDismissRequest = {
-                showRestoreConfirmDialog = false
-                selectedBackupFile = null
-                backupInfo = null
-            },
-            content = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(stringResource(R.string.susfs_restore_confirm_description))
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                            Text(
-                                text = stringResource(R.string.susfs_backup_info_date,
-                                    dateFormat.format(Date(backupInfo!!.timestamp))),
-                                fontSize = MiuixTheme.textStyles.body2.fontSize
-                            )
-                            Text(
-                                text = stringResource(R.string.susfs_backup_info_device, backupInfo!!.deviceInfo),
-                                fontSize = MiuixTheme.textStyles.body2.fontSize
-                            )
-                            Text(
-                                text = stringResource(R.string.susfs_backup_info_version, backupInfo!!.version),
-                                fontSize = MiuixTheme.textStyles.body2.fontSize
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = {
-                            showRestoreConfirmDialog = false
-                            selectedBackupFile = null
-                            backupInfo = null
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp)
-                    )
-                    TextButton(
-                        text = stringResource(R.string.susfs_restore_confirm),
-                        onClick = {
-                            selectedBackupFile?.let { filePath ->
-                                coroutineScope.launch {
-                                    isLoading = true
-                                    try {
-                                        val success = SuSFSManager.restoreFromBackup(context, filePath)
-                                        if (success) {
-                                            // 在后台线程读取配置，然后在主线程更新状态
-                                            val configs = withContext(Dispatchers.IO) {
-                                                mapOf(
-                                                    "unameValue" to SuSFSManager.getUnameValue(context),
-                                                    "buildTimeValue" to SuSFSManager.getBuildTimeValue(context),
-                                                    "autoStartEnabled" to SuSFSManager.isAutoStartEnabled(context),
-                                                    "executeInPostFsData" to SuSFSManager.getExecuteInPostFsData(context),
-                                                    "susPaths" to SuSFSManager.getSusPaths(context),
-                                                    "susLoopPaths" to SuSFSManager.getSusLoopPaths(context),
-                                                    "susMaps" to SuSFSManager.getSusMaps(context),
-                                                    "susMounts" to SuSFSManager.getSusMounts(context),
-                                                    "tryUmounts" to SuSFSManager.getTryUmounts(context),
-                                                    "androidDataPath" to SuSFSManager.getAndroidDataPath(context),
-                                                    "sdcardPath" to SuSFSManager.getSdcardPath(context),
-                                                    "kstatConfigs" to SuSFSManager.getKstatConfigs(context),
-                                                    "addKstatPaths" to SuSFSManager.getAddKstatPaths(context),
-                                                    "hideSusMountsForAllProcs" to SuSFSManager.getHideSusMountsForAllProcs(context),
-                                                    "enableHideBl" to SuSFSManager.getEnableHideBl(context),
-                                                    "enableCleanupResidue" to SuSFSManager.getEnableCleanupResidue(context),
-                                                    "umountForZygoteIsoService" to SuSFSManager.getUmountForZygoteIsoService(context),
-                                                    "enableAvcLogSpoofing" to SuSFSManager.getEnableAvcLogSpoofing(context)
-                                                )
-                                            }
-                                            
-                                            // 在主线程更新状态
-                                            @Suppress("UNCHECKED_CAST")
-                                            unameValue = configs["unameValue"] as String
-                                            @Suppress("UNCHECKED_CAST")
-                                            buildTimeValue = configs["buildTimeValue"] as String
-                                            @Suppress("UNCHECKED_CAST")
-                                            autoStartEnabled = configs["autoStartEnabled"] as Boolean
-                                            @Suppress("UNCHECKED_CAST")
-                                            executeInPostFsData = configs["executeInPostFsData"] as Boolean
-                                            @Suppress("UNCHECKED_CAST")
-                                            susPaths = configs["susPaths"] as Set<String>
-                                            @Suppress("UNCHECKED_CAST")
-                                            susLoopPaths = configs["susLoopPaths"] as Set<String>
-                                            @Suppress("UNCHECKED_CAST")
-                                            susMaps = configs["susMaps"] as Set<String>
-                                            @Suppress("UNCHECKED_CAST")
-                                            susMounts = configs["susMounts"] as Set<String>
-                                            @Suppress("UNCHECKED_CAST")
-                                            tryUmounts = configs["tryUmounts"] as Set<String>
-                                            @Suppress("UNCHECKED_CAST")
-                                            androidDataPath = configs["androidDataPath"] as String
-                                            @Suppress("UNCHECKED_CAST")
-                                            sdcardPath = configs["sdcardPath"] as String
-                                            @Suppress("UNCHECKED_CAST")
-                                            kstatConfigs = configs["kstatConfigs"] as Set<String>
-                                            @Suppress("UNCHECKED_CAST")
-                                            addKstatPaths = configs["addKstatPaths"] as Set<String>
-                                            @Suppress("UNCHECKED_CAST")
-                                            hideSusMountsForAllProcs = configs["hideSusMountsForAllProcs"] as Boolean
-                                            @Suppress("UNCHECKED_CAST")
-                                            enableHideBl = configs["enableHideBl"] as Boolean
-                                            @Suppress("UNCHECKED_CAST")
-                                            enableCleanupResidue = configs["enableCleanupResidue"] as Boolean
-                                            @Suppress("UNCHECKED_CAST")
-                                            umountForZygoteIsoService = configs["umountForZygoteIsoService"] as Boolean
-                                            @Suppress("UNCHECKED_CAST")
-                                            enableAvcLogSpoofing = configs["enableAvcLogSpoofing"] as Boolean
-                                            
-                                            // 延迟关闭对话框，给 UI 时间更新
-                                            delay(300)
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    } finally {
-                                        // 先关闭对话框，确保在主线程上执行
-                                        withContext(Dispatchers.Main) {
-                                            isLoading = false
-                                            showRestoreConfirmDialog = false
-                                        }
-                                        // 延迟清空状态，确保对话框完全关闭后再清空
-                                        delay(100)
-                                        withContext(Dispatchers.Main) {
-                                            selectedBackupFile = null
-                                            backupInfo = null
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        enabled = !isLoading,
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
-                }
-            }
-        )
-    }
 
     // 槽位信息对话框
     SlotInfoDialog(
@@ -1072,8 +753,6 @@ fun SuSFSConfigScreen(
                             },
                             onShowSlotInfo = { showSlotInfoDialog = true },
                             context = context,
-                            onShowBackupDialog = { showBackupDialog = true },
-                            onShowRestoreDialog = { showRestoreDialog = true },
                             enableHideBl = enableHideBl,
                             onEnableHideBlChange = { enabled: Boolean ->
                                 enableHideBl = enabled
@@ -1098,14 +777,62 @@ fun SuSFSConfigScreen(
                             onEnableAvcLogSpoofingChange = { enabled: Boolean ->
                                 coroutineScope.launch {
                                     isLoading = true
-                                    val success = SuSFSManager.setEnableAvcLogSpoofing(context, enabled)
+                                    val success =
+                                        SuSFSManager.setEnableAvcLogSpoofing(context, enabled)
                                     if (success) {
                                         enableAvcLogSpoofing = enabled
                                     }
                                     isLoading = false
                                 }
                             },
-                            onReset = { showConfirmReset = true }
+                            onReset = { showConfirmReset = true },
+                            onApply = {
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    val success = SuSFSManager.setUname(
+                                        context,
+                                        unameValue.trim(),
+                                        buildTimeValue.trim()
+                                    )
+                                    if (success) {
+                                        SuSFSManager.saveExecuteInPostFsData(
+                                            context,
+                                            executeInPostFsData
+                                        )
+                                        if (SuSFSManager.isAutoStartEnabled(context)) {
+                                            SuSFSManager.configureAutoStart(context, true)
+                                        }
+                                    }
+                                    isLoading = false
+                                }
+                            },
+                            onConfigReload = {
+                                coroutineScope.launch {
+                                    unameValue = SuSFSManager.getUnameValue(context)
+                                    buildTimeValue = SuSFSManager.getBuildTimeValue(context)
+                                    autoStartEnabled = SuSFSManager.isAutoStartEnabled(context)
+                                    executeInPostFsData =
+                                        SuSFSManager.getExecuteInPostFsData(context)
+                                    susPaths = SuSFSManager.getSusPaths(context)
+                                    susLoopPaths = SuSFSManager.getSusLoopPaths(context)
+                                    susMaps = SuSFSManager.getSusMaps(context)
+                                    susMounts = SuSFSManager.getSusMounts(context)
+                                    tryUmounts = SuSFSManager.getTryUmounts(context)
+                                    androidDataPath = SuSFSManager.getAndroidDataPath(context)
+                                    sdcardPath = SuSFSManager.getSdcardPath(context)
+                                    kstatConfigs = SuSFSManager.getKstatConfigs(context)
+                                    addKstatPaths = SuSFSManager.getAddKstatPaths(context)
+                                    hideSusMountsForAllProcs =
+                                        SuSFSManager.getHideSusMountsForAllProcs(context)
+                                    enableHideBl = SuSFSManager.getEnableHideBl(context)
+                                    enableCleanupResidue =
+                                        SuSFSManager.getEnableCleanupResidue(context)
+                                    umountForZygoteIsoService =
+                                        SuSFSManager.getUmountForZygoteIsoService(context)
+                                    enableAvcLogSpoofing =
+                                        SuSFSManager.getEnableAvcLogSpoofing(context)
+                                }
+                            }
                         )
                     }
                     SuSFSTab.SUS_PATHS -> {
@@ -1337,325 +1064,6 @@ fun SuSFSConfigScreen(
     }
 }
 
-/**
- * 基本设置内容组件
- */
-@Composable
-fun BasicSettingsContent(
-    unameValue: String,
-    onUnameValueChange: (String) -> Unit,
-    buildTimeValue: String,
-    onBuildTimeValueChange: (String) -> Unit,
-    executeInPostFsData: Boolean,
-    onExecuteInPostFsDataChange: (Boolean) -> Unit,
-    autoStartEnabled: Boolean,
-    canEnableAutoStart: Boolean,
-    isLoading: Boolean,
-    onAutoStartToggle: (Boolean) -> Unit,
-    onShowSlotInfo: () -> Unit,
-    context: Context,
-    onShowBackupDialog: () -> Unit,
-    onShowRestoreDialog: () -> Unit,
-    enableHideBl: Boolean,
-    onEnableHideBlChange: (Boolean) -> Unit,
-    enableCleanupResidue: Boolean,
-    onEnableCleanupResidueChange: (Boolean) -> Unit,
-    enableAvcLogSpoofing: Boolean,
-    onEnableAvcLogSpoofingChange: (Boolean) -> Unit,
-    onReset: (() -> Unit)? = null
-) {
-    val isAbDevice = produceState(initialValue = false) {
-        value = isAbDevice()
-    }.value
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // 说明卡片
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.susfs_config_description),
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.Medium,
-                    color = colorScheme.primary
-                )
-                Text(
-                    text = stringResource(R.string.susfs_config_description_text),
-                    style = MiuixTheme.textStyles.body2,
-                    color = colorScheme.onSurfaceVariantSummary,
-                    lineHeight = 18.sp
-                )
-            }
-        }
-
-        // Uname输入框
-        TextField(
-            value = unameValue,
-            onValueChange = onUnameValueChange,
-            label = stringResource(R.string.susfs_uname_label),
-            useLabelAsPlaceholder = true,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
-        )
-
-        // 构建时间伪装输入框
-        TextField(
-            value = buildTimeValue,
-            onValueChange = onBuildTimeValueChange,
-            label = stringResource(R.string.susfs_build_time_label),
-            useLabelAsPlaceholder = true,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
-        )
-
-        // 执行位置选择
-        val locationItems = listOf(
-            stringResource(R.string.susfs_execution_location_service),
-            stringResource(R.string.susfs_execution_location_post_fs_data)
-        )
-        SuperDropdown(
-            title = stringResource(R.string.susfs_execution_location_label),
-            summary = if (executeInPostFsData) {
-                stringResource(R.string.susfs_execution_location_post_fs_data)
-            } else {
-                stringResource(R.string.susfs_execution_location_service)
-            },
-            items = locationItems,
-            selectedIndex = if (executeInPostFsData) 1 else 0,
-            onSelectedIndexChange = { index ->
-                onExecuteInPostFsDataChange(index == 1)
-            },
-            enabled = !isLoading
-        )
-
-        // 当前值显示
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.susfs_current_value, SuSFSManager.getUnameValue(context)),
-                    style = MiuixTheme.textStyles.body2,
-                    color = colorScheme.onSurfaceVariantSummary
-                )
-                Text(
-                    text = stringResource(R.string.susfs_current_build_time, SuSFSManager.getBuildTimeValue(context)),
-                    style = MiuixTheme.textStyles.body2,
-                    color = colorScheme.onSurfaceVariantSummary
-                )
-                Text(
-                    text = stringResource(R.string.susfs_current_execution_location, if (SuSFSManager.getExecuteInPostFsData(context)) "Post-FS-Data" else "Service"),
-                    style = MiuixTheme.textStyles.body2,
-                    color = colorScheme.onSurfaceVariantSummary
-                )
-            }
-        }
-
-        // 开机自启动开关
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            SuperSwitch(
-                title = stringResource(R.string.susfs_autostart_title),
-                summary = if (canEnableAutoStart) {
-                    stringResource(R.string.susfs_autostart_description)
-                } else {
-                    stringResource(R.string.susfs_autostart_requirement)
-                },
-                leftAction = {
-                    Icon(
-                        Icons.Default.AutoMode,
-                        modifier = Modifier.padding(end = 16.dp),
-                        contentDescription = stringResource(R.string.susfs_autostart_title),
-                        tint = if (canEnableAutoStart) colorScheme.onBackground else colorScheme.onSurfaceVariantSummary
-                    )
-                },
-                checked = autoStartEnabled,
-                onCheckedChange = onAutoStartToggle,
-                enabled = !isLoading && canEnableAutoStart
-            )
-        }
-
-        // 隐藏BL脚本开关
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            SuperSwitch(
-                title = stringResource(R.string.hide_bl_script),
-                summary = stringResource(R.string.hide_bl_script_description),
-                leftAction = {
-                    Icon(
-                        Icons.Default.Security,
-                        modifier = Modifier.padding(end = 16.dp),
-                        contentDescription = stringResource(R.string.hide_bl_script),
-                        tint = colorScheme.onBackground
-                    )
-                },
-                checked = enableHideBl,
-                onCheckedChange = onEnableHideBlChange,
-                enabled = !isLoading
-            )
-        }
-
-        // 清理残留脚本开关
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            SuperSwitch(
-                title = stringResource(R.string.cleanup_residue),
-                summary = stringResource(R.string.cleanup_residue_description),
-                leftAction = {
-                    Icon(
-                        Icons.Default.CleaningServices,
-                        modifier = Modifier.padding(end = 16.dp),
-                        contentDescription = stringResource(R.string.cleanup_residue),
-                        tint = colorScheme.onBackground
-                    )
-                },
-                checked = enableCleanupResidue,
-                onCheckedChange = onEnableCleanupResidueChange,
-                enabled = !isLoading
-            )
-        }
-
-        // AVC日志欺骗开关
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            SuperSwitch(
-                title = stringResource(R.string.avc_log_spoofing),
-                summary = stringResource(R.string.avc_log_spoofing_description),
-                leftAction = {
-                    Icon(
-                        Icons.Default.VisibilityOff,
-                        modifier = Modifier.padding(end = 16.dp),
-                        contentDescription = stringResource(R.string.avc_log_spoofing),
-                        tint = colorScheme.onBackground
-                    )
-                },
-                checked = enableAvcLogSpoofing,
-                onCheckedChange = onEnableAvcLogSpoofingChange,
-                enabled = !isLoading
-            )
-        }
-
-        // 槽位信息按钮
-        if (isAbDevice) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            tint = colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = stringResource(R.string.susfs_slot_info_title),
-                            style = MiuixTheme.textStyles.title3,
-                            fontWeight = FontWeight.Medium,
-                            color = colorScheme.onBackground
-                        )
-                    }
-                    Text(
-                        text = stringResource(R.string.susfs_slot_info_description),
-                        style = MiuixTheme.textStyles.body2,
-                        color = colorScheme.onSurfaceVariantSummary,
-                        lineHeight = 18.sp
-                    )
-                    TextButton(
-                        text = stringResource(R.string.susfs_slot_info_title),
-                        onClick = onShowSlotInfo,
-                        enabled = !isLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp)
-                    )
-                }
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 备份按钮
-            TextButton(
-                text = stringResource(R.string.susfs_backup_title),
-                onClick = onShowBackupDialog,
-                enabled = !isLoading,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .padding(vertical = 8.dp)
-            )
-            // 还原按钮
-            TextButton(
-                text = stringResource(R.string.susfs_restore_title),
-                onClick = onShowRestoreDialog,
-                enabled = !isLoading,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 48.dp)
-                    .padding(vertical = 8.dp)
-            )
-        }
-
-        // 重置按钮
-        if (onReset != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                onClick = onReset,
-                modifier = Modifier.fillMaxWidth(),
-                cornerRadius = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.RestoreFromTrash,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.susfs_reset_confirm_title),
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.Medium,
-                        color = colorScheme.primary
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 槽位信息对话框
- */
 @Composable
 fun SlotInfoDialog(
     showDialog: Boolean,
@@ -1689,7 +1097,7 @@ fun SlotInfoDialog(
                 ) {
                     Text(
                         text = stringResource(R.string.susfs_current_active_slot, currentActiveSlot),
-                        style = MiuixTheme.textStyles.body1,
+                        style = MiuixTheme.textStyles.body2,
                         fontWeight = FontWeight.Medium,
                         color = colorScheme.primary
                     )
@@ -1727,7 +1135,7 @@ fun SlotInfoDialog(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = slotInfo.slotName,
-                                            style = MiuixTheme.textStyles.title2,
+                                            style = MiuixTheme.textStyles.body1,
                                             fontWeight = FontWeight.Bold,
                                             color = if (slotInfo.slotName == currentActiveSlot) {
                                                 colorScheme.primary
@@ -1755,12 +1163,12 @@ fun SlotInfoDialog(
                                     }
                                     Text(
                                         text = stringResource(R.string.susfs_slot_uname, slotInfo.uname),
-                                        style = MiuixTheme.textStyles.body2,
+                                        style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
                                         color = colorScheme.onSurface
                                     )
                                     Text(
                                         text = stringResource(R.string.susfs_slot_build_time, slotInfo.buildTime),
-                                        style = MiuixTheme.textStyles.body2,
+                                        style = MiuixTheme.textStyles.body2.copy(fontSize = 13.sp),
                                         color = colorScheme.onSurface
                                     )
 
@@ -1820,20 +1228,22 @@ fun SlotInfoDialog(
                         cornerRadius = 8.dp
                     ) {
                         Text(
-                            text = stringResource(R.string.refresh),
-                            style = MiuixTheme.textStyles.body2,
-                            maxLines = 2
+                            text = stringResource(R.string.refresh)
                         )
                     }
-                    
-                    TextButton(
-                        text = stringResource(android.R.string.cancel),
+
+                    Button(
                         onClick = onDismiss,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
-                            .padding(vertical = 8.dp)
-                    )
+                            .padding(vertical = 8.dp),
+                        cornerRadius = 8.dp
+                    ) {
+                        Text(
+                            text = stringResource(android.R.string.cancel)
+                        )
+                    }
                 }
             }
         )
