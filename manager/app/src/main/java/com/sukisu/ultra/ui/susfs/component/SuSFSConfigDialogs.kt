@@ -25,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.Image
@@ -1431,101 +1430,3 @@ fun FeatureStatusCard(
     }
 }
 
-@Composable
-fun SusMountHidingControlCard(
-    hideSusMountsForAllProcs: Boolean,
-    isLoading: Boolean,
-    onToggleHiding: (Boolean) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.defaultColors(
-            color = colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 标题行
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = if (hideSusMountsForAllProcs) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = null,
-                    tint = colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.susfs_hide_mounts_control_title),
-                    style = MiuixTheme.textStyles.title2,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSurface
-                )
-            }
-
-            // 描述文本
-            Text(
-                text = stringResource(R.string.susfs_hide_mounts_control_description),
-                    style = MiuixTheme.textStyles.body1,
-                color = colorScheme.onSurfaceVariantSummary,
-                lineHeight = 16.sp
-            )
-
-            // 控制开关
-            SuperSwitch(
-                title = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
-                summary = if (hideSusMountsForAllProcs) {
-                    stringResource(R.string.susfs_hide_mounts_for_all_procs_enabled_description)
-                } else {
-                    stringResource(R.string.susfs_hide_mounts_for_all_procs_disabled_description)
-                },
-                leftAction = {
-                    Icon(
-                        if (hideSusMountsForAllProcs) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        modifier = Modifier.padding(end = 16.dp),
-                        contentDescription = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
-                        tint = colorScheme.onBackground
-                    )
-                },
-                checked = hideSusMountsForAllProcs,
-                onCheckedChange = onToggleHiding,
-                enabled = !isLoading
-            )
-
-            // 当前设置显示
-            Text(
-                text = stringResource(
-                    R.string.susfs_hide_mounts_current_setting,
-                    if (hideSusMountsForAllProcs) {
-                        stringResource(R.string.susfs_hide_mounts_setting_all)
-                    } else {
-                        stringResource(R.string.susfs_hide_mounts_setting_non_ksu)
-                    }
-                ),
-                    style = MiuixTheme.textStyles.body1,
-                color = colorScheme.primary,
-                fontWeight = FontWeight.Medium
-            )
-
-            // 建议文本
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.defaultColors(
-                    color = colorScheme.surfaceVariant.copy(alpha = 0.2f)
-                ),
-                cornerRadius = 8.dp
-            ) {
-                Text(
-                    text = stringResource(R.string.susfs_hide_mounts_recommendation),
-                    style = MiuixTheme.textStyles.body2,
-                    color = colorScheme.onSurfaceVariantSummary,
-                    lineHeight = 18.sp,
-                    modifier = Modifier.padding(12.dp)
-                )
-            }
-        }
-    }
-}

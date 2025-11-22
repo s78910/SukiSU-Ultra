@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -42,7 +41,6 @@ import com.sukisu.ultra.ui.susfs.content.KstatConfigContent
 import com.sukisu.ultra.ui.susfs.content.PathSettingsContent
 import com.sukisu.ultra.ui.susfs.content.SusLoopPathsContent
 import com.sukisu.ultra.ui.susfs.content.SusMapsContent
-import com.sukisu.ultra.ui.susfs.content.SusMountsContent
 import com.sukisu.ultra.ui.susfs.content.SusPathsContent
 import com.sukisu.ultra.ui.susfs.content.TryUmountContent
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager
@@ -63,7 +61,6 @@ enum class SuSFSTab(val displayNameRes: Int) {
     SUS_PATHS(R.string.susfs_tab_sus_paths),
     SUS_LOOP_PATHS(R.string.susfs_tab_sus_loop_paths),
     SUS_MAPS(R.string.susfs_tab_sus_maps),
-    SUS_MOUNTS(R.string.susfs_tab_sus_mounts),
     TRY_UMOUNT(R.string.susfs_tab_try_umount),
     KSTAT_CONFIG(R.string.susfs_tab_kstat_config),
     PATH_SETTINGS(R.string.susfs_tab_path_settings),
@@ -112,7 +109,6 @@ fun SuSFSConfigScreen(
     var susPaths by remember { mutableStateOf(emptySet<String>()) }
     var susLoopPaths by remember { mutableStateOf(emptySet<String>()) }
     var susMaps by remember { mutableStateOf(emptySet<String>()) }
-    var susMounts by remember { mutableStateOf(emptySet<String>()) }
     var tryUmounts by remember { mutableStateOf(emptySet<String>()) }
     var androidDataPath by remember { mutableStateOf("") }
     var sdcardPath by remember { mutableStateOf("") }
@@ -138,7 +134,6 @@ fun SuSFSConfigScreen(
     var showAddLoopPathDialog by remember { mutableStateOf(false) }
     var showAddSusMapDialog by remember { mutableStateOf(false) }
     var showAddAppPathDialog by remember { mutableStateOf(false) }
-    var showAddMountDialog by remember { mutableStateOf(false) }
     var showAddUmountDialog by remember { mutableStateOf(false) }
     var showAddKstatStaticallyDialog by remember { mutableStateOf(false) }
     var showAddKstatDialog by remember { mutableStateOf(false) }
@@ -147,7 +142,6 @@ fun SuSFSConfigScreen(
     var editingPath by remember { mutableStateOf<String?>(null) }
     var editingLoopPath by remember { mutableStateOf<String?>(null) }
     var editingSusMap by remember { mutableStateOf<String?>(null) }
-    var editingMount by remember { mutableStateOf<String?>(null) }
     var editingUmount by remember { mutableStateOf<String?>(null) }
     var editingKstatConfig by remember { mutableStateOf<String?>(null) }
     var editingKstatPath by remember { mutableStateOf<String?>(null) }
@@ -156,7 +150,6 @@ fun SuSFSConfigScreen(
     var showResetPathsDialog by remember { mutableStateOf(false) }
     var showResetLoopPathsDialog by remember { mutableStateOf(false) }
     var showResetSusMapsDialog by remember { mutableStateOf(false) }
-    var showResetMountsDialog by remember { mutableStateOf(false) }
     var showResetUmountsDialog by remember { mutableStateOf(false) }
     var showResetKstatDialog by remember { mutableStateOf(false) }
 
@@ -211,7 +204,6 @@ fun SuSFSConfigScreen(
             susPaths = SuSFSManager.getSusPaths(context)
             susLoopPaths = SuSFSManager.getSusLoopPaths(context)
             susMaps = SuSFSManager.getSusMaps(context)
-            susMounts = SuSFSManager.getSusMounts(context)
             tryUmounts = SuSFSManager.getTryUmounts(context)
             androidDataPath = SuSFSManager.getAndroidDataPath(context)
             sdcardPath = SuSFSManager.getSdcardPath(context)
@@ -369,34 +361,6 @@ fun SuSFSConfigScreen(
         apps = installedApps,
         onLoadApps = { loadInstalledApps() },
         existingSusPaths = susPaths
-    )
-
-    AddPathDialog(
-        showDialog = showAddMountDialog,
-        onDismiss = {
-            showAddMountDialog = false
-            editingMount = null
-        },
-        onConfirm = { mount ->
-            coroutineScope.launch {
-                isLoading = true
-                val success = if (editingMount != null) {
-                    SuSFSManager.editSusMount(context, editingMount!!, mount)
-                } else {
-                    SuSFSManager.addSusMount(context, mount)
-                }
-                if (success) {
-                    susMounts = SuSFSManager.getSusMounts(context)
-                }
-                isLoading = false
-                showAddMountDialog = false
-                editingMount = null
-            }
-        },
-        isLoading = isLoading,
-        titleRes = if (editingMount != null) R.string.susfs_edit_sus_mount else R.string.susfs_add_sus_mount,
-        labelRes = R.string.susfs_mount_path_label,
-        initialValue = editingMount ?: ""
     )
 
     AddTryUmountDialog(
@@ -578,26 +542,6 @@ fun SuSFSConfigScreen(
         },
         titleRes = R.string.susfs_reset_sus_maps_title,
         messageRes = R.string.susfs_reset_sus_maps_message,
-        isLoading = isLoading
-    )
-
-    ConfirmDialog(
-        showDialog = showResetMountsDialog,
-        onDismiss = { showResetMountsDialog = false },
-        onConfirm = {
-            coroutineScope.launch {
-                isLoading = true
-                SuSFSManager.saveSusMounts(context, emptySet())
-                susMounts = emptySet()
-                if (SuSFSManager.isAutoStartEnabled(context)) {
-                    SuSFSManager.configureAutoStart(context, true)
-                }
-                isLoading = false
-                showResetMountsDialog = false
-            }
-        },
-        titleRes = R.string.susfs_reset_mounts_title,
-        messageRes = R.string.susfs_reset_mounts_message,
         isLoading = isLoading
     )
 
@@ -785,6 +729,20 @@ fun SuSFSConfigScreen(
                                     isLoading = false
                                 }
                             },
+                            hideSusMountsForAllProcs = hideSusMountsForAllProcs,
+                            onHideSusMountsForAllProcsChange = { hideForAll: Boolean ->
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    if (SuSFSManager.setHideSusMountsForAllProcs(
+                                            context,
+                                            hideForAll
+                                        )
+                                    ) {
+                                        hideSusMountsForAllProcs = hideForAll
+                                    }
+                                    isLoading = false
+                                }
+                            },
                             onReset = { showConfirmReset = true },
                             onApply = {
                                 coroutineScope.launch {
@@ -816,7 +774,6 @@ fun SuSFSConfigScreen(
                                     susPaths = SuSFSManager.getSusPaths(context)
                                     susLoopPaths = SuSFSManager.getSusLoopPaths(context)
                                     susMaps = SuSFSManager.getSusMaps(context)
-                                    susMounts = SuSFSManager.getSusMounts(context)
                                     tryUmounts = SuSFSManager.getTryUmounts(context)
                                     androidDataPath = SuSFSManager.getAndroidDataPath(context)
                                     sdcardPath = SuSFSManager.getSdcardPath(context)
@@ -900,42 +857,6 @@ fun SuSFSConfigScreen(
                             onReset = { showResetSusMapsDialog = true }
                         )
                     }
-                    SuSFSTab.SUS_MOUNTS -> {
-                        SusMountsContent(
-                            susMounts = susMounts,
-                            hideSusMountsForAllProcs = hideSusMountsForAllProcs,
-                            isLoading = isLoading,
-                            onAddMount = { showAddMountDialog = true },
-                            onRemoveMount = { mount ->
-                                coroutineScope.launch {
-                                    isLoading = true
-                                    if (SuSFSManager.removeSusMount(context, mount)) {
-                                        susMounts = SuSFSManager.getSusMounts(context)
-                                    }
-                                    isLoading = false
-                                }
-                            },
-                            onEditMount = { mount ->
-                                editingMount = mount
-                                showAddMountDialog = true
-                            },
-                            onToggleHideSusMountsForAllProcs = { hideForAll ->
-                                coroutineScope.launch {
-                                    isLoading = true
-                                    if (SuSFSManager.setHideSusMountsForAllProcs(
-                                            context,
-                                            hideForAll
-                                        )
-                                    ) {
-                                        hideSusMountsForAllProcs = hideForAll
-                                    }
-                                    isLoading = false
-                                }
-                            },
-                            onReset = { showResetMountsDialog = true }
-                        )
-                    }
-
                     SuSFSTab.TRY_UMOUNT -> {
                         TryUmountContent(
                             tryUmounts = tryUmounts,

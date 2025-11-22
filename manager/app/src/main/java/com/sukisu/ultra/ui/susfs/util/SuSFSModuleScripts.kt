@@ -427,16 +427,6 @@ object ScriptGenerator {
             appendLine(generateBinaryCheck(config.targetPath))
             appendLine()
 
-            // 添加SUS挂载
-            if (config.susMounts.isNotEmpty()) {
-                appendLine("# 添加SUS挂载")
-                config.susMounts.forEach { mount ->
-                    appendLine($$"\"$SUSFS_BIN\" add_sus_mount '$$mount'")
-                    appendLine($$"echo \"$(get_current_time): 添加SUS挂载: $$mount\" >> \"$LOG_FILE\"")
-                }
-                appendLine()
-            }
-
             // 添加尝试卸载
             if (config.tryUmounts.isNotEmpty()) {
                 appendLine("# 添加尝试卸载")

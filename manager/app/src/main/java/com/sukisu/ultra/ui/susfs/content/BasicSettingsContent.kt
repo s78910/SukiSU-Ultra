@@ -44,6 +44,8 @@ fun BasicSettingsContent(
     onEnableCleanupResidueChange: (Boolean) -> Unit,
     enableAvcLogSpoofing: Boolean,
     onEnableAvcLogSpoofingChange: (Boolean) -> Unit,
+    hideSusMountsForAllProcs: Boolean,
+    onHideSusMountsForAllProcsChange: (Boolean) -> Unit,
     onReset: (() -> Unit)? = null,
     onApply: (() -> Unit)? = null,
     onConfigReload: () -> Unit
@@ -241,6 +243,27 @@ fun BasicSettingsContent(
             },
             checked = enableAvcLogSpoofing,
             onCheckedChange = onEnableAvcLogSpoofingChange,
+            enabled = !isLoading
+        )
+
+        // 对所有进程隐藏SuS挂载开关
+        SuperSwitch(
+            title = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
+            summary = if (hideSusMountsForAllProcs) {
+                stringResource(R.string.susfs_hide_mounts_for_all_procs_enabled_description)
+            } else {
+                stringResource(R.string.susfs_hide_mounts_for_all_procs_disabled_description)
+            },
+            leftAction = {
+                Icon(
+                    if (hideSusMountsForAllProcs) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    modifier = Modifier.padding(end = 16.dp),
+                    contentDescription = stringResource(R.string.susfs_hide_mounts_for_all_procs_label),
+                    tint = colorScheme.onBackground
+                )
+            },
+            checked = hideSusMountsForAllProcs,
+            onCheckedChange = onHideSusMountsForAllProcsChange,
             enabled = !isLoading
         )
     }
