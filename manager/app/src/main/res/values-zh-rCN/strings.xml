@@ -361,16 +361,11 @@
     <!-- SuSFS Toast Messages -->
     <string name="susfs_binary_not_found">无法找到 ksu_susfs 文件</string>
     <string name="susfs_command_failed">SuSFS 命令执行失败</string>
-    <string name="susfs_uname_set_success" formatted="false">SuSFS 内核名称和构建时间设置成功: %s, %s</string>
     <!-- SuSFS Settings Item -->
     <!-- 开机自启动相关 -->
     <string name="susfs_autostart_title">开机自启动</string>
     <string name="susfs_autostart_description">重启时自动应用所有非默认配置</string>
     <string name="susfs_autostart_requirement">需要添加配置后才能启用</string>
-    <string name="susfs_autostart_enable_failed">启用开机自启动失败</string>
-    <string name="susfs_autostart_disable_failed">禁用开机自启动失败</string>
-    <string name="susfs_autostart_error">开机自启动配置错误: %s</string>
-    <string name="susfs_no_config_to_autostart">没有可用的配置进行开机自启动</string>
     <!-- SuSFS Tab Titles -->
     <string name="susfs_tab_basic_settings">基本设置</string>
     <string name="susfs_tab_sus_paths">SuS 路径</string>
@@ -380,8 +375,6 @@
     <!-- SuSFS Path Management -->
     <string name="susfs_add_sus_path">添加 SuS 路径</string>
     <string name="susfs_add_try_umount">添加尝试卸载</string>
-    <string name="susfs_sus_path_added_success">SuS 路径添加成功</string>
-    <string name="susfs_path_not_found_error">路径未找到错误</string>
     <string name="susfs_path_label">路径</string>
     <string name="susfs_no_paths_configured">暂无 SuS 路径配置</string>
     <string name="susfs_no_umounts_configured">暂无尝试卸载配置</string>
@@ -392,8 +385,6 @@
     <string name="susfs_umount_mode_normal_short">普通</string>
     <string name="susfs_umount_mode_detach_short">分离</string>
     <string name="susfs_umount_mode_display">模式: %1$s (%2$s)</string>
-    <string name="susfs_try_umount_added_success">尝试 umount 路径添加成功： %s</string>
-    <string name="susfs_try_umount_added_saved">尝试 umount 路径保存成功： %s</string>
     <!-- SuSFS Run Umount -->
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">重置 SuS 路径</string>
@@ -424,8 +415,6 @@
     <string name="susfs_enable_log_label">SuSFS 启用日志</string>
     <string name="susfs_log_config_description">启用或者关闭 SuSFS 的日志</string>
     <string name="susfs_log_config_title">SuSFS 日志配置</string>
-    <string name="susfs_log_enabled">启用 SuSFS 日志</string>
-    <string name="susfs_log_disabled">关闭 SuSFS 日志</string>
     <string name="susfs_execution_location_label">执行位置</string>
     <string name="susfs_current_execution_location">当前执行位置：%s</string>
     <string name="susfs_execution_location_service">Service</string>
@@ -440,16 +429,8 @@
     <string name="susfs_slot_use_build_time">使用构建时间</string>
     <string name="susfs_slot_info_unavailable">无法获取槽位信息</string>
     <!-- SuSFS 自启动相关字符串 -->
-    <string name="susfs_autostart_enabled_success">SuSFS 自启动模块已启用，模块路径：%s</string>
-    <string name="susfs_autostart_disabled_success">SuSFS 自启动模块已禁用</string>
     <!-- SuSFS Kstat相关字符串 -->
     <string name="susfs_tab_kstat_config">Kstat 配置</string>
-    <string name="kstat_static_config_added">Kstat 静态配置已添加：%1$s</string>
-    <string name="kstat_config_removed">已移除 Kstat 配置：%1$s</string>
-    <string name="kstat_path_added">Kstat 路径已添加：%1$s</string>
-    <string name="kstat_path_removed">已移除 Kstat 路径：%1$s</string>
-    <string name="kstat_updated">Kstat 已更新：%1$s</string>
-    <string name="kstat_full_clone_updated">Kstat 完整克隆已更新：%1$s</string>
     <string name="add_kstat_statically_title">添加 Kstat 静态配置</string>
     <string name="file_or_directory_path_label">文件/目录路径</string>
     <string name="hint_use_default_value">提示：可以使用 "default" 来使用原始值</string>
@@ -469,11 +450,6 @@
     <string name="susfs_hide_mounts_for_all_procs_label">对所有进程隐藏 SuS 挂载</string>
     <string name="susfs_hide_mounts_for_all_procs_enabled_description">启用后，SuS 挂载将对所有进程隐藏，包括 KSU 进程</string>
     <string name="susfs_hide_mounts_for_all_procs_disabled_description">禁用后，SuS 挂载仅对非 KSU 进程隐藏，KSU 进程可以看到挂载</string>
-    <string name="susfs_hide_mounts_all_enabled">已启用对所有进程隐藏 SuS 挂载</string>
-    <string name="susfs_hide_mounts_all_disabled">已禁用对所有进程隐藏 SuS 挂载</string>
-    <string name="susfs_android_data_path_set">Android Data 路径已设置为: %s</string>
-    <string name="susfs_sdcard_path_set">SDCard 路径已设置为: %s</string>
-    <string name="susfs_path_setup_warning">路径设置可能未完全成功，但将继续添加 SuS 路径</string>
     <!-- 备份和还原相关字符串 -->
     <string name="susfs_backup_title">备份</string>
     <string name="susfs_backup_description">创建所有 SuSFS 配置的备份。备份文件将包含所有设置、路径和配置信息。</string>
@@ -506,13 +482,9 @@
     <string name="edit">编辑</string>
     <string name="delete">删除</string>
     <string name="update">更新</string>
-    <string name="kstat_config_updated">Kstat 配置更新</string>
-    <string name="kstat_path_updated">Kstat 路径更新</string>
     <string name="susfs_update_full_clone">Susfs 完整克隆更新</string>
     <string name="umount_zygote_iso_service">卸载 Zygote 隔离服务</string>
     <string name="umount_zygote_iso_service_description">启用此选项将在系统启动时卸载 Zygote 隔离服务挂载点</string>
-    <string name="umount_zygote_iso_service_enabled">Zygote 隔离服务卸载已启用</string>
-    <string name="umount_zygote_iso_service_disabled">Zygote 隔离服务卸载已禁用</string>
     <string name="app_paths_section">应用路径</string>
     <string name="other_paths_section">其他路径</string>
     <string name="add_custom_path">其他</string>
@@ -526,33 +498,29 @@
     <string name="susfs_tab_sus_loop_paths">SuS 循环路径</string>
     <string name="susfs_add_sus_loop_path">添加 SuS 循环路径</string>
     <string name="susfs_edit_sus_loop_path">编辑 SuS 循环路径</string>
-    <string name="susfs_loop_path_added_success">SuS 循环路径添加成功: %1$s</string>
-    <string name="susfs_loop_path_removed">SuS 循环路径已移除: %1$s</string>
-    <string name="susfs_loop_path_updated">SuS 循环路径已更新: %1$s -&gt; %2$s</string>
     <string name="susfs_no_loop_paths_configured">未配置 SuS 循环路径</string>
     <string name="susfs_reset_loop_paths_title">重置循环路径</string>
     <string name="susfs_reset_loop_paths_message">确定要清空所有 SuS 循环路径吗？此操作无法撤销。</string>
     <string name="susfs_loop_path_label">循环路径</string>
     <string name="susfs_loop_path_restriction_warning">注意：只有不在 /storage/ 和 /sdcard/ 内的路径才能通过循环路径添加。</string>
-    <string name="susfs_loop_path_invalid_location">错误：循环路径不能位于 /storage/ 或 /sdcard/ 目录内</string>
+    <string name="susfs_invalid_loop_path">无效的循环路径</string>
+    <string name="susfs_add_loop_path_failed">添加循环路径失败</string>
+    <string name="susfs_edit_loop_path_failed">编辑循环路径失败</string>
     <string name="loop_paths_section">循环路径</string>
     <string name="add_loop_path">添加循环路径</string>
     <!-- 循环路径功能描述 -->
     <string name="sus_loop_paths_description_title">循环路径配置</string>
     <string name="sus_loop_paths_description_text">循环路径会在每次非 root 用户应用或隔离服务启动时重新标记为 SUS_PATH。这有助于解决添加的路径可能因 inode 状态重置或内核中 inode 重新创建而失效的问题</string>
     <string name="avc_log_spoofing">AVC 日志欺骗</string>
-    <string name="avc_log_spoofing_enabled">AVC 日志欺骗已启用</string>
-    <string name="avc_log_spoofing_disabled">AVC 日志欺骗已禁用</string>
     <string name="avc_log_spoofing_description">禁用: 禁用在内核 AVC 日志中欺骗 \'su\' 的 sus tcontext。\n启用: 启用在内核 AVC 日志中将 \'su\' 的 sus tcontext 欺骗为 \'kernel\'</string>
     <!-- SUS Map related strings -->
     <string name="susfs_tab_sus_maps">SUS映射</string>
     <string name="susfs_sus_map_label">库文件路径</string>
     <string name="susfs_add_sus_map">添加SUS映射</string>
     <string name="susfs_edit_sus_map">编辑SUS映射</string>
-    <string name="susfs_sus_map_added_success">SUS映射添加成功: %1$s</string>
-    <string name="susfs_sus_map_removed">SUS映射已移除: %1$s</string>
-    <string name="susfs_sus_map_updated">SUS映射已更新: %1$s -&gt; %2$s</string>
     <string name="susfs_no_sus_maps_configured">未配置SUS映射</string>
+    <string name="susfs_add_map_failed">添加SUS映射失败</string>
+    <string name="susfs_edit_map_failed">编辑SUS映射失败</string>
     <string name="susfs_reset_sus_maps_title">重置SUS映射</string>
     <string name="susfs_reset_sus_maps_message">这将移除所有已配置的SUS映射。此操作无法撤销。</string>
     <string name="sus_maps_section">内存映射隐藏</string>

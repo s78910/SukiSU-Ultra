@@ -261,10 +261,11 @@ fun SuSFSConfigScreen(
             editingPath = null
         },
         onConfirm = { path ->
+            val oldPath = editingPath
             coroutineScope.launch {
                 isLoading = true
-                val success = if (editingPath != null) {
-                    SuSFSManager.editSusPath(context, editingPath!!, path)
+                val success = if (oldPath != null) {
+                    SuSFSManager.editSusPath(context, oldPath, path)
                 } else {
                     SuSFSManager.addSusPath(context, path)
                 }
@@ -289,10 +290,11 @@ fun SuSFSConfigScreen(
             editingLoopPath = null
         },
         onConfirm = { path ->
+            val oldPath = editingLoopPath
             coroutineScope.launch {
                 isLoading = true
-                val success = if (editingLoopPath != null) {
-                    SuSFSManager.editSusLoopPath(context, editingLoopPath!!, path)
+                val success = if (oldPath != null) {
+                    SuSFSManager.editSusLoopPath(context, oldPath, path)
                 } else {
                     SuSFSManager.addSusLoopPath(context, path)
                 }
@@ -317,10 +319,11 @@ fun SuSFSConfigScreen(
             editingSusMap = null
         },
         onConfirm = { path ->
+            val oldPath = editingSusMap
             coroutineScope.launch {
                 isLoading = true
-                val success = if (editingSusMap != null) {
-                    SuSFSManager.editSusMap(context, editingSusMap!!, path)
+                val success = if (oldPath != null) {
+                    SuSFSManager.editSusMap(context, oldPath, path)
                 } else {
                     SuSFSManager.addSusMap(context, path)
                 }
@@ -370,10 +373,11 @@ fun SuSFSConfigScreen(
             editingUmount = null
         },
         onConfirm = { path, mode ->
+            val oldUmount = editingUmount
             coroutineScope.launch {
                 isLoading = true
-                val success = if (editingUmount != null) {
-                    SuSFSManager.editTryUmount(context, editingUmount!!, path, mode)
+                val success = if (oldUmount != null) {
+                    SuSFSManager.editTryUmount(context, oldUmount, path, mode)
                 } else {
                     SuSFSManager.addTryUmount(context, path, mode)
                 }
@@ -397,12 +401,13 @@ fun SuSFSConfigScreen(
             editingKstatConfig = null
         },
         onConfirm = { path, ino, dev, nlink, size, atime, atimeNsec, mtime, mtimeNsec, ctime, ctimeNsec, blocks, blksize ->
+            val oldConfig = editingKstatConfig
             coroutineScope.launch {
                 isLoading = true
-                val success = if (editingKstatConfig != null) {
+                val success = if (oldConfig != null) {
                     SuSFSManager.editKstatConfig(
                         context,
-                        editingKstatConfig!!,
+                        oldConfig,
                         path,
                         ino,
                         dev,
@@ -442,10 +447,11 @@ fun SuSFSConfigScreen(
             editingKstatPath = null
         },
         onConfirm = { path ->
+            val oldPath = editingKstatPath
             coroutineScope.launch {
                 isLoading = true
-                val success = if (editingKstatPath != null) {
-                    SuSFSManager.editAddKstat(context, editingKstatPath!!, path)
+                val success = if (oldPath != null) {
+                    SuSFSManager.editAddKstat(context, oldPath, path)
                 } else {
                     SuSFSManager.addKstat(context, path)
                 }

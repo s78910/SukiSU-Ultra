@@ -63,7 +63,7 @@ fun SusPathsContent(
 
     val (appPathGroups, otherPaths) = remember(susPaths, superUserApps) {
         val appPathRegex = Regex(".*/Android/data/([^/]+)/?.*")
-        val uidPathRegex = Regex("/sys/fs/cgroup/uid_([0-9]+)")
+        val uidPathRegex = Regex("/sys/fs/cgroup(?:/[^/]+)*/uid_([0-9]+)")
         val appPathMap = mutableMapOf<String, MutableList<String>>()
         val uidToPackageMap = mutableMapOf<String, String>()
         val others = mutableListOf<String>()

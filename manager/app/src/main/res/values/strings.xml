@@ -369,16 +369,11 @@
     <!-- SuSFS Toast Messages -->
     <string name="susfs_binary_not_found">Cannot find ksu_susfs file</string>
     <string name="susfs_command_failed">SuSFS command execution failed</string>
-    <string name="susfs_uname_set_success" formatted="false">SuSFS uname and build time set successfully: %s, %s</string>
     <!-- SuSFS Settings Item -->
     <!-- 开机自启动相关 -->
     <string name="susfs_autostart_title">Auto Start</string>
     <string name="susfs_autostart_description">Automatically apply all non-default configurations on reboot</string>
     <string name="susfs_autostart_requirement">Configuration needs to be added to enable</string>
-    <string name="susfs_autostart_enable_failed">Failed to enable auto start</string>
-    <string name="susfs_autostart_disable_failed">Failed to disable auto start</string>
-    <string name="susfs_autostart_error">Auto start configuration error: %s</string>
-    <string name="susfs_no_config_to_autostart">No available configuration for auto start</string>
     <!-- SuSFS Tab Titles -->
     <string name="susfs_tab_basic_settings">Basic Settings</string>
     <string name="susfs_tab_sus_paths">SUS Paths</string>
@@ -388,8 +383,6 @@
     <!-- SuSFS Path Management -->
     <string name="susfs_add_sus_path">Add SUS Path</string>
     <string name="susfs_add_try_umount">Add Try Umount</string>
-    <string name="susfs_sus_path_added_success">SUS path added successfully</string>
-    <string name="susfs_path_not_found_error">Path not found error</string>
     <string name="susfs_path_label">Path</string>
     <string name="susfs_no_paths_configured">No SUS paths configured</string>
     <string name="susfs_no_umounts_configured">No try umount configured</string>
@@ -400,8 +393,6 @@
     <string name="susfs_umount_mode_normal_short">Normal</string>
     <string name="susfs_umount_mode_detach_short">Detach</string>
     <string name="susfs_umount_mode_display">Mode: %1$s (%2$s)</string>
-    <string name="susfs_try_umount_added_success">Try to umount path added successfully： %s</string>
-    <string name="susfs_try_umount_added_saved">Attempted umount path save succeeded： %s</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">Reset SUS Paths</string>
     <string name="susfs_reset_paths_message">This will clear all SUS path configurations. Are you sure you want to continue?</string>
@@ -431,8 +422,6 @@
     <string name="susfs_enable_log_label">SuSFS Enable Log</string>
     <string name="susfs_log_config_description">Enable or disable logging for SuSFS</string>
     <string name="susfs_log_config_title">SuSFS Logging Configuration</string>
-    <string name="susfs_log_enabled">Enabling SuSFS Logging</string>
-    <string name="susfs_log_disabled">Turn off SuSFS logging</string>
     <string name="susfs_execution_location_label">Execution Location</string>
     <string name="susfs_current_execution_location">Current execution location: %s</string>
     <string name="susfs_execution_location_service">Service</string>
@@ -447,16 +436,8 @@
     <string name="susfs_slot_use_build_time">Use Build Time</string>
     <string name="susfs_slot_info_unavailable">Unable to retrieve slot information</string>
     <!-- SuSFS 自启动相关字符串 -->
-    <string name="susfs_autostart_enabled_success">SuSFS auto-start module enabled, module path: %s</string>
-    <string name="susfs_autostart_disabled_success">SuSFS auto-start module disabled</string>
     <!-- SuSFS Kstat相关字符串 -->
     <string name="susfs_tab_kstat_config">Kstat Configuration</string>
-    <string name="kstat_static_config_added">Kstat static configuration added: %1$s</string>
-    <string name="kstat_config_removed">Kstat configuration removed: %1$s</string>
-    <string name="kstat_path_added">Kstat path added: %1$s</string>
-    <string name="kstat_path_removed">Kstat path removed: %1$s</string>
-    <string name="kstat_updated">Kstat updated: %1$s</string>
-    <string name="kstat_full_clone_updated">Kstat full clone updated: %1$s</string>
     <string name="add_kstat_statically_title">Add Kstat Static Configuration</string>
     <string name="file_or_directory_path_label">File/Directory Path</string>
     <string name="hint_use_default_value">Hint: You can use "default" to use the original value</string>
@@ -476,11 +457,6 @@
     <string name="susfs_hide_mounts_for_all_procs_label">Hide SUS mounts for all processes</string>
     <string name="susfs_hide_mounts_for_all_procs_enabled_description">When enabled, SUS mounts will be hidden from all processes, including KSU processes</string>
     <string name="susfs_hide_mounts_for_all_procs_disabled_description">When disabled, SUS mounts will only be hidden from non-KSU processes, KSU processes can see the mounts</string>
-    <string name="susfs_hide_mounts_all_enabled">Enabled hiding SUS mounts for all processes</string>
-    <string name="susfs_hide_mounts_all_disabled">Disabled hiding SUS mounts for all processes</string>
-    <string name="susfs_android_data_path_set">Android Data path has been set to: %s</string>
-    <string name="susfs_sdcard_path_set">SD card path has been set to: %s</string>
-    <string name="susfs_path_setup_warning">Path setup may not be fully successful, but SUS paths will continue to be added</string>
     <!-- 备份和还原相关字符串 -->
     <string name="susfs_backup_title">Backup</string>
     <string name="susfs_backup_description">Create a backup of all SuSFS configurations. The backup file will include all settings, paths, and configurations</string>
@@ -513,13 +489,9 @@
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
     <string name="update">Update</string>
-    <string name="kstat_config_updated">Kstat config update</string>
-    <string name="kstat_path_updated">Kstat path update</string>
     <string name="susfs_update_full_clone">Susfs update full clone</string>
     <string name="umount_zygote_iso_service">Unmount Zygote Isolation Service</string>
     <string name="umount_zygote_iso_service_description">Enable this option to unmount Zygote isolation service mount points at system startup</string>
-    <string name="umount_zygote_iso_service_enabled">Zygote isolation service unmount enabled</string>
-    <string name="umount_zygote_iso_service_disabled">Zygote isolation service unmount disabled</string>
     <string name="app_paths_section">Application Path</string>
     <string name="other_paths_section">Other paths</string>
     <string name="add_custom_path">Other</string>
@@ -533,33 +505,29 @@
     <string name="susfs_tab_sus_loop_paths">SUS Loop Paths</string>
     <string name="susfs_add_sus_loop_path">Add SUS Loop Path</string>
     <string name="susfs_edit_sus_loop_path">Edit SUS Loop Path</string>
-    <string name="susfs_loop_path_added_success">SUS loop path added successfully: %1$s</string>
-    <string name="susfs_loop_path_removed">SUS loop path removed: %1$s</string>
-    <string name="susfs_loop_path_updated">SUS loop path updated: %1$s -> %2$s</string>
     <string name="susfs_no_loop_paths_configured">No SUS loop paths configured</string>
     <string name="susfs_reset_loop_paths_title">Reset Loop Paths</string>
     <string name="susfs_reset_loop_paths_message">Are you sure you want to clear all SUS loop paths? This action cannot be undone</string>
     <string name="susfs_loop_path_label">Loop Path</string>
     <string name="susfs_loop_path_restriction_warning">Note: Only paths NOT inside /storage/ and /sdcard/ can be added via loop paths</string>
-    <string name="susfs_loop_path_invalid_location">Error: Loop paths cannot be inside /storage/ or /sdcard/ directories</string>
+    <string name="susfs_invalid_loop_path">Invalid loop path</string>
+    <string name="susfs_add_loop_path_failed">Failed to add loop path</string>
+    <string name="susfs_edit_loop_path_failed">Failed to edit loop path</string>
     <string name="loop_paths_section">Loop Paths</string>
     <string name="add_loop_path">Add Loop Path</string>
     <!-- 循环路径功能描述 -->
     <string name="sus_loop_paths_description_title">Loop Path Configuration</string>
     <string name="sus_loop_paths_description_text">Loop paths are re-flagged as SUS_PATH on each non-root user app or isolated service startup. This helps address issues where added paths may have their inode status reset or inode re-created in the kernel</string>
     <string name="avc_log_spoofing">AVC Log Spoofing</string>
-    <string name="avc_log_spoofing_enabled">AVC log spoofing has been enabled</string>
-    <string name="avc_log_spoofing_disabled">AVC log spoofing has been disabled</string>
     <string name="avc_log_spoofing_description">Disabled: Disable spoofing the sus tcontext of \'su\' shown in avc log in kernel\nEnabled: Enable spoofing the sus tcontext of \'su\' with \'kernel\' shown in avc log in kernel</string>
     <!-- SUS Map related strings -->
     <string name="susfs_tab_sus_maps">SUS Maps</string>
     <string name="susfs_sus_map_label">Library Path</string>
     <string name="susfs_add_sus_map">Add SUS Map</string>
     <string name="susfs_edit_sus_map">Edit SUS Map</string>
-    <string name="susfs_sus_map_added_success">SUS map added successfully: %1$s</string>
-    <string name="susfs_sus_map_removed">SUS map removed: %1$s</string>
-    <string name="susfs_sus_map_updated">SUS map updated: %1$s -> %2$s</string>
     <string name="susfs_no_sus_maps_configured">No SUS maps configured</string>
+    <string name="susfs_add_map_failed">Failed to add SUS map</string>
+    <string name="susfs_edit_map_failed">Failed to edit SUS map</string>
     <string name="susfs_reset_sus_maps_title">Reset SUS Maps</string>
     <string name="susfs_reset_sus_maps_message">This will remove all configured SUS maps. This action cannot be undone.</string>
     <string name="sus_maps_section">Memory Map Hiding</string>
