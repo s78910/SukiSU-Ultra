@@ -39,7 +39,6 @@ bool ksu_set_app_profile(struct app_profile *, bool persist);
 bool ksu_uid_should_umount(uid_t uid);
 struct root_profile *ksu_get_root_profile(uid_t uid);
 
-#ifndef CONFIG_KSU_SUSFS
 static inline bool is_appuid(uid_t uid)
 {
 	uid_t appid = uid % PER_USER_RANGE;
@@ -51,7 +50,6 @@ static inline bool is_isolated_process(uid_t uid)
     uid_t appid = uid % PER_USER_RANGE;
     return appid >= FIRST_ISOLATED_UID && appid <= LAST_ISOLATED_UID;
 }
-#endif // #ifndef CONFIG_KSU_SUSFS
 
 #ifdef CONFIG_KSU_MANUAL_SU
 bool ksu_temp_grant_root_once(uid_t uid);
