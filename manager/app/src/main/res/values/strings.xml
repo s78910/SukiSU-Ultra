@@ -397,7 +397,6 @@
     <!-- Feature Labels -->
     <string name="sus_path_feature_label">SUS Path Support</string>
     <string name="sus_mount_feature_label">SUS Mount Support</string>
-    <string name="try_umount_feature_label">Try Umount Support</string>
     <string name="spoof_uname_feature_label">Spoof uname Support</string>
     <string name="spoof_cmdline_feature_label">Spoof Cmdline/Bootconfig</string>
     <string name="open_redirect_feature_label">Open Redirect Support</string>

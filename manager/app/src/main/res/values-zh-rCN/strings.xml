@@ -389,7 +389,6 @@
     <!-- Feature Labels -->
     <string name="sus_path_feature_label">SuS 路径支持</string>
     <string name="sus_mount_feature_label">SuS 挂载支持</string>
-    <string name="try_umount_feature_label">尝试卸载支持</string>
     <string name="spoof_uname_feature_label">欺骗 uname 支持</string>
     <string name="spoof_cmdline_feature_label">欺骗 Cmdline/Bootconfig</string>
     <string name="open_redirect_feature_label">开放重定向支持</string>

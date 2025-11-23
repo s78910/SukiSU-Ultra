@@ -772,7 +772,6 @@ object SuSFSManager {
         val featureMap = mapOf(
             "CONFIG_KSU_SUSFS_SUS_PATH" to context.getString(R.string.sus_path_feature_label),
             "CONFIG_KSU_SUSFS_SUS_MOUNT" to context.getString(R.string.sus_mount_feature_label),
-            "CONFIG_KSU_SUSFS_TRY_UMOUNT" to context.getString(R.string.try_umount_feature_label),
             "CONFIG_KSU_SUSFS_SPOOF_UNAME" to context.getString(R.string.spoof_uname_feature_label),
             "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" to context.getString(R.string.spoof_cmdline_feature_label),
             "CONFIG_KSU_SUSFS_OPEN_REDIRECT" to context.getString(R.string.open_redirect_feature_label),
@@ -801,7 +800,6 @@ object SuSFSManager {
         val defaultFeatures = listOf(
             "sus_path_feature_label" to context.getString(R.string.sus_path_feature_label),
             "sus_mount_feature_label" to context.getString(R.string.sus_mount_feature_label),
-            "try_umount_feature_label" to context.getString(R.string.try_umount_feature_label),
             "spoof_uname_feature_label" to context.getString(R.string.spoof_uname_feature_label),
             "spoof_cmdline_feature_label" to context.getString(R.string.spoof_cmdline_feature_label),
             "open_redirect_feature_label" to context.getString(R.string.open_redirect_feature_label),
