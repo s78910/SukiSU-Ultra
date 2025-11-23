@@ -470,7 +470,8 @@ static int do_manage_mark(void __user *arg)
 		cmd.result = (u32)ret;
 		break;
 #else
-		return -EINVAL;
+		cmd.result = 0;
+        break;
 #endif
 	}
 	case KSU_MARK_MARK: {
@@ -486,7 +487,9 @@ static int do_manage_mark(void __user *arg)
 			}
 		}
 #else
-		pr_info("susfs: cmd: KSU_MARK_MARK => do nothing\n");
+		if (cmd.pid != 0) {
+            return 0;
+        }
 #endif
 		break;
 	}
@@ -503,7 +506,9 @@ static int do_manage_mark(void __user *arg)
 			}
 		}
 #else
-		pr_info("susfs: cmd: KSU_MARK_UNMARK => do nothing\n");
+		if (cmd.pid != 0) {
+            return 0;
+        }
 #endif
 		break;
 	}
@@ -1024,12 +1029,6 @@ int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 			return 0;
 		}
 #endif //#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
-#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
-		if (cmd == CMD_SUSFS_ADD_TRY_UMOUNT) {
-			susfs_add_try_umount(arg);
-			return 0;
-		}
-#endif //#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 		if (cmd == CMD_SUSFS_SET_UNAME) {
 			susfs_set_uname(arg);
