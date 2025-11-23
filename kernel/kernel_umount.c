@@ -26,6 +26,7 @@
 #include "ksud.h"
 
 #include "sulog.h"
+#include "umount_manager.h"
 
 static bool ksu_kernel_umount_enabled = true;
 
@@ -54,7 +55,7 @@ static const struct ksu_feature_handler kernel_umount_handler = {
 extern bool susfs_is_log_enabled;
 #endif // #ifdef CONFIG_KSU_SUSFS
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) ||                           \
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) ||						   \
 	defined(KSU_HAS_PATH_UMOUNT)
 extern int path_umount(struct path *path, int flags);
 static void ksu_umount_mnt(const char *__never_use_mnt, struct path *path,
@@ -89,7 +90,7 @@ static void ksu_sys_umount(const char *mnt, int flags)
 
 #endif
 
-static void try_umount(const char *mnt, int flags)
+void try_umount(const char *mnt, int flags)
 {
 	struct path path;
 	int err = kern_path(mnt, 0, &path);
@@ -128,6 +129,8 @@ static void umount_tw_func(struct callback_head *cb)
 	}
 	up_read(&mount_list_lock);
 
+	ksu_umount_manager_execute_all(tw->old_cred);
+
 	if (saved)
 		revert_creds(saved);
 
@@ -152,18 +155,18 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 
 #ifndef CONFIG_KSU_SUSFS
 	// There are 5 scenarios:
-    // 1. Normal app: zygote -> appuid
-    // 2. Isolated process forked from zygote: zygote -> isolated_process
-    // 3. App zygote forked from zygote: zygote -> appuid
-    // 4. Isolated process froked from app zygote: appuid -> isolated_process (already handled by 3)
-    // 5. Isolated process froked from webview zygote (no need to handle, app cannot run custom code)
-    if (!is_appuid(new_uid) && !is_isolated_process(new_uid)) {
-        return 0;
-    }
+	// 1. Normal app: zygote -> appuid
+	// 2. Isolated process forked from zygote: zygote -> isolated_process
+	// 3. App zygote forked from zygote: zygote -> appuid
+	// 4. Isolated process froked from app zygote: appuid -> isolated_process (already handled by 3)
+	// 5. Isolated process froked from webview zygote (no need to handle, app cannot run custom code)
+	if (!is_appuid(new_uid) && !is_isolated_process(new_uid)) {
+		return 0;
+	}
 
 	if (!ksu_uid_should_umount(new_uid) && !is_isolated_process(new_uid)) {
-        return 0;
-    }
+		return 0;
+	}
 
 	// check old process's selinux context, if it is not zygote, ignore it!
 	// because some su apps may setuid to untrusted_app but they are in global mount namespace
@@ -204,6 +207,11 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 
 void ksu_kernel_umount_init(void)
 {
+	int rc = 0;
+	rc = ksu_umount_manager_init();
+	if (rc) {
+		pr_err("Failed to initialize umount manager: %d\n", rc);
+	}
 	if (ksu_register_feature_handler(&kernel_umount_handler)) {
 		pr_err("Failed to register kernel_umount feature handler\n");
 	}
@@ -211,5 +219,6 @@ void ksu_kernel_umount_init(void)
 
 void ksu_kernel_umount_exit(void)
 {
+	ksu_umount_manager_exit();
 	ksu_unregister_feature_handler(KSU_FEATURE_KERNEL_UMOUNT);
 }
