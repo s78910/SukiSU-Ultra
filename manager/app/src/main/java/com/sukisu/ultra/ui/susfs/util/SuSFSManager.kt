@@ -40,7 +40,6 @@ object SuSFSManager {
     private const val KEY_SUS_LOOP_PATHS = "sus_loop_paths"
 
     private const val KEY_SUS_MAPS = "sus_maps"
-    private const val KEY_TRY_UMOUNTS = "try_umounts"
     private const val KEY_ANDROID_DATA_PATH = "android_data_path"
     private const val KEY_SDCARD_PATH = "sdcard_path"
     private const val KEY_ENABLE_LOG = "enable_log"
@@ -147,7 +146,6 @@ object SuSFSManager {
         val susPaths: Set<String>,
         val susLoopPaths: Set<String>,
         val susMaps: Set<String>,
-        val tryUmounts: Set<String>,
         val androidDataPath: String,
         val sdcardPath: String,
         val enableLog: Boolean,
@@ -168,7 +166,6 @@ object SuSFSManager {
                     susPaths.isNotEmpty() ||
                     susLoopPaths.isNotEmpty() ||
                     susMaps.isNotEmpty() ||
-                    tryUmounts.isNotEmpty() ||
                     kstatConfigs.isNotEmpty() ||
                     addKstatPaths.isNotEmpty()
         }
@@ -267,7 +264,6 @@ object SuSFSManager {
             susPaths = getSusPaths(context),
             susLoopPaths = getSusLoopPaths(context),
             susMaps = getSusMaps(context),
-            tryUmounts = getTryUmounts(context),
             androidDataPath = getAndroidDataPath(context),
             sdcardPath = getSdcardPath(context),
             enableLog = getEnableLogState(context),
@@ -368,12 +364,6 @@ object SuSFSManager {
 
     fun getSusMaps(context: Context): Set<String> =
         getPrefs(context).getStringSet(KEY_SUS_MAPS, emptySet()) ?: emptySet()
-
-    fun saveTryUmounts(context: Context, umounts: Set<String>) =
-        getPrefs(context).edit { putStringSet(KEY_TRY_UMOUNTS, umounts) }
-
-    fun getTryUmounts(context: Context): Set<String> =
-        getPrefs(context).getStringSet(KEY_TRY_UMOUNTS, emptySet()) ?: emptySet()
 
     fun saveKstatConfigs(context: Context, configs: Set<String>) =
         getPrefs(context).edit { putStringSet(KEY_KSTAT_CONFIGS, configs) }
@@ -552,7 +542,6 @@ object SuSFSManager {
             KEY_SUS_PATHS to getSusPaths(context),
             KEY_SUS_LOOP_PATHS to getSusLoopPaths(context),
             KEY_SUS_MAPS to getSusMaps(context),
-            KEY_TRY_UMOUNTS to getTryUmounts(context),
             KEY_ANDROID_DATA_PATH to getAndroidDataPath(context),
             KEY_SDCARD_PATH to getSdcardPath(context),
             KEY_ENABLE_LOG to getEnableLogState(context),
@@ -1062,48 +1051,6 @@ object SuSFSManager {
         } catch (e: Exception) {
             Log.e("SuSFSManager", "Exception editing SUS map", e)
             showToast(context, context.getString(R.string.susfs_edit_map_failed))
-            false
-        }
-    }
-
-    // 添加尝试卸载
-    private suspend fun addTryUmountInternal(context: Context, path: String, mode: Int): Boolean {
-        executeSusfsCommand(context, "add_try_umount '$path' $mode")
-        saveTryUmounts(context, getTryUmounts(context) + "$path|$mode")
-        if (isAutoStartEnabled(context)) updateMagiskModule(context)
-        return true
-    }
-
-    suspend fun addTryUmount(context: Context, path: String, mode: Int): Boolean {
-        return addTryUmountInternal(context, path, mode)
-    }
-
-    suspend fun removeTryUmount(context: Context, umountEntry: String): Boolean {
-        saveTryUmounts(context, getTryUmounts(context) - umountEntry)
-        if (isAutoStartEnabled(context)) updateMagiskModule(context)
-        return true
-    }
-
-    // 编辑尝试卸载
-    suspend fun editTryUmount(context: Context, oldEntry: String, newPath: String, newMode: Int): Boolean {
-        return try {
-            val currentUmounts = getTryUmounts(context).toMutableSet()
-            if (!currentUmounts.remove(oldEntry)) {
-                return false
-            }
-
-            saveTryUmounts(context, currentUmounts)
-
-            val success = addTryUmountInternal(context, newPath, newMode)
-
-            if (!success) {
-                // 如果添加新条目失败，恢复旧条目
-                currentUmounts.add(oldEntry)
-                saveTryUmounts(context, currentUmounts)
-                if (isAutoStartEnabled(context)) updateMagiskModule(context)
-            }
-            return success
-        } catch (_: Exception) {
             false
         }
     }

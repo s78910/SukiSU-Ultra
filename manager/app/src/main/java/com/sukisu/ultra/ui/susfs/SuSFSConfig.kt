@@ -42,7 +42,6 @@ import com.sukisu.ultra.ui.susfs.content.PathSettingsContent
 import com.sukisu.ultra.ui.susfs.content.SusLoopPathsContent
 import com.sukisu.ultra.ui.susfs.content.SusMapsContent
 import com.sukisu.ultra.ui.susfs.content.SusPathsContent
-import com.sukisu.ultra.ui.susfs.content.TryUmountContent
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager
 import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.launch
@@ -61,7 +60,6 @@ enum class SuSFSTab(val displayNameRes: Int) {
     SUS_PATHS(R.string.susfs_tab_sus_paths),
     SUS_LOOP_PATHS(R.string.susfs_tab_sus_loop_paths),
     SUS_MAPS(R.string.susfs_tab_sus_maps),
-    TRY_UMOUNT(R.string.susfs_tab_try_umount),
     KSTAT_CONFIG(R.string.susfs_tab_kstat_config),
     PATH_SETTINGS(R.string.susfs_tab_path_settings),
     ENABLED_FEATURES(R.string.susfs_tab_enabled_features);
@@ -109,7 +107,6 @@ fun SuSFSConfigScreen(
     var susPaths by remember { mutableStateOf(emptySet<String>()) }
     var susLoopPaths by remember { mutableStateOf(emptySet<String>()) }
     var susMaps by remember { mutableStateOf(emptySet<String>()) }
-    var tryUmounts by remember { mutableStateOf(emptySet<String>()) }
     var androidDataPath by remember { mutableStateOf("") }
     var sdcardPath by remember { mutableStateOf("") }
 
@@ -134,7 +131,6 @@ fun SuSFSConfigScreen(
     var showAddLoopPathDialog by remember { mutableStateOf(false) }
     var showAddSusMapDialog by remember { mutableStateOf(false) }
     var showAddAppPathDialog by remember { mutableStateOf(false) }
-    var showAddUmountDialog by remember { mutableStateOf(false) }
     var showAddKstatStaticallyDialog by remember { mutableStateOf(false) }
     var showAddKstatDialog by remember { mutableStateOf(false) }
 
@@ -142,7 +138,6 @@ fun SuSFSConfigScreen(
     var editingPath by remember { mutableStateOf<String?>(null) }
     var editingLoopPath by remember { mutableStateOf<String?>(null) }
     var editingSusMap by remember { mutableStateOf<String?>(null) }
-    var editingUmount by remember { mutableStateOf<String?>(null) }
     var editingKstatConfig by remember { mutableStateOf<String?>(null) }
     var editingKstatPath by remember { mutableStateOf<String?>(null) }
 
@@ -150,7 +145,6 @@ fun SuSFSConfigScreen(
     var showResetPathsDialog by remember { mutableStateOf(false) }
     var showResetLoopPathsDialog by remember { mutableStateOf(false) }
     var showResetSusMapsDialog by remember { mutableStateOf(false) }
-    var showResetUmountsDialog by remember { mutableStateOf(false) }
     var showResetKstatDialog by remember { mutableStateOf(false) }
 
 
@@ -204,7 +198,6 @@ fun SuSFSConfigScreen(
             susPaths = SuSFSManager.getSusPaths(context)
             susLoopPaths = SuSFSManager.getSusLoopPaths(context)
             susMaps = SuSFSManager.getSusMaps(context)
-            tryUmounts = SuSFSManager.getTryUmounts(context)
             androidDataPath = SuSFSManager.getAndroidDataPath(context)
             sdcardPath = SuSFSManager.getSdcardPath(context)
             kstatConfigs = SuSFSManager.getKstatConfigs(context)
@@ -366,33 +359,6 @@ fun SuSFSConfigScreen(
         existingSusPaths = susPaths
     )
 
-    AddTryUmountDialog(
-        showDialog = showAddUmountDialog,
-        onDismiss = {
-            showAddUmountDialog = false
-            editingUmount = null
-        },
-        onConfirm = { path, mode ->
-            val oldUmount = editingUmount
-            coroutineScope.launch {
-                isLoading = true
-                val success = if (oldUmount != null) {
-                    SuSFSManager.editTryUmount(context, oldUmount, path, mode)
-                } else {
-                    SuSFSManager.addTryUmount(context, path, mode)
-                }
-                if (success) {
-                    tryUmounts = SuSFSManager.getTryUmounts(context)
-                }
-                isLoading = false
-                showAddUmountDialog = false
-                editingUmount = null
-            }
-        },
-        isLoading = isLoading,
-        initialPath = editingUmount?.split("|")?.get(0) ?: "",
-        initialMode = editingUmount?.split("|")?.get(1)?.toIntOrNull() ?: 0
-    )
 
     AddKstatStaticallyDialog(
         showDialog = showAddKstatStaticallyDialog,
@@ -551,25 +517,6 @@ fun SuSFSConfigScreen(
         isLoading = isLoading
     )
 
-    ConfirmDialog(
-        showDialog = showResetUmountsDialog,
-        onDismiss = { showResetUmountsDialog = false },
-        onConfirm = {
-            coroutineScope.launch {
-                isLoading = true
-                SuSFSManager.saveTryUmounts(context, emptySet())
-                tryUmounts = emptySet()
-                if (SuSFSManager.isAutoStartEnabled(context)) {
-                    SuSFSManager.configureAutoStart(context, true)
-                }
-                isLoading = false
-                showResetUmountsDialog = false
-            }
-        },
-        titleRes = R.string.susfs_reset_umounts_title,
-        messageRes = R.string.susfs_reset_umounts_message,
-        isLoading = isLoading
-    )
 
     ConfirmDialog(
         showDialog = showResetKstatDialog,
@@ -749,6 +696,18 @@ fun SuSFSConfigScreen(
                                     isLoading = false
                                 }
                             },
+                            umountForZygoteIsoService = umountForZygoteIsoService,
+                            onUmountForZygoteIsoServiceChange = { enabled ->
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    val success =
+                                        SuSFSManager.setUmountForZygoteIsoService(context, enabled)
+                                    if (success) {
+                                        umountForZygoteIsoService = enabled
+                                    }
+                                    isLoading = false
+                                }
+                            },
                             onReset = { showConfirmReset = true },
                             onApply = {
                                 coroutineScope.launch {
@@ -780,7 +739,6 @@ fun SuSFSConfigScreen(
                                     susPaths = SuSFSManager.getSusPaths(context)
                                     susLoopPaths = SuSFSManager.getSusLoopPaths(context)
                                     susMaps = SuSFSManager.getSusMaps(context)
-                                    tryUmounts = SuSFSManager.getTryUmounts(context)
                                     androidDataPath = SuSFSManager.getAndroidDataPath(context)
                                     sdcardPath = SuSFSManager.getSdcardPath(context)
                                     kstatConfigs = SuSFSManager.getKstatConfigs(context)
@@ -863,40 +821,6 @@ fun SuSFSConfigScreen(
                             onReset = { showResetSusMapsDialog = true }
                         )
                     }
-                    SuSFSTab.TRY_UMOUNT -> {
-                        TryUmountContent(
-                            tryUmounts = tryUmounts,
-                            umountForZygoteIsoService = umountForZygoteIsoService,
-                            isLoading = isLoading,
-                            onAddUmount = { showAddUmountDialog = true },
-                            onRemoveUmount = { umountEntry ->
-                                coroutineScope.launch {
-                                    isLoading = true
-                                    if (SuSFSManager.removeTryUmount(context, umountEntry)) {
-                                        tryUmounts = SuSFSManager.getTryUmounts(context)
-                                    }
-                                    isLoading = false
-                                }
-                            },
-                            onEditUmount = { umountEntry ->
-                                editingUmount = umountEntry
-                                showAddUmountDialog = true
-                            },
-                            onToggleUmountForZygoteIsoService = { enabled ->
-                                coroutineScope.launch {
-                                    isLoading = true
-                                    val success =
-                                        SuSFSManager.setUmountForZygoteIsoService(context, enabled)
-                                    if (success) {
-                                        umountForZygoteIsoService = enabled
-                                    }
-                                    isLoading = false
-                                }
-                            },
-                            onReset = { showResetUmountsDialog = true }
-                        )
-                    }
-
                     SuSFSTab.KSTAT_CONFIG -> {
                         KstatConfigContent(
                             kstatConfigs = kstatConfigs,

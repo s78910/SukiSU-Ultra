@@ -149,31 +149,28 @@ fun Tools(
 
                     DynamicManagerCard()
 
-                    val lkmMode = Natives.isLkmMode
-                    if (lkmMode) {
-                        Card(
-                            modifier = Modifier
-                                .padding(top = 12.dp)
-                                .fillMaxWidth(),
-                        ) {
-                            val umontManager = stringResource(id = R.string.umount_path_manager)
-                            SuperArrow(
-                                title = umontManager,
-                                leftAction = {
-                                    Icon(
-                                        Icons.Rounded.FolderDelete,
-                                        modifier = Modifier.padding(end = 16.dp),
-                                        contentDescription = umontManager,
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                onClick = {
-                                    navigator.navigate(UmountManagerDestination)
-                                }
-                            )
-                        }
+                    Card(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth(),
+                    ) {
+                        val umontManager = stringResource(id = R.string.umount_path_manager)
+                        SuperArrow(
+                            title = umontManager,
+                            leftAction = {
+                                Icon(
+                                    Icons.Rounded.FolderDelete,
+                                    modifier = Modifier.padding(end = 16.dp),
+                                    contentDescription = umontManager,
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = {
+                                navigator.navigate(UmountManagerDestination)
+                            }
+                        )
                     }
-
+                    
                     AllowlistBackupSection(scope = scope, context = context)
                 }
             }

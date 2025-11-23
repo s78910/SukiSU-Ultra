@@ -659,69 +659,6 @@ fun AddAppPathDialog(
     }
 }
 
-@Composable
-fun AddTryUmountDialog(
-    showDialog: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: (String, Int) -> Unit,
-    isLoading: Boolean,
-    initialPath: String = "",
-    initialMode: Int = 0
-) {
-    var newUmountPath by remember { mutableStateOf("") }
-    var newUmountMode by remember { mutableIntStateOf(0) }
-
-    // 当对话框显示时，设置初始值
-    LaunchedEffect(showDialog, initialPath, initialMode) {
-        if (showDialog) {
-            newUmountPath = initialPath
-            newUmountMode = initialMode
-        }
-    }
-
-    val umountModeItems = listOf(
-        stringResource(R.string.susfs_umount_mode_normal),
-        stringResource(R.string.susfs_umount_mode_detach)
-    )
-
-    UniversalDialog(
-        showDialog = showDialog,
-        onDismiss = onDismiss,
-        onConfirm = {
-            if (newUmountPath.isNotBlank()) {
-                onConfirm(newUmountPath.trim(), newUmountMode)
-                true
-            } else {
-                false
-            }
-        },
-        titleRes = if (initialPath.isNotEmpty()) R.string.susfs_edit_try_umount else R.string.susfs_add_try_umount,
-        isLoading = isLoading,
-        fields = listOf(
-            DialogField.TextField(
-                value = newUmountPath,
-                onValueChange = { newUmountPath = it },
-                labelRes = R.string.susfs_path_label,
-                enabled = !isLoading
-            ),
-            DialogField.Dropdown(
-                titleRes = R.string.susfs_umount_mode_label,
-                summary = umountModeItems[newUmountMode],
-                items = umountModeItems,
-                selectedIndex = newUmountMode,
-                onSelectedIndexChange = { newUmountMode = it },
-                enabled = !isLoading
-            )
-        ),
-        confirmTextRes = if (initialPath.isNotEmpty()) R.string.susfs_save else R.string.add,
-        isConfirmEnabled = newUmountPath.isNotBlank() && !isLoading,
-        onReset = {
-            newUmountPath = ""
-            newUmountMode = 0
-        }
-    )
-}
-
 /**
  * 添加Kstat静态配置对话框
  */
