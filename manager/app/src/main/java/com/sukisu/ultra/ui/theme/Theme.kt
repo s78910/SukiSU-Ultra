@@ -3,6 +3,7 @@ package com.sukisu.ultra.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import com.sukisu.ultra.ui.webui.MonetColorsProvider.UpdateCss
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -37,6 +38,9 @@ fun KernelSUTheme(
     }
     return MiuixTheme(
         controller = controller,
-        content = content
+        content = {
+            UpdateCss()
+            content()
+        }
     )
 }
