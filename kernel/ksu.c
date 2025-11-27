@@ -64,7 +64,7 @@ int __init kernelsu_init(void)
 
 	ksu_syscall_hook_manager_init();
 
-    ksu_allowlist_init();
+	ksu_allowlist_init();
 
 	ksu_throne_tracker_init();
 

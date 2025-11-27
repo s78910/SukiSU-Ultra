@@ -8,48 +8,48 @@
 struct cred;
 
 enum umount_entry_state {
-    UMOUNT_STATE_IDLE = 0,
-    UMOUNT_STATE_ACTIVE = 1,
-    UMOUNT_STATE_BUSY = 2,
+	UMOUNT_STATE_IDLE = 0,
+	UMOUNT_STATE_ACTIVE = 1,
+	UMOUNT_STATE_BUSY = 2,
 };
 
 struct umount_entry {
-    struct list_head list;
-    char path[256];
-    int flags;
-    enum umount_entry_state state;
-    bool is_default;
-    u32 ref_count;
+	struct list_head list;
+	char path[256];
+	int flags;
+	enum umount_entry_state state;
+	bool is_default;
+	u32 ref_count;
 };
 
 struct umount_manager {
-    struct list_head entry_list;
-    spinlock_t lock;
-    u32 entry_count;
-    u32 max_entries;
+	struct list_head entry_list;
+	spinlock_t lock;
+	u32 entry_count;
+	u32 max_entries;
 };
 
 enum umount_manager_op {
-    UMOUNT_OP_ADD = 0,
-    UMOUNT_OP_REMOVE = 1,
-    UMOUNT_OP_LIST = 2,
-    UMOUNT_OP_CLEAR_CUSTOM = 3,
+	UMOUNT_OP_ADD = 0,
+	UMOUNT_OP_REMOVE = 1,
+	UMOUNT_OP_LIST = 2,
+	UMOUNT_OP_CLEAR_CUSTOM = 3,
 };
 
 struct ksu_umount_manager_cmd {
-    __u32 operation;
-    char path[256];
-    __s32 flags;
-    __u32 count;
-    __aligned_u64 entries_ptr;
+	__u32 operation;
+	char path[256];
+	__s32 flags;
+	__u32 count;
+	__aligned_u64 entries_ptr;
 };
 
 struct ksu_umount_entry_info {
-    char path[256];
-    __s32 flags;
-    __u8 is_default;
-    __u32 state;
-    __u32 ref_count;
+	char path[256];
+	__s32 flags;
+	__u8 is_default;
+	__u32 state;
+	__u32 ref_count;
 };
 
 int ksu_umount_manager_init(void);

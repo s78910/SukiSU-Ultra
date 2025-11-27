@@ -82,10 +82,10 @@ static void ksu_sys_umount(const char *mnt, int flags)
 	set_fs(old_fs);
 }
 
-#define ksu_umount_mnt(mnt, __unused, flags)                                   \
-	({                                                                     \
-		path_put(__unused);                                            \
-		ksu_sys_umount(mnt, flags);                                    \
+#define ksu_umount_mnt(mnt, __unused, flags)								   \
+	({																	 \
+		path_put(__unused);											\
+		ksu_sys_umount(mnt, flags);									\
 	})
 
 #endif

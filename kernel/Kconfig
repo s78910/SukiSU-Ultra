@@ -24,11 +24,11 @@ config KSU_ALLOWLIST_WORKAROUND
 	  Useful for situations where the SU allowlist is not kept after a reboot
 
 config KSU_MANUAL_SU
-    bool "Use manual su"
-    depends on KSU
-    default y
-    help
-      Use manual su and authorize the corresponding command line and application via prctl
+	bool "Use manual su"
+	depends on KSU
+	default y
+	help
+	  Use manual su and authorize the corresponding command line and application via prctl
 
 config KSU_MULTI_MANAGER_SUPPORT
 	bool "Multi KernelSU manager support"
