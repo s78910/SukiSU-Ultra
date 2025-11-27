@@ -15,6 +15,9 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import io.noties.markwon.Markwon
+import io.noties.markwon.ext.tables.TableAwareMovementMethod
+import io.noties.markwon.ext.tables.TablePlugin
+import io.noties.markwon.movement.MovementMethodPlugin
 import io.noties.markwon.utils.NoCopySpannableFactory
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -45,7 +48,11 @@ fun MarkdownContent(content: String) {
             .clipToBounds(),
         update = {
             val textView = it.getChildAt(0) as TextView
-            Markwon.create(textView.context).setMarkdown(textView, content)
+            val markwon = Markwon.builder(textView.context)
+                .usePlugin(TablePlugin.create(textView.context))
+                .usePlugin(MovementMethodPlugin.create(TableAwareMovementMethod.create()))
+                .build()
+            markwon.setMarkdown(textView, content)
             textView.setTextColor(contentColor)
         }
     )

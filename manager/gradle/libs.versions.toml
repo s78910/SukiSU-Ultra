@@ -10,7 +10,7 @@ activity-compose = "1.11.0"
 kotlinx-coroutines = "1.10.2"
 coil-compose = "2.7.0"
 compose-destination = "2.3.0"
-twain = "0.3.2"
+markdown = "4.6.2"
 webkit = "1.14.0"
 parcelablelist = "2.0.1"
 ndk = "29.0.14206865"
@@ -66,6 +66,9 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 compose-destinations-core = { group = "io.github.raamcosta.compose-destinations", name = "core", version.ref = "compose-destination" }
 compose-destinations-ksp = { group = "io.github.raamcosta.compose-destinations", name = "ksp", version.ref = "compose-destination" }
 
+markdown = { group = "io.noties.markwon", name = "core", version.ref = "markdown" }
+markdown-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markdown" }
+
 lsposed-cxx = { module = "org.lsposed.libcxx:libcxx", version.ref = "ndk" }
 
 miuix = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuix" }
@@ -73,6 +76,7 @@ miuix = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuix" 
 haze = { module = "dev.chrisbanes.haze:haze-android", version.ref = "haze" }
 
 capsule = { module = "io.github.kyant0:capsule", version.ref = "capsule" }
+
 twain = { module = "com.colintheshots:twain", version.ref = "twain" }
 
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
