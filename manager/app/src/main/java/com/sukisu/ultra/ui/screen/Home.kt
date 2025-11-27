@@ -714,7 +714,7 @@ private fun rememberSusfsInfo(
     manualHookLabel: String,
     inlineHookLabel: String,
 ): SusfsInfoState {
-    var susfsInfo by remember { mutableStateOf(SusfsInfoState(status = SusfsStatus.Loading)) }
+    val susfsInfo = remember { mutableStateOf(SusfsInfoState(status = SusfsStatus.Loading)) }
 
     LaunchedEffect(manualHookLabel, inlineHookLabel) {
         val info = withContext(Dispatchers.IO) {
@@ -730,7 +730,9 @@ private fun rememberSusfsInfo(
                     }.takeIf { it.isNotBlank() }?.let { "($it)" }.orEmpty()
                     SusfsInfoState(
                         status = SusfsStatus.Supported,
-                        detail = listOf(version, hookLabel).filter { it.isNotBlank() }.joinToString(" ")
+                        detail = listOf(version, hookLabel)
+                            .filter { it.isNotBlank() }
+                            .joinToString(" ")
                     )
                 } else {
                     SusfsInfoState(
@@ -742,10 +744,8 @@ private fun rememberSusfsInfo(
                 SusfsInfoState(status = SusfsStatus.Error)
             }
         }
-        if (susfsInfo != info) {
-            susfsInfo = info
-        }
+        susfsInfo.value = info
     }
 
-    return susfsInfo
+    return susfsInfo.value
 }

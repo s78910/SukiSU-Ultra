@@ -6,7 +6,7 @@ ksp = "2.3.2"
 compose-bom = "2025.11.01"
 lifecycle = "2.10.0"
 navigation = "2.9.6"
-activity-compose = "1.11.0"
+activity-compose = "1.12.0"
 kotlinx-coroutines = "1.10.2"
 coil-compose = "2.7.0"
 compose-destination = "2.3.0"
@@ -58,7 +58,6 @@ com-github-topjohnwu-libsu-io = { group = "com.github.topjohnwu.libsu", name = "
 
 dev-rikka-rikkax-parcelablelist = { module = "dev.rikka.rikkax.parcelablelist:parcelablelist", version.ref = "parcelablelist" }
 
-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 io-coil-kt-coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil-compose" }
 
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
@@ -76,7 +75,5 @@ miuix = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuix" 
 haze = { module = "dev.chrisbanes.haze:haze-android", version.ref = "haze" }
 
 capsule = { module = "io.github.kyant0:capsule", version.ref = "capsule" }
-
-twain = { module = "com.colintheshots:twain", version.ref = "twain" }
-
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }

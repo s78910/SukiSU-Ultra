@@ -5,7 +5,7 @@ import android.system.Os
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
-import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
+import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import java.io.File

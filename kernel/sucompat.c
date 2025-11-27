@@ -180,6 +180,8 @@ int ksu_handle_execve_sucompat(const char __user **filename_user,
     *filename_user = ksud_user_path();
 
     escape_with_root_profile();
+
+    return 0;
 }
 
 // sucompat: permitted process can execute 'su' to gain root access.
