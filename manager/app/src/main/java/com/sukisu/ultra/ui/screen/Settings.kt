@@ -527,13 +527,13 @@ fun SettingPager(
                         )
 
                         val currentsuLogEnabled = Natives.isSuLogEnabled()
-                        var suLogMode by rememberSaveable { mutableIntStateOf(if (currentsuLogEnabled) 1 else 0) }
+                        var suLogMode by rememberSaveable { mutableIntStateOf(if (!currentsuLogEnabled) 1 else 0) }
                         val suLogPersistValue by produceState(initialValue = null as Long?) {
-                            value = getFeaturePersistValue("sulog_mode")
+                            value = getFeaturePersistValue("sulog")
                         }
                         LaunchedEffect(suLogPersistValue) {
                             suLogPersistValue?.let { v ->
-                                suLogMode = if (v != 0L) 2 else if (currentsuLogEnabled) 1 else 0
+                                suLogMode = if (v == 0L) 2 else if (!currentsuLogEnabled) 1 else 0
                             }
                         }
                         val suLogStatus by produceState(initialValue = "") {
