@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +73,7 @@ import com.sukisu.ultra.ui.util.execKsud
 import com.sukisu.ultra.ui.util.getFeatureStatus
 import com.sukisu.ultra.ui.util.getSuSFSFeatures
 import com.sukisu.ultra.ui.util.rememberKpmAvailable
+import com.sukisu.ultra.ui.util.getFeaturePersistValue
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -344,14 +346,15 @@ fun SettingPager(
                             stringResource(id = R.string.settings_mode_temp_enable),
                             stringResource(id = R.string.settings_mode_always_enable),
                         )
-                        var enhancedSecurityMode by rememberSaveable {
-                            mutableIntStateOf(
-                                run {
-                                    val currentEnabled = Natives.isEnhancedSecurityEnabled()
-                                    val savedPersist = prefs.getInt("enhanced_security_mode", 0)
-                                    if (savedPersist == 2) 2 else if (currentEnabled) 1 else 0
-                                }
-                            )
+                        val currentEnhancedEnabled = Natives.isEnhancedSecurityEnabled()
+                        var enhancedSecurityMode by rememberSaveable { mutableIntStateOf(if (currentEnhancedEnabled) 1 else 0) }
+                        val enhancedPersistValue by produceState(initialValue = null as Long?) {
+                            value = getFeaturePersistValue("enhanced_security")
+                        }
+                        LaunchedEffect(enhancedPersistValue) {
+                            enhancedPersistValue?.let { v ->
+                                enhancedSecurityMode = if (v != 0L) 2 else if (currentEnhancedEnabled) 1 else 0
+                            }
                         }
                         val enhancedStatus by produceState(initialValue = "") {
                             value = getFeatureStatus("enhanced_security")
@@ -403,14 +406,15 @@ fun SettingPager(
                             }
                         )
 
-                        var suCompatMode by rememberSaveable {
-                            mutableIntStateOf(
-                                run {
-                                    val currentEnabled = Natives.isSuEnabled()
-                                    val savedPersist = prefs.getInt("su_compat_mode", 0)
-                                    if (savedPersist == 2) 2 else if (!currentEnabled) 1 else 0
-                                }
-                            )
+                        val currentSuEnabled = Natives.isSuEnabled()
+                        var suCompatMode by rememberSaveable { mutableIntStateOf(if (!currentSuEnabled) 1 else 0) }
+                        val suPersistValue by produceState(initialValue = null as Long?) {
+                            value = getFeaturePersistValue("su_compat")
+                        }
+                        LaunchedEffect(suPersistValue) {
+                            suPersistValue?.let { v ->
+                                suCompatMode = if (v == 0L) 2 else if (!currentSuEnabled) 1 else 0
+                            }
                         }
                         val suStatus by produceState(initialValue = "") {
                             value = getFeatureStatus("su_compat")
@@ -462,14 +466,15 @@ fun SettingPager(
                             }
                         )
 
-                        var kernelUmountMode by rememberSaveable {
-                            mutableIntStateOf(
-                                run {
-                                    val currentEnabled = Natives.isKernelUmountEnabled()
-                                    val savedPersist = prefs.getInt("kernel_umount_mode", 0)
-                                    if (savedPersist == 2) 2 else if (!currentEnabled) 1 else 0
-                                }
-                            )
+                        val currentUmountEnabled = Natives.isKernelUmountEnabled()
+                        var kernelUmountMode by rememberSaveable { mutableIntStateOf(if (!currentUmountEnabled) 1 else 0) }
+                        val umountPersistValue by produceState(initialValue = null as Long?) {
+                            value = getFeaturePersistValue("kernel_umount")
+                        }
+                        LaunchedEffect(umountPersistValue) {
+                            umountPersistValue?.let { v ->
+                                kernelUmountMode = if (v == 0L) 2 else if (!currentUmountEnabled) 1 else 0
+                            }
                         }
                         val umountStatus by produceState(initialValue = "") {
                             value = getFeatureStatus("kernel_umount")
@@ -521,14 +526,15 @@ fun SettingPager(
                             }
                         )
 
-                        var suLogMode by rememberSaveable {
-                            mutableIntStateOf(
-                                run {
-                                    val currentEnabled = Natives.isSuLogEnabled()
-                                    val savedPersist = prefs.getInt("sulog_mode", 0)
-                                    if (savedPersist == 2) 2 else if (!currentEnabled) 1 else 0
-                                }
-                            )
+                        val currentsuLogEnabled = Natives.isSuLogEnabled()
+                        var suLogMode by rememberSaveable { mutableIntStateOf(if (currentsuLogEnabled) 1 else 0) }
+                        val suLogPersistValue by produceState(initialValue = null as Long?) {
+                            value = getFeaturePersistValue("sulog_mode")
+                        }
+                        LaunchedEffect(suLogPersistValue) {
+                            suLogPersistValue?.let { v ->
+                                suLogMode = if (v != 0L) 2 else if (currentsuLogEnabled) 1 else 0
+                            }
                         }
                         val suLogStatus by produceState(initialValue = "") {
                             value = getFeatureStatus("sulog")
