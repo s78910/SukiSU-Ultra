@@ -2,6 +2,7 @@ package com.sukisu.ultra.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import com.sukisu.ultra.ui.webui.MonetColorsProvider.UpdateCss
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -43,4 +44,14 @@ fun KernelSUTheme(
             content()
         }
     )
+}
+
+@Composable
+@ReadOnlyComposable
+fun isInDarkTheme(themeMode: Int): Boolean {
+    return when (themeMode) {
+        1, 4 -> false  // Force light mode
+        2, 5 -> true   // Force dark mode
+        else -> isSystemInDarkTheme()  // Follow system (0 or default)
+    }
 }

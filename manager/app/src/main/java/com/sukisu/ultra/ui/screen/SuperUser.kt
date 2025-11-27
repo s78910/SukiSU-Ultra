@@ -10,7 +10,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +76,7 @@ import com.sukisu.ultra.ui.component.AppIconImage
 import com.sukisu.ultra.ui.component.DropdownItem
 import com.sukisu.ultra.ui.component.SearchBox
 import com.sukisu.ultra.ui.component.SearchPager
+import com.sukisu.ultra.ui.theme.isInDarkTheme
 import com.sukisu.ultra.ui.util.ownerNameForUid
 import com.sukisu.ultra.ui.util.pickPrimary
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
@@ -470,7 +470,7 @@ private fun GroupItem(
 ) {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-    val isDark = isSystemInDarkTheme() || prefs.getInt("color_mode", 0) == 2 || prefs.getInt("color_mode", 0) == 5
+    val isDark = isInDarkTheme(prefs.getInt("color_mode", 0))
     val colorScheme = colorScheme
     val bg = remember(colorScheme) { colorScheme.secondaryContainer.copy(alpha = 0.8f) }
     val rootBg = remember(colorScheme) { colorScheme.tertiaryContainer.copy(alpha = 0.6f) }
