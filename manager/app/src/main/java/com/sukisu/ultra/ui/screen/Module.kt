@@ -113,6 +113,8 @@ import com.sukisu.ultra.ui.util.DownloadListener
 import com.sukisu.ultra.ui.util.download
 import com.sukisu.ultra.ui.util.getFileName
 import com.sukisu.ultra.ui.util.hasMagisk
+import com.sukisu.ultra.ui.util.module.fetchModuleDetail
+import com.sukisu.ultra.ui.util.module.fetchReleaseDescriptionHtml
 import com.sukisu.ultra.ui.util.toggleModule
 import com.sukisu.ultra.ui.util.undoUninstallModule
 import com.sukisu.ultra.ui.util.uninstallModule
@@ -259,11 +261,27 @@ fun ModulePager(
         }
 
         val changelog = changelogResult.getOrElse { "" }
+        var htmlLog = ""
+        if (changelog.isBlank()) {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val detail = fetchModuleDetail(module.id)
+                    val latestTag = detail?.latestTag ?: ""
+                    val html = if (latestTag.isNotBlank()) fetchReleaseDescriptionHtml(module.id, latestTag) else null
+                    if (html != null) htmlLog = html
+                }
+            }
+        }
 
         val confirmResult = confirmDialog.awaitConfirm(
-            if (changelog.isNotEmpty()) changelogText else updateText,
-            content = changelog.ifBlank { startDownloadingText.format(module.name) },
-            markdown = changelog.isNotBlank(),
+            if (changelog.isNotEmpty() || htmlLog.isNotEmpty()) changelogText else updateText,
+            content = when {
+                changelog.isNotEmpty() -> changelog
+                htmlLog.isNotEmpty() -> htmlLog
+                else -> startDownloadingText.format(module.name)
+            },
+            markdown = changelog.isNotEmpty(),
+            html = htmlLog.isNotEmpty(),
             confirm = updateText,
         )
 
