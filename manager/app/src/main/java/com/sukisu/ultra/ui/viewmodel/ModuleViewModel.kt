@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import com.sukisu.ultra.ksuApp
 import com.sukisu.ultra.ui.component.SearchStatus
 import com.sukisu.ultra.ui.util.HanziToPinyin
+import com.sukisu.ultra.ui.util.isNetworkAvailable
 import com.sukisu.ultra.ui.util.listModules
 import com.sukisu.ultra.ui.util.module.RepoSummary
 import com.sukisu.ultra.ui.util.module.fetchRepoIndex
@@ -233,13 +234,18 @@ class ModuleViewModel : ViewModel() {
     private val _repoIndex = mutableStateMapOf<String, RepoSummary>()
 
     suspend fun refreshRepoIndex() {
-        val parsed = withContext(Dispatchers.IO) { fetchRepoIndex() }
+        val parsed = withContext(Dispatchers.IO) {
+            val map = fetchRepoIndex()
+            if (map.isEmpty()) null else map.entries.map { it.key to it.value }
+        }
+
         withContext(Dispatchers.Main) {
-            _repoIndex.clear()
-            parsed.forEach { (id, summary) -> _repoIndex[id] = summary }
+            if (parsed != null) {
+                _repoIndex.clear()
+                parsed.forEach { (id, summary) -> _repoIndex[id] = summary }
+            }
         }
     }
-
 
     private fun ModuleInfo.toSignature(): ModuleUpdateSignature {
         return ModuleUpdateSignature(
@@ -322,6 +328,9 @@ class ModuleViewModel : ViewModel() {
     }
 
     fun checkUpdate(m: ModuleInfo): ModuleUpdateInfo {
+        if (!isNetworkAvailable(ksuApp)) {
+            return ModuleUpdateInfo.Empty
+        }
         if (m.updateJson.isEmpty() || m.remove || m.update || !m.enabled) {
             return ModuleUpdateInfo.Empty
         }
