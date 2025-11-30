@@ -186,7 +186,7 @@ fun MainScreen(navController: DestinationsNavigator) {
                 pagerState.animateScrollToPage(0)
             }
         } else {
-            activity?.finishAndRemoveTask()
+            activity?.moveTaskToBack(true)
         }
     }
 
