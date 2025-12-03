@@ -59,4 +59,6 @@ static inline int endswith(const char *s, const char *t)
 }
 #endif
 
+extern struct cred* ksu_cred;
+
 #endif
