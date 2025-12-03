@@ -46,8 +46,6 @@ fun BasicSettingsContent(
     onEnableAvcLogSpoofingChange: (Boolean) -> Unit,
     hideSusMountsForAllProcs: Boolean,
     onHideSusMountsForAllProcsChange: (Boolean) -> Unit,
-    umountForZygoteIsoService: Boolean,
-    onUmountForZygoteIsoServiceChange: (Boolean) -> Unit,
     onReset: (() -> Unit)? = null,
     onApply: (() -> Unit)? = null,
     onConfigReload: () -> Unit
@@ -266,23 +264,6 @@ fun BasicSettingsContent(
             },
             checked = hideSusMountsForAllProcs,
             onCheckedChange = onHideSusMountsForAllProcsChange,
-            enabled = !isLoading
-        )
-
-        // 卸载 Zygote 隔离服务开关
-        SuperSwitch(
-            title = stringResource(R.string.umount_zygote_iso_service),
-            summary = stringResource(R.string.umount_zygote_iso_service_description),
-            leftAction = {
-                Icon(
-                    Icons.Default.Security,
-                    modifier = Modifier.padding(end = 16.dp),
-                    contentDescription = stringResource(R.string.umount_zygote_iso_service),
-                    tint = colorScheme.onBackground
-                )
-            },
-            checked = umountForZygoteIsoService,
-            onCheckedChange = onUmountForZygoteIsoServiceChange,
             enabled = !isLoading
         )
     }
