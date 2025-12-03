@@ -2,7 +2,6 @@
 #include <linux/fs.h>
 #include <linux/kobject.h>
 #include <linux/module.h>
-#include <linux/workqueue.h>
 #include <generated/utsrelease.h>
 #include <generated/compile.h>
 #include <linux/version.h> /* LINUX_VERSION_CODE, KERNEL_VERSION macros */
@@ -25,13 +24,6 @@
 #include "sulog.h"
 #include "throne_comm.h"
 #include "dynamic_manager.h"
-
-static struct workqueue_struct *ksu_workqueue;
-
-bool ksu_queue_work(struct work_struct *work)
-{
-	return queue_work(ksu_workqueue, work);
-}
 
 void sukisu_custom_config_init(void)
 {
@@ -72,9 +64,7 @@ int __init kernelsu_init(void)
 
 	ksu_syscall_hook_manager_init();
 
-	ksu_workqueue = alloc_ordered_workqueue("kernelsu_work_queue", 0);
-
-	ksu_allowlist_init();
+    ksu_allowlist_init();
 
 	ksu_throne_tracker_init();
 
@@ -102,8 +92,6 @@ void kernelsu_exit(void)
 	ksu_observer_exit();
 
 	ksu_throne_tracker_exit();
-
-	destroy_workqueue(ksu_workqueue);
 
 #if defined(CONFIG_KPROBES) && !defined(CONFIG_KSU_SUSFS)
 	ksu_ksud_exit();

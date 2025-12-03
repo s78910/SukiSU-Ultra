@@ -2,7 +2,7 @@
 #define __KSU_H_KSU
 
 #include <linux/types.h>
-#include <linux/workqueue.h>
+#include <linux/cred.h>
 
 #define KERNEL_SU_VERSION KSU_VERSION
 #define KERNEL_SU_OPTION 0xDEADBEEF
@@ -40,8 +40,6 @@ struct manager_list_info {
 		int signature_index;
 	} managers[2];
 };
-
-bool ksu_queue_work(struct work_struct *work);
 
 void ksu_lsm_hook_init(void);
 
