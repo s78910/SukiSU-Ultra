@@ -54,6 +54,7 @@ import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ui.component.BottomBar
 import com.sukisu.ultra.ui.screen.HomePager
 import com.sukisu.ultra.ui.screen.ModulePager
+import com.sukisu.ultra.ui.screen.ModuleRepoPager
 import com.sukisu.ultra.ui.screen.SettingPager
 import com.sukisu.ultra.ui.screen.SuperUserPager
 import com.sukisu.ultra.ui.theme.KernelSUTheme
@@ -168,7 +169,7 @@ val LocalHandlePageChange = compositionLocalOf<(Int) -> Unit> { error("No handle
 fun MainScreen(navController: DestinationsNavigator) {
     val activity = LocalActivity.current
     val coroutineScope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    val pagerState = rememberPagerState(initialPage = 2, pageCount = { 5 })
     val hazeState = remember { HazeState() }
     val hazeStyle = HazeStyle(
         backgroundColor = MiuixTheme.colorScheme.surface,
@@ -181,9 +182,9 @@ fun MainScreen(navController: DestinationsNavigator) {
     }
 
     BackHandler {
-        if (pagerState.currentPage != 0) {
+        if (pagerState.currentPage != 2) {
             coroutineScope.launch {
-                pagerState.animateScrollToPage(0)
+                pagerState.animateScrollToPage(2)
             }
         } else {
             activity?.moveTaskToBack(true)
@@ -203,13 +204,14 @@ fun MainScreen(navController: DestinationsNavigator) {
                 modifier = Modifier.hazeSource(state = hazeState),
                 state = pagerState,
                 beyondViewportPageCount = 2,
-                userScrollEnabled = false
+                userScrollEnabled = false,
             ) {
                 when (it) {
-                    0 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
-                    1 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
-                    2 -> ModulePager(navController, innerPadding.calculateBottomPadding())
-                    3 -> SettingPager(navController, innerPadding.calculateBottomPadding())
+                    0 -> ModuleRepoPager(navController, innerPadding.calculateBottomPadding())
+                    1 -> ModulePager(navController, innerPadding.calculateBottomPadding())
+                    2 -> HomePager(pagerState, navController, innerPadding.calculateBottomPadding())
+                    3 -> SuperUserPager(navController, innerPadding.calculateBottomPadding())
+                    4 -> SettingPager(navController, innerPadding.calculateBottomPadding())
                 }
             }
         }
