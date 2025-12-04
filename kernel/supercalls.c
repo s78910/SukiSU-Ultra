@@ -513,11 +513,11 @@ static int do_manage_mark(void __user *arg)
 		break;
 	}
 	case KSU_MARK_REFRESH: {
-#ifndef CONFIG_KSU_SUSFS
+#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
 		ksu_mark_running_process();
 		pr_info("manage_mark: refreshed running processes\n");
 #else
-		pr_info("susfs: cmd: KSU_MARK_REFRESH: do nothing\n");
+		pr_info("manual_hook: cmd: KSU_MARK_REFRESH: do nothing\n");
 #endif
 		break;
 	}
