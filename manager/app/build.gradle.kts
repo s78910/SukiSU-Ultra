@@ -38,6 +38,10 @@ android {
     }**/
     namespace = "com.sukisu.ultra"
 
+    defaultConfig {
+        applicationId = "com.s78910.onlyr"
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -82,7 +86,7 @@ android {
     applicationVariants.all {
         outputs.forEach {
             val output = it as BaseVariantOutputImpl
-            output.outputFileName = "SukiSU_${managerVersionName}_${managerVersionCode}-$name.apk"
+            output.outputFileName = "S789_${managerVersionName}_${managerVersionCode}-$name.apk"
         }
         kotlin.sourceSets {
             getByName(name) {
