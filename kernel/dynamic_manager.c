@@ -365,7 +365,11 @@ static bool persistent_dynamic_manager(void)
 	spin_unlock_irqrestore(&dynamic_manager_lock, flags);
 
 	tw->cb.func = do_save_dynamic_manager;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 	task_work_add(tsk, &tw->cb, TWA_RESUME);
+#else
+	task_work_add(tsk, &tw->cb, true);
+#endif
 
 put_task:
 	put_task_struct(tsk);
@@ -583,9 +587,9 @@ void ksu_dynamic_manager_exit(void)
 
 	tw->cb.func = do_save_dynamic_manager;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-	task_work_add(tsk, cb, TWA_RESUME);
+	task_work_add(tsk, &tw->cb, TWA_RESUME);
 #else
-	task_work_add(tsk, cb, true);
+	task_work_add(tsk, &tw->cb, true);
 #endif
 
 put_task:
