@@ -1,20 +1,17 @@
 name: Build Custom Manager
 
 on:
+  push:
+    branches: [ "main", "custom-package" ]
+    paths:
+      - '.github/workflows/build-custom-manager.yml'
+      - 'manager/**'
   workflow_dispatch:
     inputs:
       app_title:
         description: '应用内标题'
         required: false
         default: '姜太公钓瑜'
-      create_custom_package_branch:
-        description: '创建改包名分支'
-        type: boolean
-        default: false
-      custom_package_name:
-        description: '自定义包名（仅在改包名分支有效）'
-        required: false
-        default: 'com.s78910.onlyr'
 
 jobs:
   build-lkm:
@@ -62,11 +59,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine title
+        id: title
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "APP_TITLE=${{ github.event.inputs.app_title }}" >> $GITHUB_OUTPUT
+          else
+            echo "APP_TITLE=姜太公钓瑜" >> $GITHUB_OUTPUT
+          fi
+
       - name: Apply custom title
         run: |
           # 修改 TopBar 标题为自定义标题
-          sed -i 's/text = stringResource(R.string.app_name)/text = "${{ github.event.inputs.app_title }}"/g' app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt
-          echo "Applied custom title: ${{ github.event.inputs.app_title }}"
+          sed -i 's/text = stringResource(R.string.app_name)/text = "${{ steps.title.outputs.APP_TITLE }}"/g' app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt
+          echo "Applied custom title: ${{ steps.title.outputs.APP_TITLE }}"
 
       - name: Write key
         run: |
@@ -137,46 +143,17 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean assembleRelease
 
+      - name: Determine artifact name
+        id: artifact_name
+        run: |
+          if [ "${{ github.ref_name }}" == "custom-package" ]; then
+            echo "NAME=Custom-Manager-S789-CustomPackage" >> $GITHUB_OUTPUT
+          else
+            echo "NAME=Custom-Manager-S789" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Custom Manager APK
         uses: actions/upload-artifact@v4
         with:
-          name: Custom-Manager-S789
+          name: ${{ steps.artifact_name.outputs.NAME }}
           path: manager/app/build/outputs/apk/release/*.apk
-
-  # 创建改包名分支并编译
-  create-custom-package-branch:
-    needs: build-custom-manager
-    if: ${{ github.event.inputs.create_custom_package_branch == 'true' }}
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Create custom-package branch
-        run: |
-          git checkout -b custom-package || git checkout custom-package
-          
-          # 修改包名
-          PACKAGE_NAME="${{ github.event.inputs.custom_package_name }}"
-          
-          # 修改 build.gradle.kts 中的 namespace
-          sed -i "s/namespace = \"com.sukisu.ultra\"/namespace = \"$PACKAGE_NAME\"/g" manager/app/build.gradle.kts
-          
-          # 修改 TopBar 标题
-          sed -i 's/text = stringResource(R.string.app_name)/text = "${{ github.event.inputs.app_title }}"/g' manager/app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt
-          
-          # 提交修改
-          git add .
-          git commit -m "feat: 修改包名为 $PACKAGE_NAME" || echo "No changes to commit"
-          git push origin custom-package --force
-          
-          echo "Custom package branch created with package name: $PACKAGE_NAME"
