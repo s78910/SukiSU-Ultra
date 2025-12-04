@@ -531,7 +531,11 @@ bool ksu_load_dynamic_manager(void)
 		goto put_task;
 	}
 	cb->func = do_load_dynamic_manager;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 	task_work_add(tsk, cb, TWA_RESUME);
+#else
+	task_work_add(tsk, cb, true);
+#endif
 
 put_task:
 	put_task_struct(tsk);
@@ -578,7 +582,11 @@ void ksu_dynamic_manager_exit(void)
 	spin_unlock_irqrestore(&dynamic_manager_lock, flags);
 
 	tw->cb.func = do_save_dynamic_manager;
-	task_work_add(tsk, &tw->cb, TWA_RESUME);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+	task_work_add(tsk, cb, TWA_RESUME);
+#else
+	task_work_add(tsk, cb, true);
+#endif
 
 put_task:
 	put_task_struct(tsk);
