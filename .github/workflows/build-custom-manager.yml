@@ -54,14 +54,40 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Apply custom title
+      - name: Apply custom modifications
         run: |
-          # 修改 strings.xml 中的 app_name 为 姜太公钓瑜
+          # 1. 修改 strings.xml 中的 app_name 为 姜太公钓瑜
           sed -i 's/<string name="app_name" translatable="false">SukiSU Ultra<\/string>/<string name="app_name" translatable="false">姜太公钓瑜<\/string>/g' app/src/main/res/values/strings.xml
           
-          # 验证修改是否成功
-          echo "=== Checking strings.xml modification ==="
-          grep "app_name" app/src/main/res/values/strings.xml | head -1
+          # 2. 隐藏 LKM/Built-in 标签和管理器版本
+          python3 << 'EOF'
+          import re
+          
+          with open('app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt', 'r', encoding='utf-8') as f:
+              content = f.read()
+          
+          # 隐藏工作模式标签 - 将 workingModeSurfaceText 设置为空字符串
+          content = re.sub(
+              r'val workingModeSurfaceText = when \{[^}]*systemStatus\.lkmMode == true -> "LKM"[^}]*else -> "Built-in"[^}]*\}',
+              'val workingModeSurfaceText = ""',
+              content,
+              flags=re.DOTALL
+          )
+          
+          # 隐藏管理器版本
+          pattern2 = r'(InfoCardItem\(\s*stringResource\(R\.string\.home_manager_version\),[^)]*icon = Icons\.Default\.SettingsSuggest,\s*\))'
+          content = re.sub(pattern2, '// 已隐藏管理器版本\n            // \\1', content, flags=re.DOTALL)
+          
+          with open('app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt', 'w', encoding='utf-8') as f:
+              f.write(content)
+          
+          print("Custom modifications applied successfully!")
+          EOF
+          
+          # 验证修改
+          echo "=== Checking modifications ==="
+          grep -n "app_name" app/src/main/res/values/strings.xml | head -1
+          grep -n "workingModeSurfaceText" app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt | head -3
           echo "=== Done ==="
 
       - name: Write key
