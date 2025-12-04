@@ -7,11 +7,6 @@ on:
       - '.github/workflows/build-custom-manager.yml'
       - 'manager/**'
   workflow_dispatch:
-    inputs:
-      app_title:
-        description: '应用内标题'
-        required: false
-        default: '姜太公钓瑜'
 
 jobs:
   build-lkm:
@@ -59,20 +54,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine title
-        id: title
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "APP_TITLE=${{ github.event.inputs.app_title }}" >> $GITHUB_OUTPUT
-          else
-            echo "APP_TITLE=姜太公钓瑜" >> $GITHUB_OUTPUT
-          fi
-
       - name: Apply custom title
         run: |
-          # 修改 TopBar 标题为自定义标题
-          sed -i 's/text = stringResource(R.string.app_name)/text = "${{ steps.title.outputs.APP_TITLE }}"/g' app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt
-          echo "Applied custom title: ${{ steps.title.outputs.APP_TITLE }}"
+          # 修改 strings.xml 中的 app_name 为 姜太公钓瑜
+          sed -i 's/<string name="app_name" translatable="false">SukiSU Ultra<\/string>/<string name="app_name" translatable="false">姜太公钓瑜<\/string>/g' app/src/main/res/values/strings.xml
+          
+          # 验证修改是否成功
+          echo "=== Checking strings.xml modification ==="
+          grep "app_name" app/src/main/res/values/strings.xml | head -1
+          echo "=== Done ==="
 
       - name: Write key
         run: |
