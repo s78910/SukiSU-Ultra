@@ -55,51 +55,13 @@ fun BottomBar(navController: NavHostController) {
         tonalElevation = cardElevation
     ) {
         BottomBarDestination.entries.forEach { destination ->
-            if (destination == BottomBarDestination.Kpm) {
-                if (kpmVersion.isNotEmpty() && !kpmVersion.startsWith("Error") && !showKpmInfo && Natives.version >= Natives.MINIMAL_SUPPORTED_KPM) {
-                    if (!isFullFeatured && destination.rootRequired) return@forEach
-                    val isCurrentDestOnBackStack by navController.isRouteOnBackStackAsState(destination.direction)
-                    NavigationBarItem(
-                        selected = isCurrentDestOnBackStack,
-                        onClick = {
-                            if (!isCurrentDestOnBackStack) {
-                                navigator.popBackStack(destination.direction, false)
-                            }
-                            navigator.navigate(destination.direction) {
-                                popUpTo(NavGraphs.root as RouteOrDirection) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            BadgedBox(
-                                badge = {
-                                    if (kpmModuleCount > 0 && !isHideOtherInfo) {
-                                        Badge(
-                                            containerColor = MaterialTheme.colorScheme.secondary
-                                        ) {
-                                            Text(
-                                                text = kpmModuleCount.toString(),
-                                                style = MaterialTheme.typography.labelSmall
-                                            )
-                                        }
-                                    }
-                                }
-                            ) {
-                                if (isCurrentDestOnBackStack) {
-                                    Icon(destination.iconSelected, stringResource(destination.label))
-                                } else {
-                                    Icon(destination.iconNotSelected, stringResource(destination.label))
-                                }
-                            }
-                        },
-                        label = { Text(stringResource(destination.label),style = MaterialTheme.typography.labelMedium) },
-                        alwaysShowLabel = false
-                    )
-                }
-            } else if (destination == BottomBarDestination.SuperUser) {
+            // 只显示主页和超级用户，隐藏其他导航项
+            if (destination != BottomBarDestination.Home && 
+                destination != BottomBarDestination.SuperUser) {
+                return@forEach
+            }
+            
+            if (destination == BottomBarDestination.SuperUser) {
                 if (!isFullFeatured && destination.rootRequired) return@forEach
                 val isCurrentDestOnBackStack by navController.isRouteOnBackStackAsState(destination.direction)
 
@@ -126,49 +88,6 @@ fun BottomBar(navController: NavHostController) {
                                     ) {
                                         Text(
                                             text = superuserCount.toString(),
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    }
-                                }
-                            }
-                        ) {
-                            if (isCurrentDestOnBackStack) {
-                                Icon(destination.iconSelected, stringResource(destination.label))
-                            } else {
-                                Icon(destination.iconNotSelected, stringResource(destination.label))
-                            }
-                        }
-                    },
-                    label = { Text(stringResource(destination.label),style = MaterialTheme.typography.labelMedium) },
-                    alwaysShowLabel = false
-                )
-            } else if (destination == BottomBarDestination.Module) {
-                if (!isFullFeatured && destination.rootRequired) return@forEach
-                val isCurrentDestOnBackStack by navController.isRouteOnBackStackAsState(destination.direction)
-
-                NavigationBarItem(
-                    selected = isCurrentDestOnBackStack,
-                    onClick = {
-                        if (isCurrentDestOnBackStack) {
-                            navigator.popBackStack(destination.direction, false)
-                        }
-                        navigator.navigate(destination.direction) {
-                            popUpTo(NavGraphs.root) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = {
-                        BadgedBox(
-                            badge = {
-                                if (moduleCount > 0 && !isHideOtherInfo) {
-                                    Badge(
-                                        containerColor = MaterialTheme.colorScheme.secondary)
-                                    {
-                                        Text(
-                                            text = moduleCount.toString(),
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     }
