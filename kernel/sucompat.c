@@ -1,4 +1,5 @@
 #include <linux/compiler_types.h>
+#include <linux/version.h>
 #include <linux/preempt.h>
 #include <linux/printk.h>
 #include <linux/mm.h>
@@ -12,7 +13,6 @@
 #include <linux/cred.h>
 #include <linux/fs.h>
 #include <linux/types.h>
-#include <linux/version.h>
 #include <linux/ptrace.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/task_stack.h>
