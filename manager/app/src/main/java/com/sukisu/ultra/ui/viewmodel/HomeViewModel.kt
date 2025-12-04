@@ -105,7 +105,7 @@ class HomeViewModel : ViewModel() {
     fun loadUserSettings(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
             val settingsPrefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            isSimpleMode = settingsPrefs.getBoolean("is_simple_mode", false)
+            isSimpleMode = settingsPrefs.getBoolean("is_simple_mode", true)
             isKernelSimpleMode = settingsPrefs.getBoolean("is_kernel_simple_mode", false)
             isHideVersion = settingsPrefs.getBoolean("is_hide_version", false)
             isHideOtherInfo = settingsPrefs.getBoolean("is_hide_other_info", false)
@@ -254,38 +254,37 @@ class HomeViewModel : ViewModel() {
                 )
 
                 isExtendedDataLoaded = true
+                _dataRefreshTrigger.value = System.currentTimeMillis()
             } catch (_: Exception) {
-                // 静默处理错误
             }
         }
         loadingJobs.add(job)
     }
 
-    fun refreshData(context: Context, forceRefresh: Boolean = false) {
+    private fun refreshData(context: Context, forceRefresh: Boolean = false) {
         val currentTime = System.currentTimeMillis()
 
-        // 如果不是强制刷新，检查冷却时间
+        // 防抖检查
         if (!forceRefresh && currentTime - lastRefreshTime < refreshCooldown) {
             return
         }
 
+        // 如果正在刷新，不重复刷新
+        if (isRefreshing) return
+
         lastRefreshTime = currentTime
+        isRefreshing = true
+
+        // 取消之前的加载任务
+        loadingJobs.forEach { it.cancel() }
+        loadingJobs.clear()
+
+        // 重置状态
+        isCoreDataLoaded = false
+        isExtendedDataLoaded = false
 
         viewModelScope.launch {
-            isRefreshing = true
-
             try {
-                // 取消正在进行的加载任务
-                loadingJobs.forEach { it.cancel() }
-                loadingJobs.clear()
-
-                // 重置状态
-                isCoreDataLoaded = false
-                isExtendedDataLoaded = false
-
-                // 触发数据刷新状态流
-                _dataRefreshTrigger.value = currentTime
-
                 // 重新加载用户设置
                 loadUserSettings(context)
 
