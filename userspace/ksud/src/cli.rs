@@ -8,7 +8,9 @@ use android_logger::Config;
 use log::LevelFilter;
 
 use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
-use crate::{apk_sign, assets, debug, defs, init_event, ksucalls, module, module_config, utils};
+use crate::{
+    apk_sign, assets, debug, defs, init_event, ksucalls, module, module_config, susfs, utils,
+};
 
 /// KernelSU userspace cli
 #[derive(Parser, Debug)]
@@ -34,6 +36,12 @@ enum Commands {
 
     /// Trigger `boot-complete` event
     BootCompleted,
+
+    /// Susfs
+    Susfs {
+        #[command(subcommand)]
+        command: Susfs,
+    },
 
     /// Install KernelSU userspace component to system
     Install {
@@ -436,6 +444,16 @@ mod kpm_cmd {
 }
 
 #[derive(clap::Subcommand, Debug)]
+enum Susfs {
+    /// Get SUSFS Status
+    Status,
+    /// Get SUSFS Version
+    Version,
+    /// Get SUSFS enable Features
+    Features,
+}
+
+#[derive(clap::Subcommand, Debug)]
 enum Umount {
     /// Add custom umount path
     Add {
@@ -499,7 +517,16 @@ pub fn run() -> Result<()> {
             init_event::on_boot_completed();
             Ok(())
         }
+        Commands::Susfs { command } => {
+            match command {
+                Susfs::Version => println!("{}", susfs::get_susfs_version()),
 
+                Susfs::Status => println!("{}", susfs::get_susfs_status()),
+
+                Susfs::Features => println!("{}", susfs::get_susfs_features()),
+            }
+            Ok(())
+        }
         Commands::Module { command } => {
             #[cfg(any(target_os = "linux", target_os = "android"))]
             {
