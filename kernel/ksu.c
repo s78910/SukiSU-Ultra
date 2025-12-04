@@ -69,8 +69,9 @@ int __init kernelsu_init(void)
 	ksu_supercalls_init();
 
 	sukisu_custom_config_init();
-
+#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
 	ksu_syscall_hook_manager_init();
+#endif
 
 	ksu_allowlist_init();
 
@@ -105,7 +106,9 @@ void kernelsu_exit(void)
 	ksu_ksud_exit();
 #endif
 
+#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
 	ksu_syscall_hook_manager_exit();
+#endif
 
 	sukisu_custom_config_exit();
 
