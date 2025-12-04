@@ -57,12 +57,12 @@ int __init kernelsu_init(void)
 	pr_alert("*************************************************************");
 #endif
 
-    ksu_cred = prepare_creds();
-    if (!ksu_cred) {
-        pr_err("prepare cred failed!\n");
-    }
+	ksu_cred = prepare_creds();
+	if (!ksu_cred) {
+		pr_err("prepare cred failed!\n");
+	}
 
-    ksu_feature_init();
+	ksu_feature_init();
 
 	ksu_lsm_hook_init();
 
@@ -109,13 +109,13 @@ void kernelsu_exit(void)
 
 	sukisu_custom_config_exit();
 
-    ksu_supercalls_exit();
-    
-    ksu_feature_exit();
+	ksu_supercalls_exit();
+	
+	ksu_feature_exit();
 
-    if (ksu_cred) {
-        put_cred(ksu_cred);
-    }
+	if (ksu_cred) {
+		put_cred(ksu_cred);
+	}
 }
 
 module_init(kernelsu_init);

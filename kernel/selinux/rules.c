@@ -68,8 +68,8 @@ void apply_kernelsu_rules(void)
 		ksu_allowxperm(db, KERNEL_SU_DOMAIN, ALL, "file", ALL);
 	}
 
-    // our ksud triggered by init
-    ksu_allow(db, "init", KERNEL_SU_DOMAIN, ALL, ALL);
+	// our ksud triggered by init
+	ksu_allow(db, "init", KERNEL_SU_DOMAIN, ALL, ALL);
 
 	// copied from Magisk rules
 	// suRights

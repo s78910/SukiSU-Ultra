@@ -8,8 +8,8 @@
 
 static int transive_to_domain(const char *domain, struct cred *cred)
 {
-    u32 sid;
-    int error;
+	u32 sid;
+	int error;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 18, 0)
 	struct task_security_struct *tsec;
 #else 
@@ -60,17 +60,17 @@ is_ksu_transition(const struct task_security_struct *old_tsec,
 
 void setup_selinux(const char *domain)
 {
-    if (transive_to_domain(domain, (struct cred *)__task_cred(current))) {
-        pr_err("transive domain failed.\n");
-        return;
-    }
+	if (transive_to_domain(domain, (struct cred *)__task_cred(current))) {
+		pr_err("transive domain failed.\n");
+		return;
+	}
 }
 
 void setup_ksu_cred()
 {
-    if (ksu_cred && transive_to_domain(KERNEL_SU_CONTEXT, ksu_cred)) {
-        pr_err("setup ksu cred failed.\n");
-    }
+	if (ksu_cred && transive_to_domain(KERNEL_SU_CONTEXT, ksu_cred)) {
+		pr_err("setup ksu cred failed.\n");
+	}
 }
 
 void setenforce(bool enforce)
