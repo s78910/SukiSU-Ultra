@@ -28,7 +28,6 @@
 #include "sucompat.h"
 #include "app_profile.h"
 #include "util.h"
-
 #ifndef CONFIG_KSU_SUSFS
 #include "syscall_hook_manager.h"
 #endif // #ifndef CONFIG_KSU_SUSFS

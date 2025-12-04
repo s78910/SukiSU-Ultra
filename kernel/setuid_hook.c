@@ -294,20 +294,17 @@ do_umount:
 	// Handle kernel umount
 	ksu_handle_umount(old_uid, new_uid);
 
-	get_task_struct(current);
-
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	// We can reorder the mnt_id now after all sus mounts are umounted
 	susfs_reorder_mnt_id();
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 
-	susfs_set_current_proc_umounted();
-
-	put_task_struct(current);
-
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 	susfs_run_sus_path_loop(new_uid);
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+
+	susfs_set_current_proc_umounted();
+
 	return 0;
 }
 #endif // #ifndef CONFIG_KSU_SUSFS
