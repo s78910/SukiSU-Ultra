@@ -417,7 +417,11 @@ static bool clear_dynamic_manager_file(void)
 		goto put_task;
 	}
 	cb->func = do_clear_dynamic_manager;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 	task_work_add(tsk, cb, TWA_RESUME);
+#else
+	task_work_add(tsk, cb, true);
+#endif
 
 put_task:
 	put_task_struct(tsk);
