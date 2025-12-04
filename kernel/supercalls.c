@@ -460,7 +460,7 @@ static int do_manage_mark(void __user *arg)
 
 	switch (cmd.operation) {
 	case KSU_MARK_GET: {
-#ifndef CONFIG_KSU_SUSFS
+#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
 		// Get task mark status
 		ret = ksu_get_task_mark(cmd.pid);
 		if (ret < 0) {
@@ -475,7 +475,7 @@ static int do_manage_mark(void __user *arg)
 #endif
 	}
 	case KSU_MARK_MARK: {
-#ifndef CONFIG_KSU_SUSFS
+#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
 		if (cmd.pid == 0) {
 			ksu_mark_all_process();
 		} else {
@@ -494,7 +494,7 @@ static int do_manage_mark(void __user *arg)
 		break;
 	}
 	case KSU_MARK_UNMARK: {
-#ifndef CONFIG_KSU_SUSFS
+#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
 		if (cmd.pid == 0) {
 			ksu_unmark_all_process();
 		} else {
