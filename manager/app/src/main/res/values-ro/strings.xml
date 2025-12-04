@@ -78,7 +78,6 @@
     <string name="app_profile_template_export_empty">Nu există șabloane locale de exportat!</string>
     <string name="app_profile_template_id_exist">ID-ul șablonului există deja!</string>
     <string name="app_profile_import_from_clipboard">Import din clipboard</string>
-    <string name="module_changelog_failed">Preluarea jurnalului de modificări a eșuat: %s</string>
     <string name="app_profile_template_name">Nume</string>
     <string name="app_profile_template_id_invalid">ID șablon nevalid</string>
     <string name="app_profile_template_sync">Sincronizează șabloanele online</string>

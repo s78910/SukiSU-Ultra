@@ -82,7 +82,6 @@
     <string name="app_profile_template_export_empty">Нет локальных шаблонов для экспорта!</string>
     <string name="app_profile_template_id_exist">Шаблон с таким ID уже существует!</string>
     <string name="app_profile_import_from_clipboard">Импортировать из буфера обмена</string>
-    <string name="module_changelog_failed">Не удалось получить список изменений: %s</string>
     <string name="app_profile_template_name">Название</string>
     <string name="app_profile_template_id_invalid">Неверный ID шаблона</string>
     <string name="app_profile_template_sync">Синхронизировать онлайн-шаблоны</string>

@@ -84,7 +84,6 @@
     <string name="app_profile_template_export_empty">查無可供匯出的本地範本！</string>
     <string name="app_profile_template_id_exist">編號已由其他範本領有！</string>
     <string name="app_profile_import_from_clipboard">自剪貼簿匯入</string>
-    <string name="module_changelog_failed">無法取得更新說明：%s</string>
     <string name="app_profile_template_name">名稱</string>
     <string name="app_profile_template_sync">同步線上範本</string>
     <string name="app_profile_import_export">匯入／匯出</string>

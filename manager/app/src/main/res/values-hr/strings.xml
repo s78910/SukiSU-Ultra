@@ -97,7 +97,6 @@
     <string name="app_profile_template_sync">Sinkronizacija online predložaka</string>
     <string name="app_profile_template_save_failed">Spremanje predloška nije uspjelo</string>
     <string name="app_profile_template_import_empty">Međuspremnik je prazan!</string>
-    <string name="module_changelog_failed">Dohvaćanje popisa promjena nije uspjelo: %s</string>
     <string name="settings_check_update">Provjeri za ažuriranja</string>
     <string name="settings_check_update_summary">Automatski provjeri za ažuriranja prilikom otvaranja aplikacije</string>
     <string name="grant_root_failed">Dodjeljivanje root pristupa nije uspjelo!</string>

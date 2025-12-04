@@ -79,7 +79,6 @@
     <string name="app_profile_template_export_empty">Не вдається знайти локальний шаблон для експорту!</string>
     <string name="app_profile_template_id_exist">Ідентифікатор шаблону вже існує!</string>
     <string name="app_profile_import_from_clipboard">Імпортувати з буферу обміну</string>
-    <string name="module_changelog_failed">Невдача при завантаженні списку змін: %s</string>
     <string name="app_profile_template_name">Ім\'я</string>
     <string name="app_profile_template_id_invalid">Недійсний ідентифікатор шаблону</string>
     <string name="app_profile_template_sync">Синхронізувати мережеві шаблони</string>

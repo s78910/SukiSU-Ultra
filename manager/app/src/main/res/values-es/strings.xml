@@ -79,7 +79,6 @@
     <string name="app_profile_template_export_empty">¡No se encuentra la plantilla local para exportar!</string>
     <string name="app_profile_template_id_exist">¡El ID de plantilla ya existe!</string>
     <string name="app_profile_import_from_clipboard">Importar desde el portapapeles</string>
-    <string name="module_changelog_failed">Fallo en la obtención del registro de cambios: %s</string>
     <string name="app_profile_template_name">Nombre</string>
     <string name="app_profile_template_id_invalid">ID de plantilla no válida</string>
     <string name="app_profile_template_sync">Sincronizar plantillas en línea</string>

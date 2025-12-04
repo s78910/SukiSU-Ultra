@@ -79,7 +79,6 @@
     <string name="app_profile_template_export_empty">Não foi possível encontrar o modelo local para exportar!</string>
     <string name="app_profile_template_id_exist">O ID do modelo já existe!</string>
     <string name="app_profile_import_from_clipboard">Importar da área de transferência</string>
-    <string name="module_changelog_failed">Falha ao buscar o registro de alterações: %s</string>
     <string name="app_profile_template_name">Nome</string>
     <string name="app_profile_template_id_invalid">ID do modelo inválido</string>
     <string name="app_profile_template_sync">Sincronizar modelos online</string>

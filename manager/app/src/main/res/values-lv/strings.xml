@@ -83,7 +83,6 @@
     <string name="app_profile_template_export_empty">Nevar atrast vietējo eksportējamo veidni!</string>
     <string name="app_profile_template_save_failed">Neizdevās saglabāt veidni</string>
     <string name="app_profile_template_import_empty">Starpliktuve ir tukša!</string>
-    <string name="module_changelog_failed">Izmaiņu žurnāla iegūšana neizdevās: %s</string>
     <string name="selinux_status_permissive">Visatļautība</string>
     <string name="module_failed_to_enable">Neizdevās iespējot moduli: %s</string>
     <string name="module_install">Uzstādīt</string>

@@ -99,7 +99,6 @@
     <string name="app_profile_template_sync">Synkroniser online skabeloner</string>
     <string name="app_profile_template_save_failed">Kunne ikke gemme skabelon</string>
     <string name="app_profile_template_import_empty">Udklipsholderen er tom!</string>
-    <string name="module_changelog_failed">Hent changelog mislykkedes: %s</string>
     <string name="settings_check_update">Check for opdateringer</string>
     <string name="settings_check_update_summary">Søg automatisk efter opdateringer, når appen åbnes.</string>
     <string name="grant_root_failed">Kunne ikke tildelle root!</string>

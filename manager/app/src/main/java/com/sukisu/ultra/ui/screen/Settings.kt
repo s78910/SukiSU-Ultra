@@ -71,9 +71,9 @@ import com.sukisu.ultra.ui.component.UninstallDialog
 import com.sukisu.ultra.ui.component.rememberLoadingDialog
 import com.sukisu.ultra.ui.util.execKsud
 import com.sukisu.ultra.ui.util.getFeatureStatus
-import com.sukisu.ultra.ui.util.getSuSFSFeatures
 import com.sukisu.ultra.ui.util.rememberKpmAvailable
 import com.sukisu.ultra.ui.util.getFeaturePersistValue
+import com.sukisu.ultra.ui.util.getSuSFSStatus
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -305,8 +305,7 @@ fun SettingPager(
                 }
 
                 KsuIsValid {
-                    val rawFeature = getSuSFSFeatures()
-                    val supported = rawFeature.isNotEmpty() && !rawFeature.startsWith("[-]")
+                    val supported = getSuSFSStatus().equals("true", ignoreCase = true)
                     if (supported) {
                         Card(
                             modifier = Modifier

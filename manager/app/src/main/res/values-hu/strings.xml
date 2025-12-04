@@ -78,7 +78,6 @@
     <string name="app_profile_template_id_exist">A sablon ID már létezik!</string>
     <string name="module_changelog">Változások</string>
     <string name="app_profile_import_from_clipboard">Importálás a vágólapról</string>
-    <string name="module_changelog_failed">A változásnapló lekérése nem sikerült: %s</string>
     <string name="app_profile_template_name">Név</string>
     <string name="app_profile_template_id_invalid">Hibás sablon ID</string>
     <string name="app_profile_template_sync">Online sablonok szinkronizálása</string>

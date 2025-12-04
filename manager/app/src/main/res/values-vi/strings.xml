@@ -79,7 +79,6 @@
     <string name="app_profile_template_id_exist">ID mẫu đã tồn tại!</string>
     <string name="module_changelog">Nhật ký thay đổi</string>
     <string name="app_profile_import_from_clipboard">Nhập từ bộ nhớ tạm</string>
-    <string name="module_changelog_failed">Lấy nhật ký thay đổi thất bại: %s</string>
     <string name="app_profile_template_name">Tên</string>
     <string name="app_profile_template_id_invalid">ID mẫu không hợp lệ</string>
     <string name="app_profile_template_sync">Đồng bộ hoá các mẫu trực tuyến</string>

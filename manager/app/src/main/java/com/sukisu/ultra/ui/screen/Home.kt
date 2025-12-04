@@ -36,10 +36,8 @@ import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -594,14 +592,14 @@ fun DonateCard() {
 private fun InfoCard() {
     val manualHookText = stringResource(R.string.manual_hook)
     val inlineHookText = stringResource(R.string.inline_hook)
-    val TracepointHookText = stringResource(R.string.tracepoint_hook)
+    val tracepointHookText = stringResource(R.string.tracepoint_hook)
     val unknownHookText = stringResource(R.string.selinux_status_unknown)
     val susfsInfo = rememberSusfsInfo(manualHookText, inlineHookText)
     val isSusfsSupported = susfsInfo.status == SusfsStatus.Supported
-    val hookTypeLabel = remember(manualHookText, inlineHookText, TracepointHookText) {
+    val hookTypeLabel = remember(manualHookText, inlineHookText, tracepointHookText) {
         val localized = when (val rawType = Natives.getHookType()) {
             "Manual" -> manualHookText
-            "Tracepoint" -> TracepointHookText
+            "Tracepoint" -> tracepointHookText
             else -> rawType
         }
         localized.ifBlank { unknownHookText }
@@ -714,38 +712,30 @@ private fun rememberSusfsInfo(
     manualHookLabel: String,
     inlineHookLabel: String,
 ): SusfsInfoState {
-    val susfsInfo = remember { mutableStateOf(SusfsInfoState(status = SusfsStatus.Loading)) }
-
-    LaunchedEffect(manualHookLabel, inlineHookLabel) {
-        val info = withContext(Dispatchers.IO) {
-            runCatching {
-                val rawFeature = getSuSFSFeatures()
-                val supported = rawFeature.isNotEmpty() && !rawFeature.startsWith("[-]")
-                if (supported) {
-                    val version = getSuSFSVersion().trim()
-                    val hookLabel = when (val type = Natives.getHookType()) {
-                        "Manual" -> manualHookLabel
-                        "Inline" -> inlineHookLabel
-                        else -> type
-                    }.takeIf { it.isNotBlank() }?.let { "($it)" }.orEmpty()
-                    SusfsInfoState(
-                        status = SusfsStatus.Supported,
-                        detail = listOf(version, hookLabel)
-                            .filter { it.isNotBlank() }
-                            .joinToString(" ")
-                    )
-                } else {
-                    SusfsInfoState(
-                        status = SusfsStatus.Unsupported,
-                        detail = rawFeature
-                    )
-                }
-            }.getOrElse {
-                SusfsInfoState(status = SusfsStatus.Error)
+    return remember(manualHookLabel, inlineHookLabel) {
+        runCatching {
+            val supported = getSuSFSStatus().equals("true", ignoreCase = true)
+            if (supported) {
+                val version = getSuSFSVersion().trim()
+                val hookLabel = when (val type = Natives.getHookType()) {
+                    "Manual" -> manualHookLabel
+                    "Inline" -> inlineHookLabel
+                    else -> type
+                }.takeIf { it.isNotBlank() }?.let { "($it)" }.orEmpty()
+                SusfsInfoState(
+                    status = SusfsStatus.Supported,
+                    detail = listOf(version, hookLabel)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" ")
+                )
+            } else {
+                SusfsInfoState(
+                    status = SusfsStatus.Unsupported,
+                    detail = ""
+                )
             }
+        }.getOrElse {
+            SusfsInfoState(status = SusfsStatus.Error)
         }
-        susfsInfo.value = info
     }
-
-    return susfsInfo.value
 }

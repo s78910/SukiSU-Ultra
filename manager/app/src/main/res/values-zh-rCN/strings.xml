@@ -100,7 +100,6 @@
     <string name="app_profile_template_save_failed">模版保存失败</string>
     <string name="app_profile_template_import_empty">剪切板为空！</string>
     <string name="app_profile_affects_following_apps">影响以下应用</string>
-    <string name="module_changelog_failed">获取更新日志失败：%s</string>
     <string name="settings_check_update">检查更新</string>
     <string name="settings_check_update_summary">在应用启动后自动检查是否有最新版。</string>
     <string name="settings_module_check_update">检查模块更新</string>
@@ -399,6 +398,7 @@
     <string name="enable_log_feature_label">日志记录支持</string>
     <string name="hide_symbols_feature_label">隐藏 KSU SuSFS 符号</string>
     <string name="sus_kstat_feature_label">SuS Kstat 支持</string>
+    <string name="sus_map_feature_label">SUS Map 支持</string>
     <!-- 可切换状态 -->
     <string name="susfs_feature_configurable">可配置的 SuSFS 功能</string>
     <string name="susfs_enable_log_label">SuSFS 启用日志</string>
@@ -471,8 +471,6 @@
     <string name="delete">删除</string>
     <string name="update">更新</string>
     <string name="susfs_update_full_clone">Susfs 完整克隆更新</string>
-    <string name="umount_zygote_iso_service">卸载 Zygote 隔离服务</string>
-    <string name="umount_zygote_iso_service_description">启用此选项将在系统启动时卸载 Zygote 隔离服务挂载点</string>
     <string name="app_paths_section">应用路径</string>
     <string name="other_paths_section">其他路径</string>
     <string name="add_custom_path">其他</string>

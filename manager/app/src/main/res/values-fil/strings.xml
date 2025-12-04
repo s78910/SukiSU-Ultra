@@ -99,7 +99,6 @@
     <string name="app_profile_template_sync">I-sync ang mga online template</string>
     <string name="app_profile_template_save_failed">Nabigong i-save ang template</string>
     <string name="app_profile_template_import_empty">Walang laman ang clipboard!</string>
-    <string name="module_changelog_failed">Nabigong kunin ang mga pagbabago: %s</string>
     <string name="settings_check_update">Tumingin para sa mga update</string>
     <string name="settings_check_update_summary">Awtomatikong tumingin para sa mga update kapag binubuksan ang app</string>
     <string name="grant_root_failed">Nabigong ibigay ang root!</string>

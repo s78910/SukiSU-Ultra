@@ -84,7 +84,6 @@
     <string name="require_kernel_version">현재 KernelSU %d 버전은 매니저가 정상 작동하기에 너무 낮습니다. %d 버전 이상으로 업그레이드하세요!</string>
     <string name="action">액션</string>
     <string name="settings_uninstall_temporary">임시 제거</string>
-    <string name="module_changelog_failed">업데이트 내역 불러오기 실패: %s</string>
     <string name="open">열기</string>
     <string name="install_inactive_slot_warning">재부팅 후 기기가 **강제로** 비활성 슬롯으로 부팅합니다!\nOTA가 완료된 후에만 이 옵션을 사용하세요.\n계속할까요?</string>
     <string name="flash_success">플래싱 성공</string>

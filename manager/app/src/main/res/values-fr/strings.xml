@@ -78,7 +78,6 @@
     <string name="app_profile_template_id_exist">L\'ID du modèle existe déjà !</string>
     <string name="module_changelog">Journal des modifications</string>
     <string name="app_profile_import_from_clipboard">Importer à partir du presse-papiers</string>
-    <string name="module_changelog_failed">Échec de récupération du journal des modifications : %s</string>
     <string name="app_profile_template_name">Nom</string>
     <string name="app_profile_template_id_invalid">ID de modèle invalide</string>
     <string name="app_profile_template_sync">Synchroniser les modèles en ligne</string>

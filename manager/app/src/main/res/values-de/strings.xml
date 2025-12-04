@@ -78,7 +78,6 @@
     <string name="app_profile_template_export_empty">Kann lokale Vorlage nicht finden!</string>
     <string name="app_profile_template_id_exist">Vorlagen-ID existiert bereits!</string>
     <string name="app_profile_import_from_clipboard">Aus Zwischenablage importieren</string>
-    <string name="module_changelog_failed">Konnte Veränderungs-Protokoll nicht laden: %s</string>
     <string name="app_profile_template_name">Name</string>
     <string name="app_profile_template_id_invalid">Ungültige Vorlagen-ID</string>
     <string name="app_profile_template_sync">Online-Vorlagen synchronisieren</string>

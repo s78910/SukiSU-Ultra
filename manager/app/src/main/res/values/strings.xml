@@ -104,7 +104,6 @@
     <string name="app_profile_template_save_failed">Failed to save template</string>
     <string name="app_profile_template_import_empty">Clipboard is empty!</string>
     <string name="app_profile_affects_following_apps">Affects the following apps</string>
-    <string name="module_changelog_failed">Fetch changelog failed: %s</string>
     <string name="settings_check_update">Check for updates</string>
     <string name="settings_check_update_summary">Automatically check for updates when opening the app.</string>
     <string name="settings_module_check_update">Check for module updates</string>
@@ -407,6 +406,7 @@
     <string name="enable_log_feature_label">Logging Support</string>
     <string name="hide_symbols_feature_label">Hide KSU SUSFS Symbols</string>
     <string name="sus_kstat_feature_label">SUS Kstat Support</string>
+    <string name="sus_map_feature_label">SUS Map Support</string>
     <!-- 可切换状态 -->
     <string name="susfs_feature_configurable">Configurable SuSFS Features</string>
     <string name="susfs_enable_log_label">SuSFS Enable Log</string>
@@ -478,8 +478,6 @@
     <string name="delete">Delete</string>
     <string name="update">Update</string>
     <string name="susfs_update_full_clone">Susfs update full clone</string>
-    <string name="umount_zygote_iso_service">Unmount Zygote Isolation Service</string>
-    <string name="umount_zygote_iso_service_description">Enable this option to unmount Zygote isolation service mount points at system startup</string>
     <string name="app_paths_section">Application Path</string>
     <string name="other_paths_section">Other paths</string>
     <string name="add_custom_path">Other</string>

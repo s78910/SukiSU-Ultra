@@ -78,7 +78,6 @@
     <string name="app_profile_template_export_empty">لا يمكن العثور على القالب المحلي للتصدير!</string>
     <string name="app_profile_template_id_exist">معرف القالب موجود بالفعل!</string>
     <string name="app_profile_import_from_clipboard">استيراد من الحافظة</string>
-    <string name="module_changelog_failed">فشل في جلب سجل التغيير: %s</string>
     <string name="app_profile_template_name">الاسم</string>
     <string name="app_profile_template_id_invalid">معرف القالب غير صالح</string>
     <string name="app_profile_template_sync">مزامنة القوالب عبر الإنترنت</string>

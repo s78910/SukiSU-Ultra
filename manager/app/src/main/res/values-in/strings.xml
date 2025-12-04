@@ -79,7 +79,6 @@
     <string name="app_profile_template_export_empty">Tidak ditemukan templat lokal untuk diekspor!</string>
     <string name="app_profile_template_id_exist">ID templat sudah ada!</string>
     <string name="app_profile_import_from_clipboard">Impor dari papan klip</string>
-    <string name="module_changelog_failed">Gagal mengambil Changelog: %s</string>
     <string name="app_profile_template_name">Nama</string>
     <string name="app_profile_template_id_invalid">ID templat tidak valid</string>
     <string name="app_profile_template_sync">Sinkronkan templat daring</string>

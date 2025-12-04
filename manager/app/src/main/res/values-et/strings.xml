@@ -29,7 +29,6 @@
     <string name="app_profile_template_id_exist">Malli ID juba eksisteerib!</string>
     <string name="app_profile_export_to_clipboard">Ekspordi lõikelauale</string>
     <string name="app_profile_template_sync">Sünkrooni võrgumallid</string>
-    <string name="module_changelog_failed">Muudatuste logi hankimine ebaõnnestus: %s</string>
     <string name="home">Kodu</string>
     <string name="home_click_to_install">Klõpsa paigaldamiseks</string>
     <string name="home_not_installed">Pole paigaldatud</string>

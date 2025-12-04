@@ -78,7 +78,6 @@
     <string name="app_profile_template_export_empty">本地沒有模板可匯出！</string>
     <string name="app_profile_template_id_exist">模板 ID 已存在！</string>
     <string name="app_profile_import_from_clipboard">從剪貼簿匯入</string>
-    <string name="module_changelog_failed">獲取更新日誌失敗：%s</string>
     <string name="app_profile_template_name">名字</string>
     <string name="app_profile_template_id_invalid">模板 ID 無效</string>
     <string name="app_profile_template_sync">同步在線規則</string>

@@ -79,7 +79,6 @@
     <string name="app_profile_template_export_empty">エクスポートするローカル テンプレートが見つかりません！</string>
     <string name="app_profile_template_id_exist">テンプレート ID はすでに存在します！</string>
     <string name="app_profile_import_from_clipboard">クリップボードからインポート</string>
-    <string name="module_changelog_failed">変更ログの取得に失敗しました: %s</string>
     <string name="app_profile_template_name">名前</string>
     <string name="app_profile_template_id_invalid">無効なテンプレート ID</string>
     <string name="app_profile_template_sync">オンラインテンプレートの同期</string>
