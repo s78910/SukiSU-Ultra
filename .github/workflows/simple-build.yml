@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -25,39 +27,44 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Check secrets
+      - name: Download official APK and extract libs
         run: |
-          echo "Checking secrets..."
-          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
-            echo "KEYSTORE: SET (length: ${#KEYSTORE_B64})"
-          else
-            echo "KEYSTORE: NOT SET"
-          fi
-          if [ ! -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
-            echo "KEYSTORE_PASSWORD: SET"
-          else
-            echo "KEYSTORE_PASSWORD: NOT SET"
-          fi
-          if [ ! -z "${{ secrets.KEY_ALIAS }}" ]; then
-            echo "KEY_ALIAS: SET"
-          else
-            echo "KEY_ALIAS: NOT SET"
-          fi
-          if [ ! -z "${{ secrets.KEY_PASSWORD }}" ]; then
-            echo "KEY_PASSWORD: SET"
-          else
-            echo "KEY_PASSWORD: NOT SET"
-          fi
-        env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE }}
+          cd manager
+          # Download official release APK
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          # Extract native libs
+          unzip -o official.apk -d extracted
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          mkdir -p app/src/main/jniLibs/x86_64
+          mkdir -p app/src/main/jniLibs/armeabi-v7a
+          cp -f extracted/lib/arm64-v8a/*.so app/src/main/jniLibs/arm64-v8a/
+          cp -f extracted/lib/x86_64/*.so app/src/main/jniLibs/x86_64/
+          cp -f extracted/lib/armeabi-v7a/*.so app/src/main/jniLibs/armeabi-v7a/
+          ls -la app/src/main/jniLibs/*/
+          rm -rf official.apk extracted
 
-      - name: Build debug APK (no signing)
+      - name: Write key
         working-directory: ./manager
         run: |
-          ./gradlew clean assembleDebug --stacktrace 2>&1 | tail -200
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            {
+              echo KEYSTORE_PASSWORD='${{ secrets.KEYSTORE_PASSWORD }}'
+              echo KEY_ALIAS='${{ secrets.KEY_ALIAS }}'
+              echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}'
+              echo KEYSTORE_FILE='key.jks'
+            } >> gradle.properties
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+            echo "Custom signing configured"
+          else
+            echo "No signing key, using debug"
+          fi
 
-      - name: Upload debug APK
+      - name: Build release APK
+        working-directory: ./manager
+        run: ./gradlew clean assembleRelease --stacktrace 2>&1 | tail -300
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Debug-APK
-          path: manager/app/build/outputs/apk/debug/*.apk
+          name: Manager-simple-${{ github.ref_name }}
+          path: manager/app/build/outputs/apk/release/*.apk
