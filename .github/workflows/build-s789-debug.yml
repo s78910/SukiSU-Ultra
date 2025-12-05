@@ -1,0 +1,75 @@
+name: Build S789 Debug
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "custom-package" ]
+    paths:
+      - '.github/workflows/build-s789-debug.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: custom-package
+
+      - name: Download official libs
+        run: |
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          unzip -q official.apk 'lib/*' -d libs
+          
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
+          
+          cp libs/lib/arm64-v8a/* manager/app/src/main/jniLibs/arm64-v8a/
+          cp libs/lib/x86_64/* manager/app/src/main/jniLibs/x86_64/
+          cp libs/lib/armeabi-v7a/* manager/app/src/main/jniLibs/armeabi-v7a/
+          
+          echo "Libraries copied:"
+          find manager/app/src/main/jniLibs -name "*.so"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Debug APK (no custom signing)
+        working-directory: ./manager
+        run: |
+          echo "构建 Debug APK（使用默认签名，先确保能编译）"
+          
+          ./gradlew clean assembleDebug --stacktrace --info 2>&1 | tail -n 500
+          
+          echo "Output:"
+          ls -lh app/build/outputs/apk/debug/ || echo "No debug output"
+
+      - name: Check if build succeeded
+        run: |
+          if [ -f "manager/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "✓ Debug APK 构建成功！"
+            ls -lh manager/app/build/outputs/apk/debug/app-debug.apk
+          else
+            echo "✗ 构建失败，检查完整输出"
+            echo "尝试查找任何 APK:"
+            find manager/app/build -name "*.apk" -exec ls -lh {} \;
+            exit 1
+          fi
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-Debug-APK
+          path: manager/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
