@@ -568,31 +568,6 @@ fun getSuSFSFeatures(): String {
     val cmd = "${getKsuDaemonPath()} susfs features"
     return runCmd(shell, cmd)
 }
-
-fun getZygiskImplement(): String {
-    val shell = getRootShell()
-
-    val zygiskModuleIds = listOf(
-        "zygisksu",
-        "rezygisk",
-        "shirokozygisk"
-    )
-
-    for (moduleId in zygiskModuleIds) {
-        val modulePath = "/data/adb/modules/$moduleId"
-        when {
-            ShellUtils.fastCmdResult(shell, "test -f $modulePath/module.prop && test ! -f $modulePath/disable") -> {
-                val result = ShellUtils.fastCmd(shell, "grep '^name=' $modulePath/module.prop | cut -d'=' -f2")
-                Log.i(TAG, "Zygisk implement: $result")
-                return result
-            }
-        }
-    }
-
-    Log.i(TAG, "Zygisk implement: None")
-    return "None"
-}
-
 fun getUidScannerDaemonPath(): String {
     return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libuid_scanner.so"
 }
