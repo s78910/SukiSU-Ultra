@@ -5,21 +5,29 @@ on:
     branches: [ "main", "dev", "ci", "miuix", "custom-package" ]
     paths:
       - '.github/workflows/build-manager.yml'
+      - '.github/workflows/build-lkm.yml'
       - 'manager/**'
+      - 'kernel/**'
       - 'userspace/ksud/**'
       - 'userspace/user_scanner/**'
   pull_request:
     branches: [ "main", "dev", "miuix" ]
     paths:
       - '.github/workflows/build-manager.yml'
+      - '.github/workflows/build-lkm.yml'
       - 'manager/**'
+      - 'kernel/**'
       - 'userspace/ksud/**'
       - 'userspace/user_scanner/**'
   workflow_call:
   workflow_dispatch:
 
 jobs:
+  build-lkm:
+    uses: ./.github/workflows/build-lkm.yml
+    secrets: inherit
   build-user_scanner:
+    needs: build-lkm
     strategy:
       matrix:
         include:
@@ -31,6 +39,7 @@ jobs:
       os: ${{ matrix.os }}
 
   build-ksud:
+    needs: build-lkm
     strategy:
       matrix:
         include:
@@ -44,10 +53,9 @@ jobs:
     with:
       target: ${{ matrix.target }}
       os: ${{ matrix.os }}
-      pack_lkm: false
 
   build-manager:
-    needs: [build-ksud, build-user_scanner]
+    needs: build-ksud
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -109,18 +117,6 @@ jobs:
         with:
           name: ksud-armv7-linux-androideabi
           path: .
-
-      - name: Debug - List files
-        run: |
-          echo "=== Current dir (manager) ==="
-          pwd
-          ls -la
-          echo "=== Parent dir ==="
-          ls -la ..
-          echo "=== Looking for ksud ==="
-          find .. -name "ksud" -type f 2>/dev/null || true
-          echo "=== Looking for uid_scanner ==="
-          find .. -name "uid_scanner" -type f 2>/dev/null || true
   
       - name: Copy ksud to app jniLibs
         run: |
