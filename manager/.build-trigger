@@ -1,0 +1,4 @@
+# Build trigger file
+# Triggered at: 2025-12-05 10:03 UTC+8
+# Purpose: Test custom signing certificate
+build_id=sign_test_001
