@@ -1,0 +1,156 @@
+name: Build Custom Simple
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "custom-package" ]
+    paths:
+      - '.github/workflows/build-custom-simple.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout custom-package branch
+        uses: actions/checkout@v4
+        with:
+          ref: custom-package
+          fetch-depth: 0
+
+      - name: Download official native libs
+        run: |
+          echo "=== 下载官方预编译库 ==="
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          
+          echo "=== 提取 native 库 ==="
+          unzip -q official.apk 'lib/*' -d extracted
+          
+          echo "=== 复制到项目 ==="
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
+          
+          cp extracted/lib/arm64-v8a/*.so manager/app/src/main/jniLibs/arm64-v8a/ || echo "arm64 libs not found"
+          cp extracted/lib/x86_64/*.so manager/app/src/main/jniLibs/x86_64/ || echo "x86_64 libs not found"
+          cp extracted/lib/armeabi-v7a/*.so manager/app/src/main/jniLibs/armeabi-v7a/ || echo "armeabi libs not found"
+          
+          echo "=== 库文件列表 ==="
+          ls -lah manager/app/src/main/jniLibs/*/ || echo "No libs copied"
+          
+          echo "✓ Native 库准备完成"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Configure signing
+        working-directory: ./manager
+        run: |
+          echo "=== 配置签名 ==="
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks || { echo "Base64 decode failed"; exit 1; }
+            ls -lh key.jks
+            
+            cat >> gradle.properties << EOF
+          KEYSTORE_FILE=key.jks
+          KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
+            
+            echo "✓ 签名配置完成"
+            cat gradle.properties
+          else
+            echo "⚠ 未配置签名密钥"
+            exit 1
+          fi
+
+      - name: Build APK
+        working-directory: ./manager
+        run: |
+          echo "=== 开始构建 ==="
+          ./gradlew clean assembleRelease --stacktrace --info 2>&1 | tail -n 200
+          
+          echo "=== 构建结果 ==="
+          ls -lh app/build/outputs/apk/release/ || echo "No APK found"
+
+      - name: Extract certificate info
+        if: success()
+        run: |
+          echo "=== 安装证书提取工具 ==="
+          pip3 install cryptography
+          
+          echo "=== 创建提取脚本 ==="
+          cat > extract_cert.py << 'EOF'
+          #!/usr/bin/env python3
+          import sys, zipfile, hashlib, os
+          from cryptography import x509
+          from cryptography.hazmat.backends import default_backend
+          
+          apk_dir = "manager/app/build/outputs/apk/release/"
+          apk_files = [f for f in os.listdir(apk_dir) if f.endswith('.apk')]
+          
+          if not apk_files:
+              print("错误：未找到 APK 文件")
+              sys.exit(1)
+          
+          apk_path = os.path.join(apk_dir, apk_files[0])
+          print(f"分析 APK: {apk_path}")
+          
+          with zipfile.ZipFile(apk_path, 'r') as apk:
+              for name in apk.namelist():
+                  if name.startswith('META-INF/') and (name.endswith('.RSA') or name.endswith('.DSA') or name.endswith('.EC')):
+                      cert_data = apk.read(name)
+                      cert = x509.load_der_x509_certificate(cert_data, default_backend())
+                      cert_bytes = cert.public_bytes(encoding=x509.Encoding.DER)
+                      sha256 = hashlib.sha256(cert_bytes).hexdigest()
+                      size = len(cert_bytes)
+                      
+                      print("\n" + "="*50)
+                      print("S789 自定义签名证书信息")
+                      print("="*50)
+                      print(f"证书大小（十进制）: {size}")
+                      print(f"证书大小（十六进制）: 0x{size:x}")
+                      print(f"SHA256 哈希: {sha256}")
+                      print("="*50)
+                      print("\n配置到内核动态管理器:")
+                      print(f"  大小: {size}")
+                      print(f"  哈希: {sha256}")
+                      print("="*50)
+                      
+                      with open("signature_info.txt", "w") as f:
+                          f.write(f"证书大小: {size} (0x{size:x})\n")
+                          f.write(f"SHA256: {sha256}\n")
+                          f.write(f"\n内核配置命令:\n")
+                          f.write(f"echo '{size}:{sha256}' > /data/adb/ksu/dynamic_manager\n")
+                      
+                      sys.exit(0)
+          
+          print("错误：未找到签名证书")
+          sys.exit(1)
+          EOF
+          
+          echo "=== 提取证书信息 ==="
+          python3 extract_cert.py
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-Manager-Custom
+          path: manager/app/build/outputs/apk/release/*.apk
+
+      - name: Upload signature info
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Signature-Info
+          path: signature_info.txt
