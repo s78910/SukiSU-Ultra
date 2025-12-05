@@ -1,0 +1,107 @@
+name: Build APK Only (Fast)
+
+on:
+  push:
+    branches: [ "main", "custom-package" ]
+    paths:
+      - '.github/workflows/build-apk-only.yml'
+      - 'manager/.build-apk-trigger'
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./manager
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download prebuilt libs from official
+        run: |
+          cd ..
+          echo "Downloading prebuilt libraries from official SukiSU-Ultra..."
+          
+          mkdir -p aarch64-linux-android/release
+          mkdir -p x86_64-linux-android/release
+          mkdir -p armv7-linux-androideabi/release
+          mkdir -p arm64-v8a
+          mkdir -p x86_64
+          mkdir -p armeabi-v7a
+          
+          REPO="SukiSU-Ultra/SukiSU-Ultra"
+          
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/ksud-aarch64-linux-android.zip" -o ksud-arm64.zip || true
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/ksud-x86_64-linux-android.zip" -o ksud-x86_64.zip || true
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/ksud-armv7-linux-androideabi.zip" -o ksud-arm.zip || true
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/userscanner-all-linux-android.zip" -o userscanner.zip || true
+          
+          unzip -o ksud-arm64.zip -d aarch64-linux-android/release/ 2>/dev/null || echo "arm64 ksud download failed"
+          unzip -o ksud-x86_64.zip -d x86_64-linux-android/release/ 2>/dev/null || echo "x86_64 ksud download failed"
+          unzip -o ksud-arm.zip -d armv7-linux-androideabi/release/ 2>/dev/null || echo "arm ksud download failed"
+          unzip -o userscanner.zip 2>/dev/null || echo "userscanner download failed"
+          
+          echo "=== Downloaded files ==="
+          find . -name "ksud" -o -name "uid_scanner" 2>/dev/null || true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Write signing key
+        run: |
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            {
+              echo KEYSTORE_PASSWORD='${{ secrets.KEYSTORE_PASSWORD }}'
+              echo KEY_ALIAS='${{ secrets.KEY_ALIAS }}'
+              echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}'
+              echo KEYSTORE_FILE='key.jks'
+            } >> gradle.properties
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+            echo "Signing key configured!"
+          else
+            echo "No signing key found, will use debug signing"
+          fi
+
+      - name: Copy libs to jniLibs
+        run: |
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          mkdir -p app/src/main/jniLibs/x86_64
+          mkdir -p app/src/main/jniLibs/armeabi-v7a
+          
+          cp -f ../aarch64-linux-android/release/ksud app/src/main/jniLibs/arm64-v8a/libksud.so 2>/dev/null || echo "arm64 ksud not found"
+          cp -f ../x86_64-linux-android/release/ksud app/src/main/jniLibs/x86_64/libksud.so 2>/dev/null || echo "x86_64 ksud not found"
+          cp -f ../armv7-linux-androideabi/release/ksud app/src/main/jniLibs/armeabi-v7a/libksud.so 2>/dev/null || echo "arm ksud not found"
+          
+          cp -f ../arm64-v8a/uid_scanner app/src/main/jniLibs/arm64-v8a/libuid_scanner.so 2>/dev/null || echo "arm64 scanner not found"
+          cp -f ../x86_64/uid_scanner app/src/main/jniLibs/x86_64/libuid_scanner.so 2>/dev/null || echo "x86_64 scanner not found"
+          cp -f ../armeabi-v7a/uid_scanner app/src/main/jniLibs/armeabi-v7a/libuid_scanner.so 2>/dev/null || echo "arm scanner not found"
+          
+          echo "=== jniLibs contents ==="
+          find app/src/main/jniLibs -type f
+
+      - name: Apply custom modifications
+        run: |
+          sed -i 's/<string name="app_name" translatable="false">SukiSU Ultra<\/string>/<string name="app_name" translatable="false">姜太公钓瑜<\/string>/g' app/src/main/res/values/strings.xml
+          echo "Applied title modification"
+
+      - name: Build APK
+        run: ./gradlew clean assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SukiSU-Manager-${{ github.ref_name }}
+          path: manager/app/build/outputs/apk/release/*.apk
