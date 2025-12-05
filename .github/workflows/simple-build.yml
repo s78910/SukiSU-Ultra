@@ -1,0 +1,60 @@
+name: Simple Build Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Check secrets
+        run: |
+          echo "Checking secrets..."
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "KEYSTORE: SET (length: ${#KEYSTORE_B64})"
+          else
+            echo "KEYSTORE: NOT SET"
+          fi
+          if [ ! -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
+            echo "KEYSTORE_PASSWORD: SET"
+          else
+            echo "KEYSTORE_PASSWORD: NOT SET"
+          fi
+          if [ ! -z "${{ secrets.KEY_ALIAS }}" ]; then
+            echo "KEY_ALIAS: SET"
+          else
+            echo "KEY_ALIAS: NOT SET"
+          fi
+          if [ ! -z "${{ secrets.KEY_PASSWORD }}" ]; then
+            echo "KEY_PASSWORD: SET"
+          else
+            echo "KEY_PASSWORD: NOT SET"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE }}
+
+      - name: Build debug APK (no signing)
+        working-directory: ./manager
+        run: |
+          ./gradlew clean assembleDebug --stacktrace 2>&1 | tail -100
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Debug-APK
+          path: manager/app/build/outputs/apk/debug/*.apk
