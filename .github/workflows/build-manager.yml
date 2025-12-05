@@ -77,9 +77,6 @@ jobs:
               echo KEYSTORE_FILE='key.jks'
             } >> gradle.properties
             echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
-            echo "Custom signing key configured!"
-          else
-            echo "No signing key found, using debug signing"
           fi
 
       - name: Setup Java
