@@ -1,0 +1,178 @@
+name: Build S789 Xposed Module
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '.github/workflows/build-xposed-module.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Create module project
+        run: |
+          mkdir -p app/src/main/java/com/s789/xposed
+          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/res/values
+          
+          # MainHook.java
+          cat > app/src/main/java/com/s789/xposed/MainHook.java << 'EOF'
+          package com.s789.xposed;
+
+          import de.robv.android.xposed.IXposedHookLoadPackage;
+          import de.robv.android.xposed.XC_MethodHook;
+          import de.robv.android.xposed.XposedBridge;
+          import de.robv.android.xposed.XposedHelpers;
+          import de.robv.android.xposed.callbacks.XC_LoadPackage;
+
+          public class MainHook implements IXposedHookLoadPackage {
+              private static final String TAG = "S789-Xposed";
+              private static final String TARGET_PACKAGE = "com.sukisu.ultra";
+
+              @Override
+              public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
+                  if (!lpparam.packageName.equals(TARGET_PACKAGE)) {
+                      return;
+                  }
+                  XposedBridge.log(TAG + ": Hooking SukiSU Manager");
+                  
+                  // Force simple mode ON
+                  try {
+                      XposedHelpers.findAndHookMethod(
+                          android.content.SharedPreferences.class,
+                          "getBoolean",
+                          String.class, boolean.class,
+                          new XC_MethodHook() {
+                              @Override
+                              protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                  String key = (String) param.args[0];
+                                  if ("is_simple_mode".equals(key)) {
+                                      param.setResult(true);
+                                  }
+                              }
+                          }
+                      );
+                      XposedBridge.log(TAG + ": Simple mode hook OK");
+                  } catch (Throwable t) {
+                      XposedBridge.log(TAG + ": Hook failed: " + t);
+                  }
+              }
+          }
+          EOF
+
+          # xposed_init
+          echo "com.s789.xposed.MainHook" > app/src/main/assets/xposed_init
+
+          # AndroidManifest.xml
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.s789.xposed">
+              <application android:label="S789 UI Mod">
+                  <meta-data android:name="xposedmodule" android:value="true" />
+                  <meta-data android:name="xposeddescription" android:value="SukiSU UI: Simple mode ON" />
+                  <meta-data android:name="xposedminversion" android:value="93" />
+                  <meta-data android:name="xposedscope" android:resource="@array/xposed_scope" />
+              </application>
+          </manifest>
+          EOF
+
+          # arrays.xml
+          cat > app/src/main/res/values/arrays.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string-array name="xposed_scope">
+                  <item>com.sukisu.ultra</item>
+              </string-array>
+          </resources>
+          EOF
+
+          # build.gradle (app)
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.s789.xposed'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.s789.xposed"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+          }
+          dependencies {
+              compileOnly 'de.robv.android.xposed:api:82'
+          }
+          EOF
+
+          # build.gradle (root)
+          cat > build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.1.0' apply false
+          }
+          EOF
+
+          # settings.gradle
+          cat > settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven { url 'https://api.xposed.info/' }
+              }
+          }
+          rootProject.name = "S789-Xposed"
+          include ':app'
+          EOF
+
+          # gradle.properties
+          echo "android.useAndroidX=true" > gradle.properties
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Module
+        run: |
+          chmod +x gradlew 2>/dev/null || ./gradle wrapper
+          ./gradlew assembleRelease --no-daemon || ./gradlew assembleDebug --no-daemon
+          
+          echo "Build output:"
+          find . -name "*.apk" -exec ls -lh {} \;
+
+      - name: Upload Module
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-Xposed-Module
+          path: app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
