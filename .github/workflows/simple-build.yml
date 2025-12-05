@@ -1,6 +1,9 @@
 name: Simple Build Test
 
 on:
+  push:
+    paths:
+      - '.github/workflows/simple-build.yml'
   workflow_dispatch:
 
 jobs:
@@ -51,7 +54,7 @@ jobs:
       - name: Build debug APK (no signing)
         working-directory: ./manager
         run: |
-          ./gradlew clean assembleDebug --stacktrace 2>&1 | tail -100
+          ./gradlew clean assembleDebug --stacktrace 2>&1 | tail -200
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
