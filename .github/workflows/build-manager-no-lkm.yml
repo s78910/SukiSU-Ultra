@@ -1,0 +1,79 @@
+name: Build Manager (No LKM)
+
+on:
+  push:
+    branches: [ "main", "custom-package" ]
+    paths:
+      - '.github/workflows/build-manager-no-lkm.yml'
+  workflow_dispatch:
+
+jobs:
+  build-manager:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download official APK
+        run: |
+          cd $GITHUB_WORKSPACE
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          unzip -o official.apk 'lib/*' -d extracted
+          
+      - name: Copy native libs
+        run: |
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
+          cp -f extracted/lib/arm64-v8a/*.so manager/app/src/main/jniLibs/arm64-v8a/
+          cp -f extracted/lib/x86_64/*.so manager/app/src/main/jniLibs/x86_64/
+          cp -f extracted/lib/armeabi-v7a/*.so manager/app/src/main/jniLibs/armeabi-v7a/
+          ls -lah manager/app/src/main/jniLibs/*/
+
+      - name: Write signing key
+        working-directory: ./manager
+        run: |
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            {
+              echo KEYSTORE_PASSWORD='${{ secrets.KEYSTORE_PASSWORD }}'
+              echo KEY_ALIAS='${{ secrets.KEY_ALIAS }}'
+              echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}'
+              echo KEYSTORE_FILE='key.jks'
+            } >> gradle.properties
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+            echo "✓ 自定义签名已配置"
+          else
+            echo "⚠ 无签名密钥,使用调试签名"
+          fi
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK
+        working-directory: ./manager
+        run: |
+          echo "开始构建..."
+          ./gradlew clean assembleRelease --stacktrace
+          echo "构建完成！"
+
+      - name: List APK
+        run: |
+          echo "生成的 APK:"
+          ls -lh manager/app/build/outputs/apk/release/
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Manager-${{ github.ref_name }}-nolkm
+          path: manager/app/build/outputs/apk/release/*.apk
