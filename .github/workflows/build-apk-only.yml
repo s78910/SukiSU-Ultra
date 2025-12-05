@@ -1,16 +1,12 @@
 name: Build APK Only (Fast)
 
 on:
+  push:
+    branches: [ "main", "custom-package" ]
+    paths:
+      - '.github/workflows/build-apk-only.yml'
+      - 'manager/.build-apk-trigger'
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to build'
-        required: true
-        default: 'main'
-        type: choice
-        options:
-          - main
-          - custom-package
 
 jobs:
   build-apk:
@@ -23,16 +19,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0
 
       - name: Download prebuilt libs from official
         run: |
           cd ..
-          # Download latest release artifacts from official repo
           echo "Downloading prebuilt libraries from official SukiSU-Ultra..."
           
-          # Create directories
           mkdir -p aarch64-linux-android/release
           mkdir -p x86_64-linux-android/release
           mkdir -p armv7-linux-androideabi/release
@@ -40,26 +33,19 @@ jobs:
           mkdir -p x86_64
           mkdir -p armeabi-v7a
           
-          # Download ksud binaries from latest workflow
           REPO="SukiSU-Ultra/SukiSU-Ultra"
           
-          # Get latest successful run ID
-          RUN_ID=$(curl -s "https://api.github.com/repos/$REPO/actions/workflows/build-manager.yml/runs?status=success&per_page=1" | jq -r '.workflow_runs[0].id')
-          echo "Latest successful run: $RUN_ID"
+          # Use nightly.link to download latest artifacts
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/ksud-aarch64-linux-android.zip" -o ksud-arm64.zip || true
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/ksud-x86_64-linux-android.zip" -o ksud-x86_64.zip || true
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/ksud-armv7-linux-androideabi.zip" -o ksud-arm.zip || true
+          curl -sL "https://nightly.link/$REPO/workflows/build-manager/main/userscanner-all-linux-android.zip" -o userscanner.zip || true
           
-          # Download artifacts
-          curl -sL "https://nightly.link/$REPO/actions/runs/$RUN_ID/ksud-aarch64-linux-android.zip" -o ksud-arm64.zip || true
-          curl -sL "https://nightly.link/$REPO/actions/runs/$RUN_ID/ksud-x86_64-linux-android.zip" -o ksud-x86_64.zip || true
-          curl -sL "https://nightly.link/$REPO/actions/runs/$RUN_ID/ksud-armv7-linux-androideabi.zip" -o ksud-arm.zip || true
-          curl -sL "https://nightly.link/$REPO/actions/runs/$RUN_ID/userscanner-all-linux-android.zip" -o userscanner.zip || true
+          unzip -o ksud-arm64.zip -d aarch64-linux-android/release/ 2>/dev/null || echo "arm64 ksud download failed"
+          unzip -o ksud-x86_64.zip -d x86_64-linux-android/release/ 2>/dev/null || echo "x86_64 ksud download failed"
+          unzip -o ksud-arm.zip -d armv7-linux-androideabi/release/ 2>/dev/null || echo "arm ksud download failed"
+          unzip -o userscanner.zip 2>/dev/null || echo "userscanner download failed"
           
-          # Extract if downloaded
-          if [ -f ksud-arm64.zip ]; then unzip -o ksud-arm64.zip -d aarch64-linux-android/release/ || true; fi
-          if [ -f ksud-x86_64.zip ]; then unzip -o ksud-x86_64.zip -d x86_64-linux-android/release/ || true; fi
-          if [ -f ksud-arm.zip ]; then unzip -o ksud-arm.zip -d armv7-linux-androideabi/release/ || true; fi
-          if [ -f userscanner.zip ]; then unzip -o userscanner.zip || true; fi
-          
-          # List downloaded files
           echo "=== Downloaded files ==="
           find . -name "ksud" -o -name "uid_scanner" 2>/dev/null || true
 
@@ -85,9 +71,9 @@ jobs:
               echo KEYSTORE_FILE='key.jks'
             } >> gradle.properties
             echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
-            echo "Signing key configured!"
+            echo "✅ Signing key configured!"
           else
-            echo "No signing key found, will use debug signing"
+            echo "⚠️ No signing key found, will use debug signing"
           fi
 
       - name: Copy libs to jniLibs
@@ -96,12 +82,10 @@ jobs:
           mkdir -p app/src/main/jniLibs/x86_64
           mkdir -p app/src/main/jniLibs/armeabi-v7a
           
-          # Copy ksud
           cp -f ../aarch64-linux-android/release/ksud app/src/main/jniLibs/arm64-v8a/libksud.so 2>/dev/null || echo "arm64 ksud not found"
           cp -f ../x86_64-linux-android/release/ksud app/src/main/jniLibs/x86_64/libksud.so 2>/dev/null || echo "x86_64 ksud not found"
           cp -f ../armv7-linux-androideabi/release/ksud app/src/main/jniLibs/armeabi-v7a/libksud.so 2>/dev/null || echo "arm ksud not found"
           
-          # Copy user_scanner
           cp -f ../arm64-v8a/uid_scanner app/src/main/jniLibs/arm64-v8a/libuid_scanner.so 2>/dev/null || echo "arm64 scanner not found"
           cp -f ../x86_64/uid_scanner app/src/main/jniLibs/x86_64/libuid_scanner.so 2>/dev/null || echo "x86_64 scanner not found"
           cp -f ../armeabi-v7a/uid_scanner app/src/main/jniLibs/armeabi-v7a/libuid_scanner.so 2>/dev/null || echo "arm scanner not found"
@@ -110,11 +94,10 @@ jobs:
           find app/src/main/jniLibs -type f
 
       - name: Apply custom modifications
-        if: ${{ github.event.inputs.branch == 'main' }}
         run: |
           # Modify app title
           sed -i 's/<string name="app_name" translatable="false">SukiSU Ultra<\/string>/<string name="app_name" translatable="false">姜太公钓瑜<\/string>/g' app/src/main/res/values/strings.xml
-          echo "Applied title modification"
+          echo "✅ Applied title modification"
 
       - name: Build APK
         run: ./gradlew clean assembleRelease
@@ -122,5 +105,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SukiSU-Manager-${{ github.event.inputs.branch }}
+          name: SukiSU-Manager-${{ github.ref_name }}
           path: manager/app/build/outputs/apk/release/*.apk
