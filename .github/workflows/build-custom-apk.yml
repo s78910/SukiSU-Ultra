@@ -1,0 +1,131 @@
+name: Build Custom APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "custom-package" ]
+    paths:
+      - 'manager/**'
+      - '.github/workflows/build-custom-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download official libs
+        run: |
+          echo "下载官方预编译库..."
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          
+          echo "提取 native 库..."
+          unzip -q official.apk 'lib/*' -d extracted
+          
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
+          
+          cp -f extracted/lib/arm64-v8a/*.so manager/app/src/main/jniLibs/arm64-v8a/
+          cp -f extracted/lib/x86_64/*.so manager/app/src/main/jniLibs/x86_64/
+          cp -f extracted/lib/armeabi-v7a/*.so manager/app/src/main/jniLibs/armeabi-v7a/
+          
+          echo "✓ Native 库已就绪"
+          ls -lah manager/app/src/main/jniLibs/*/
+
+      - name: Setup signing
+        working-directory: ./manager
+        run: |
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            {
+              echo KEYSTORE_PASSWORD='${{ secrets.KEYSTORE_PASSWORD }}'
+              echo KEY_ALIAS='${{ secrets.KEY_ALIAS }}'
+              echo KEY_PASSWORD='${{ secrets.KEY_PASSWORD }}'
+              echo KEYSTORE_FILE='key.jks'
+            } >> gradle.properties
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+            echo "✓ 签名密钥已配置"
+          else
+            echo "⚠ 未配置签名密钥，将使用 debug 签名"
+          fi
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK
+        working-directory: ./manager
+        run: |
+          echo "开始构建自定义 APK..."
+          ./gradlew clean assembleRelease --stacktrace
+          echo "✓ 构建完成"
+
+      - name: List output
+        run: |
+          echo "生成的 APK："
+          ls -lh manager/app/build/outputs/apk/release/
+
+      - name: Extract certificate
+        run: |
+          echo "安装证书提取工具..."
+          pip3 install cryptography
+          
+          cat > extract_cert.py << 'EOF'
+#!/usr/bin/env python3
+import sys, zipfile, hashlib
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+
+apk_path = "manager/app/build/outputs/apk/release/" + [f for f in __import__('os').listdir("manager/app/build/outputs/apk/release/") if f.endswith('.apk')][0]
+print(f"APK: {apk_path}")
+
+with zipfile.ZipFile(apk_path, 'r') as apk:
+    for name in apk.namelist():
+        if name.startswith('META-INF/') and (name.endswith('.RSA') or name.endswith('.DSA') or name.endswith('.EC')):
+            cert_data = apk.read(name)
+            cert = x509.load_der_x509_certificate(cert_data, default_backend())
+            cert_bytes = cert.public_bytes(encoding=x509.Encoding.DER)
+            sha256 = hashlib.sha256(cert_bytes).hexdigest()
+            size = len(cert_bytes)
+            
+            print("\n=== 签名证书信息 ===")
+            print(f"证书大小（十进制）: {size}")
+            print(f"证书大小（十六进制）: 0x{size:x}")
+            print(f"SHA256 哈希: {sha256}")
+            print("\n=== 内核动态管理器配置 ===")
+            print(f"大小: {size}")
+            print(f"哈希: {sha256}")
+            
+            with open("signature_info.txt", "w") as f:
+                f.write(f"证书大小: {size} (0x{size:x})\n")
+                f.write(f"SHA256: {sha256}\n")
+            sys.exit(0)
+            
+print("未找到证书")
+sys.exit(1)
+EOF
+          
+          python3 extract_cert.py
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-Manager-Custom
+          path: manager/app/build/outputs/apk/release/*.apk
+
+      - name: Upload signature info
+        uses: actions/upload-artifact@v4
+        with:
+          name: Signature-Info
+          path: signature_info.txt
