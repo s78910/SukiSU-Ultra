@@ -5,29 +5,21 @@ on:
     branches: [ "main", "dev", "ci", "miuix", "custom-package" ]
     paths:
       - '.github/workflows/build-manager.yml'
-      - '.github/workflows/build-lkm.yml'
       - 'manager/**'
-      - 'kernel/**'
       - 'userspace/ksud/**'
       - 'userspace/user_scanner/**'
   pull_request:
     branches: [ "main", "dev", "miuix" ]
     paths:
       - '.github/workflows/build-manager.yml'
-      - '.github/workflows/build-lkm.yml'
       - 'manager/**'
-      - 'kernel/**'
       - 'userspace/ksud/**'
       - 'userspace/user_scanner/**'
   workflow_call:
   workflow_dispatch:
 
 jobs:
-  build-lkm:
-    uses: ./.github/workflows/build-lkm.yml
-    secrets: inherit
   build-user_scanner:
-    needs: build-lkm
     strategy:
       matrix:
         include:
@@ -39,7 +31,6 @@ jobs:
       os: ${{ matrix.os }}
 
   build-ksud:
-    needs: build-lkm
     strategy:
       matrix:
         include:
@@ -53,9 +44,10 @@ jobs:
     with:
       target: ${{ matrix.target }}
       os: ${{ matrix.os }}
+      pack_lkm: false
 
   build-manager:
-    needs: build-ksud
+    needs: [build-ksud, build-user_scanner]
     runs-on: ubuntu-latest
     defaults:
       run:
