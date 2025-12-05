@@ -416,8 +416,6 @@ enum Umount {
         /// mount point path
         mnt: String,
     },
-    /// Save current umount list to file
-    Save,
     /// Apply saved umount list from file to kernel
     Apply,
     /// Clear custom umount paths (wipe kernel list)
@@ -721,7 +719,6 @@ pub fn run() -> Result<()> {
         Commands::Umount { command } => match command {
             Umount::Add { mnt, flags } => ksucalls::umount_list_add(&mnt, flags),
             Umount::Remove { mnt } => ksucalls::umount_list_del(&mnt),
-            Umount::Save => umount::save_umount_config(),
             Umount::Apply => umount::apply_umount_config(),
             Umount::ClearCustom => umount::clear_umount_config(),
         },
