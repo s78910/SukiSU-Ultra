@@ -23,6 +23,7 @@ jobs:
     with:
       target: ${{ matrix.target }}
       os: ${{ matrix.os }}
+      pack_lkm: false
 
   build-user_scanner:
     strategy:
@@ -111,15 +112,15 @@ jobs:
               echo KEYSTORE_FILE='key.jks'
             } >> gradle.properties
             echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
-            echo "✅ Signing key configured!"
+            echo "Signing key configured!"
           else
-            echo "⚠️ No signing key found, will use debug signing"
+            echo "No signing key found, will use debug signing"
           fi
 
       - name: Apply custom modifications
         run: |
           sed -i 's/<string name="app_name" translatable="false">SukiSU Ultra<\/string>/<string name="app_name" translatable="false">姜太公钓瑜<\/string>/g' app/src/main/res/values/strings.xml
-          echo "✅ Applied title modification"
+          echo "Applied title modification"
 
       - name: Build APK
         run: ./gradlew clean assembleRelease
