@@ -1,0 +1,180 @@
+name: Build S789 Final
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "custom-package" ]
+    paths:
+      - '.github/workflows/build-s789-final.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout custom-package
+        uses: actions/checkout@v4
+        with:
+          ref: custom-package
+          fetch-depth: 1
+
+      - name: Download official native libs
+        run: |
+          echo "下载官方预编译库（完全跳过 LKM 和 ksud 构建）"
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          
+          echo "解压 lib 目录"
+          unzip -q official.apk 'lib/*' -d official_libs
+          
+          echo "复制到 jniLibs"
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
+          
+          cp official_libs/lib/arm64-v8a/* manager/app/src/main/jniLibs/arm64-v8a/
+          cp official_libs/lib/x86_64/* manager/app/src/main/jniLibs/x86_64/
+          cp official_libs/lib/armeabi-v7a/* manager/app/src/main/jniLibs/armeabi-v7a/
+          
+          echo "验证 native 库"
+          find manager/app/src/main/jniLibs -name "*.so" -exec ls -lh {} \;
+          
+          echo "✓ Native 库已就绪"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Configure custom signing
+        working-directory: ./manager
+        run: |
+          echo "配置自定义签名密钥"
+          
+          if [ -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "错误：未配置 KEYSTORE secret"
+            exit 1
+          fi
+          
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+          
+          if [ ! -f key.jks ]; then
+            echo "错误：keystore 解码失败"
+            exit 1
+          fi
+          
+          cat >> gradle.properties << EOF
+          KEYSTORE_FILE=key.jks
+          KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
+          
+          echo "✓ 签名配置完成"
+
+      - name: Build S789 custom Manager
+        working-directory: ./manager
+        run: |
+          echo "═══════════════════════════════════════"
+          echo "开始构建 S789 自定义 Manager"
+          echo "包含修改："
+          echo "  - 应用名：S789"
+          echo "  - 包名：com.s78910.onlyr"
+          echo "  - 简洁模式默认开启"
+          echo "  - 只显示 Home 和 SuperUser"
+          echo "═══════════════════════════════════════"
+          
+          ./gradlew clean assembleRelease --no-daemon --stacktrace
+          
+          echo "✓ 构建完成"
+          
+          echo "生成的 APK："
+          ls -lh app/build/outputs/apk/release/*.apk
+
+      - name: Verify APK content
+        run: |
+          APK_FILE=$(find manager/app/build/outputs/apk/release -name "*.apk" | head -1)
+          
+          echo "验证 APK 内容"
+          unzip -l "$APK_FILE" | grep -E "AndroidManifest.xml|libksud.so|libuid_scanner.so"
+          
+          echo "检查包名"
+          aapt dump badging "$APK_FILE" | grep package
+
+      - name: Extract certificate info
+        run: |
+          pip3 install cryptography
+          
+          APK_FILE=$(find manager/app/build/outputs/apk/release -name "*.apk" | head -1)
+          
+          cat > extract_cert.py << 'PYEOF'
+          import sys, zipfile, hashlib, os
+          from cryptography import x509
+          from cryptography.hazmat.backends import default_backend
+          
+          apk_dir = "manager/app/build/outputs/apk/release/"
+          apk_files = [f for f in os.listdir(apk_dir) if f.endswith('.apk')]
+          apk_path = os.path.join(apk_dir, apk_files[0])
+          
+          print(f"分析 APK: {apk_files[0]}")
+          
+          with zipfile.ZipFile(apk_path, 'r') as apk:
+              for name in apk.namelist():
+                  if name.startswith('META-INF/') and name.endswith(('.RSA', '.DSA', '.EC')):
+                      cert_data = apk.read(name)
+                      cert = x509.load_der_x509_certificate(cert_data, default_backend())
+                      cert_bytes = cert.public_bytes(encoding=x509.Encoding.DER)
+                      sha256 = hashlib.sha256(cert_bytes).hexdigest()
+                      size = len(cert_bytes)
+                      
+                      print("\n" + "="*60)
+                      print("S789 自定义签名证书信息")
+                      print("="*60)
+                      print(f"证书大小: {size} (0x{size:x})")
+                      print(f"SHA256: {sha256}")
+                      print("="*60)
+                      print("\n内核动态管理器配置:")
+                      print(f"大小: {size}")
+                      print(f"哈希: {sha256}")
+                      print("\n配置命令:")
+                      print(f'su -c "echo \'{size}:{sha256}\' > /data/adb/ksu/dynamic_manager"')
+                      print("="*60)
+                      
+                      with open("signature_info.txt", "w") as f:
+                          f.write(f"S789 Manager 签名证书信息\n")
+                          f.write(f"="*60 + "\n")
+                          f.write(f"证书大小: {size} (0x{size:x})\n")
+                          f.write(f"SHA256: {sha256}\n\n")
+                          f.write(f"内核动态管理器配置:\n")
+                          f.write(f"大小: {size}\n")
+                          f.write(f"哈希: {sha256}\n\n")
+                          f.write(f"配置命令:\n")
+                          f.write(f'su -c "echo \'{size}:{sha256}\' > /data/adb/ksu/dynamic_manager"\n')
+                      
+                      sys.exit(0)
+          
+          print("错误：未找到签名证书")
+          sys.exit(1)
+          PYEOF
+          
+          python3 extract_cert.py
+
+      - name: Upload S789 Manager APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-Manager-Custom
+          path: manager/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload signature info
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-Signature-Info
+          path: signature_info.txt
+          if-no-files-found: error
