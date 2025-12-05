@@ -1,0 +1,130 @@
+name: Build S789 No Modify
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '.github/workflows/build-s789-no-modify.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Download official native libs
+        run: |
+          echo "下载官方预编译库"
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          
+          unzip -q official.apk 'lib/*' -d official_libs
+          
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
+          
+          cp official_libs/lib/arm64-v8a/* manager/app/src/main/jniLibs/arm64-v8a/
+          cp official_libs/lib/x86_64/* manager/app/src/main/jniLibs/x86_64/
+          cp official_libs/lib/armeabi-v7a/* manager/app/src/main/jniLibs/armeabi-v7a/
+          
+          echo "✓ Native 库已就绪"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Configure custom signing
+        working-directory: ./manager
+        run: |
+          if [ -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "错误：未配置签名密钥"
+            exit 1
+          fi
+          
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+          
+          cat >> gradle.properties << EOF
+          KEYSTORE_FILE=key.jks
+          KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
+          
+          echo "✓ 自定义签名已配置"
+
+      - name: Build Manager (custom signing)
+        working-directory: ./manager
+        run: |
+          echo "构建原版 Manager + 自定义签名"
+          echo "（保持原包名、原应用名，仅签名不同）"
+          
+          ./gradlew clean assembleRelease --no-daemon --stacktrace
+          
+          echo "✓ 构建完成"
+          ls -lh app/build/outputs/apk/release/*.apk
+
+      - name: Extract certificate
+        run: |
+          pip3 install cryptography
+          
+          APK=$(find manager/app/build/outputs/apk/release -name "*.apk" | head -1)
+          
+          python3 << 'PYEOF'
+          import sys, zipfile, hashlib, os
+          from cryptography import x509
+          from cryptography.hazmat.backends import default_backend
+          
+          apk_dir = "manager/app/build/outputs/apk/release/"
+          apk_files = [f for f in os.listdir(apk_dir) if f.endswith('.apk')]
+          apk_path = os.path.join(apk_dir, apk_files[0])
+          
+          with zipfile.ZipFile(apk_path, 'r') as apk:
+              for name in apk.namelist():
+                  if name.startswith('META-INF/') and name.endswith(('.RSA', '.DSA', '.EC')):
+                      cert_data = apk.read(name)
+                      cert = x509.load_der_x509_certificate(cert_data, default_backend())
+                      cert_bytes = cert.public_bytes(encoding=x509.Encoding.DER)
+                      sha256 = hashlib.sha256(cert_bytes).hexdigest()
+                      size = len(cert_bytes)
+                      
+                      print(f"\n{'='*60}")
+                      print("自定义签名证书信息（原版Manager）")
+                      print(f"{'='*60}")
+                      print(f"证书大小: {size} (0x{size:x})")
+                      print(f"SHA256: {sha256}")
+                      print(f"{'='*60}\n")
+                      
+                      with open("signature_info.txt", "w") as f:
+                          f.write(f"证书大小: {size} (0x{size:x})\n")
+                          f.write(f"SHA256: {sha256}\n")
+                          f.write(f'\nsu -c "echo \'{size}:{sha256}\' > /data/adb/ksu/dynamic_manager"\n')
+                      
+                      sys.exit(0)
+          sys.exit(1)
+          PYEOF
+
+      - name: Upload Manager APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Manager-CustomSigning-NoModify
+          path: manager/app/build/outputs/apk/release/*.apk
+
+      - name: Upload signature info
+        uses: actions/upload-artifact@v4
+        with:
+          name: Signature-Info-NoModify
+          path: signature_info.txt
