@@ -1,0 +1,123 @@
+name: Resign Official APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/resign-apk.yml'
+
+jobs:
+  resign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download官方APK
+        run: |
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          echo "✓ 官方 APK 已下载"
+          ls -lh official.apk
+
+      - name: Setup签名环境
+        run: |
+          if [ ! -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "${{ secrets.KEYSTORE }}" | base64 -d > custom.keystore
+            echo "✓ Keystore 已配置"
+            echo "HAS_KEY=true" >> $GITHUB_ENV
+          else
+            echo "⚠ 未找到 KEYSTORE secret"
+            echo "HAS_KEY=false" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Java & Build Tools
+        if: env.HAS_KEY == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: 安装 apksigner
+        if: env.HAS_KEY == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apksigner
+          apksigner --version
+
+      - name: 重新签名APK
+        if: env.HAS_KEY == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "开始重新签名..."
+          apksigner sign \
+            --ks custom.keystore \
+            --ks-pass pass:"$KEYSTORE_PASSWORD" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass pass:"$KEY_PASSWORD" \
+            --out Manager_custom_signed.apk \
+            official.apk
+          echo "✓ 签名完成"
+          ls -lh Manager_custom_signed.apk
+
+      - name: 验证签名
+        if: env.HAS_KEY == 'true'
+        run: |
+          echo "验证签名..."
+          apksigner verify --print-certs Manager_custom_signed.apk
+          echo "✓ 签名有效"
+
+      - name: 提取证书哈希
+        if: env.HAS_KEY == 'true'
+        run: |
+          # 安装 Python 依赖
+          pip3 install cryptography
+          
+          # 创建证书提取脚本
+          cat > extract_cert.py << 'EOF'
+#!/usr/bin/env python3
+import sys, zipfile, struct, hashlib
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+
+apk_path = sys.argv[1]
+with zipfile.ZipFile(apk_path, 'r') as apk:
+    for name in apk.namelist():
+        if name.startswith('META-INF/') and (name.endswith('.RSA') or name.endswith('.DSA') or name.endswith('.EC')):
+            cert_data = apk.read(name)
+            cert = x509.load_der_x509_certificate(cert_data, default_backend())
+            cert_bytes = cert.public_bytes(encoding=x509.Encoding.DER)
+            sha256 = hashlib.sha256(cert_bytes).hexdigest()
+            size = len(cert_bytes)
+            print(f"证书大小: {size} (0x{size:x})")
+            print(f"SHA256哈希: {sha256}")
+            sys.exit(0)
+print("未找到证书")
+sys.exit(1)
+EOF
+
+          chmod +x extract_cert.py
+          echo "=== 自定义签名证书信息 ==="
+          python3 extract_cert.py Manager_custom_signed.apk
+          
+      - name: 上传自定义签名APK
+        if: env.HAS_KEY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Manager-Custom-Signed
+          path: Manager_custom_signed.apk
+
+      - name: 创建签名信息文件
+        if: env.HAS_KEY == 'true'
+        run: |
+          python3 extract_cert.py Manager_custom_signed.apk > signature_info.txt
+          echo "" >> signature_info.txt
+          echo "=== 使用方法 ===" >> signature_info.txt
+          echo "将以上哈希值配置到内核的动态管理器中" >> signature_info.txt
+          cat signature_info.txt
+
+      - name: 上传签名信息
+        if: env.HAS_KEY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Signature-Info
+          path: signature_info.txt
