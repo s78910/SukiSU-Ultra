@@ -31,7 +31,7 @@ mod su;
 mod susfs;
 #[cfg(target_os = "android")]
 mod uid_scanner;
-mod umount_manager;
+mod umount;
 mod utils;
 
 fn main() -> anyhow::Result<()> {

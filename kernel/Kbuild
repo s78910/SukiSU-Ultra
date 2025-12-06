@@ -8,7 +8,6 @@ kernelsu-objs += syscall_hook_manager.o
 kernelsu-objs += throne_tracker.o
 kernelsu-objs += pkg_observer.o
 kernelsu-objs += throne_tracker.o
-kernelsu-objs += umount_manager.o
 kernelsu-objs += setuid_hook.o
 kernelsu-objs += kernel_umount.o
 kernelsu-objs += supercalls.o
@@ -38,8 +37,8 @@ obj-$(CONFIG_KPM) += kpm/
 
 REPO_OWNER := SukiSU-Ultra
 REPO_NAME := SukiSU-Ultra
-REPO_BRANCH := miuix
-KSU_VERSION_API := 4.0.0
+REPO_BRANCH := main
+KSU_VERSION_API := 4.1.0
 
 GIT_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
 CURL_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin curl
