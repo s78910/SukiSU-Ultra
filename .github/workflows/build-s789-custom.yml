@@ -20,7 +20,7 @@ jobs:
       - name: Download official native libs
         run: |
           echo "œ¬‘ÿπŸ∑Ω‘§±‡“Îø‚"
-          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.1.0/SukiSU_v4.1.0_40201-release.apk" -O official.apk
           
           unzip -q official.apk 'lib/*' -d official_libs
           
