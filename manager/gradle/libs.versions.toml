@@ -19,7 +19,7 @@ apksign = "1.4"
 cmaker = "1.2"
 miuix = "0.7.1"
 haze = "1.7.1"
-capsule = "2.1.1"
+capsule = "2.1.2"
 documentfile = "1.1.0"
 
 [plugins]
@@ -66,7 +66,6 @@ compose-destinations-core = { group = "io.github.raamcosta.compose-destinations"
 compose-destinations-ksp = { group = "io.github.raamcosta.compose-destinations", name = "ksp", version.ref = "compose-destination" }
 
 markdown = { group = "io.noties.markwon", name = "core", version.ref = "markdown" }
-markdown-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markdown" }
 
 lsposed-cxx = { module = "org.lsposed.libcxx:libcxx", version.ref = "ndk" }
 
