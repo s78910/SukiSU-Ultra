@@ -1,0 +1,235 @@
+name: Build S789 Custom Manager
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '.github/workflows/build-s789-custom.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download official native libs
+        run: |
+          echo "下载官方预编译库"
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official.apk
+          
+          unzip -q official.apk 'lib/*' -d official_libs
+          
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
+          
+          cp official_libs/lib/arm64-v8a/* manager/app/src/main/jniLibs/arm64-v8a/
+          cp official_libs/lib/x86_64/* manager/app/src/main/jniLibs/x86_64/
+          cp official_libs/lib/armeabi-v7a/* manager/app/src/main/jniLibs/armeabi-v7a/
+          
+          echo "? Native 库已就绪"
+
+      # ========== 修改1: 包名 ==========
+      - name: Modify package name
+        run: |
+          echo "修改包名: com.sukisu.ultra -> com.sukisu.s789"
+          
+          # 修改 build.gradle.kts 中的 namespace
+          sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.s789"/' manager/app/build.gradle.kts
+          
+          # 修改 AndroidManifest.xml
+          if [ -f manager/app/src/main/AndroidManifest.xml ]; then
+            sed -i 's/com\.sukisu\.ultra/com.sukisu.s789/g' manager/app/src/main/AndroidManifest.xml
+          fi
+          
+          echo "? 包名修改完成"
+
+      # ========== 修改2: 应用名和标题 ==========
+      - name: Modify app name and title
+        run: |
+          STRINGS_FILE="manager/app/src/main/res/values/strings.xml"
+          
+          # 修改应用名
+          sed -i 's/<string name="app_name" translatable="false">SukiSU Ultra<\/string>/<string name="app_name" translatable="false">刷机做环境找微信S78910JQKKKAA<\/string>/' "$STRINGS_FILE"
+          
+          echo "? 应用名修改完成"
+
+      # ========== 修改3: 状态标签 Built-in/LKM -> 姜太公钓瑜 ==========
+      - name: Modify status labels
+        run: |
+          # 搜索并修改 Home.kt 中的状态标签
+          HOME_FILE="manager/app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt"
+          
+          if [ -f "$HOME_FILE" ]; then
+            # 替换 Built-in 和 LKM 标签
+            sed -i 's/"Built-in"/"姜太公钓瑜"/g' "$HOME_FILE"
+            sed -i 's/"LKM"/"姜太公钓瑜"/g' "$HOME_FILE"
+            echo "? Home.kt 状态标签修改完成"
+          fi
+          
+          # 同时搜索其他可能的文件
+          find manager/app/src -name "*.kt" -exec grep -l "Built-in\|\"LKM\"" {} \; | while read file; do
+            sed -i 's/"Built-in"/"姜太公钓瑜"/g' "$file"
+            sed -i 's/"LKM"/"姜太公钓瑜"/g' "$file"
+            echo "修改: $file"
+          done
+
+      # ========== 修改4: 隐藏导航栏按钮 ==========
+      - name: Modify bottom bar - only Home and SuperUser
+        run: |
+          DEST_FILE="manager/app/src/main/java/com/sukisu/ultra/ui/screen/BottomBarDestination.kt"
+          
+          # 只保留 Home 和 SuperUser，注释掉其他
+          cat > "$DEST_FILE" << 'EOF'
+          package com.sukisu.ultra.ui.screen
+
+          import androidx.annotation.StringRes
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.filled.*
+          import androidx.compose.material.icons.outlined.*
+          import androidx.compose.ui.graphics.vector.ImageVector
+          import com.ramcosta.composedestinations.generated.destinations.*
+          import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
+          import com.sukisu.ultra.R
+
+          enum class BottomBarDestination(
+              val direction: DirectionDestinationSpec,
+              @param:StringRes val label: Int,
+              val iconSelected: ImageVector,
+              val iconNotSelected: ImageVector,
+              val rootRequired: Boolean,
+          ) {
+              Home(HomeScreenDestination, R.string.home, Icons.Filled.Home, Icons.Outlined.Home, false),
+              SuperUser(SuperUserScreenDestination, R.string.superuser, Icons.Filled.AdminPanelSettings, Icons.Outlined.AdminPanelSettings, true),
+          }
+          EOF
+          
+          echo "? 导航栏修改完成 - 只保留 Home 和 SuperUser"
+
+      # ========== 修改5: 简洁模式默认开启 ==========
+      - name: Enable simple mode by default
+        run: |
+          # 查找设置相关文件
+          find manager/app/src -name "*.kt" -exec grep -l "isSimpleMode\|is_simple_mode\|SimpleMode" {} \; | head -5
+          
+          # 修改默认值（需要找到具体文件）
+          SETTINGS_FILE=$(find manager/app/src -name "*.kt" -exec grep -l "isSimpleMode.*=.*false" {} \; | head -1)
+          if [ -n "$SETTINGS_FILE" ]; then
+            sed -i 's/isSimpleMode.*=.*false/isSimpleMode = true/g' "$SETTINGS_FILE"
+            echo "? 简洁模式默认开启: $SETTINGS_FILE"
+          fi
+
+      # ========== 修改6: 模块列表为空 ==========
+      - name: Make module list empty
+        run: |
+          MODULE_FILE="manager/app/src/main/java/com/sukisu/ultra/ui/screen/Module.kt"
+          
+          # 在模块列表获取处添加空返回逻辑
+          # 这需要更精确的修改，暂时通过修改 ViewModel 实现
+          echo "模块列表修改需要更精确定位，跳过此步骤"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Configure custom signing
+        working-directory: ./manager
+        run: |
+          if [ -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "错误：未配置签名密钥"
+            exit 1
+          fi
+          
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+          
+          cat >> gradle.properties << EOF
+          KEYSTORE_FILE=key.jks
+          KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
+          
+          echo "? 签名配置完成"
+
+      - name: Build Manager
+        working-directory: ./manager
+        run: |
+          echo "开始构建 S789 定制版 Manager"
+          ./gradlew clean assembleRelease --no-daemon --stacktrace 2>&1 || {
+            echo "构建失败，查看错误信息"
+            exit 1
+          }
+          echo "? 构建完成"
+          ls -lh app/build/outputs/apk/release/*.apk
+
+      - name: Rename APK
+        run: |
+          APK=$(find manager/app/build/outputs/apk/release -name "*.apk" | head -1)
+          cp "$APK" "S789-Manager.apk"
+          echo "? APK 重命名完成"
+
+      - name: Extract certificate info
+        run: |
+          pip3 install cryptography
+          
+          python3 << 'PYEOF'
+          import sys, zipfile, hashlib, os
+          from cryptography import x509
+          from cryptography.hazmat.backends import default_backend
+          
+          apk_path = "S789-Manager.apk"
+          
+          with zipfile.ZipFile(apk_path, 'r') as apk:
+              for name in apk.namelist():
+                  if name.startswith('META-INF/') and name.endswith(('.RSA', '.DSA', '.EC')):
+                      cert_data = apk.read(name)
+                      cert = x509.load_der_x509_certificate(cert_data, default_backend())
+                      cert_bytes = cert.public_bytes(encoding=x509.Encoding.DER)
+                      sha256 = hashlib.sha256(cert_bytes).hexdigest()
+                      size = len(cert_bytes)
+                      
+                      print(f"\n{'='*60}")
+                      print("S789 定制版签名证书信息")
+                      print(f"{'='*60}")
+                      print(f"证书大小: {size} (0x{size:x})")
+                      print(f"SHA256: {sha256}")
+                      print(f"\n内核配置命令:")
+                      print(f'su -c "echo \'{size}:{sha256}\' > /data/adb/ksu/dynamic_manager"')
+                      print(f"{'='*60}\n")
+                      
+                      with open("S789-签名信息.txt", "w") as f:
+                          f.write(f"S789 定制版签名证书信息\n")
+                          f.write(f"{'='*50}\n")
+                          f.write(f"证书大小: {size} (0x{size:x})\n")
+                          f.write(f"SHA256: {sha256}\n\n")
+                          f.write(f"内核配置命令:\n")
+                          f.write(f'su -c "echo \'{size}:{sha256}\' > /data/adb/ksu/dynamic_manager"\n')
+                      
+                      sys.exit(0)
+          sys.exit(1)
+          PYEOF
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-Manager
+          path: S789-Manager.apk
+
+      - name: Upload signature info
+        uses: actions/upload-artifact@v4
+        with:
+          name: S789-SignatureInfo
+          path: S789-签名信息.txt
