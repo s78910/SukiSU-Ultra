@@ -1210,7 +1210,7 @@ fun ModuleRepoDetailScreen(
                         val detail = fetchModuleDetail(module.moduleId)
                         if (detail != null) {
                             readmeHtml = detail.readmeHtml
-                            detail.sourceUrl?.let { if (it.isNotEmpty()) sourceUrl = detail.sourceUrl }
+                            if (detail.sourceUrl.isNotEmpty()) sourceUrl = detail.sourceUrl
                             detailReleases = detail.releases.map { r ->
                                 ReleaseArg(
                                     tagName = r.tagName,
