@@ -156,35 +156,13 @@ jobs:
       - name: Modify Package Name and UI
         run: |
           # 1. 修改包名 (applicationId)
-          sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.sukisu.s789"\n    }/' manager/app/build.gradle.kts
+          sed -i '/namespace = "com.sukisu.ultra"/a\    defaultConfig {\n        applicationId = "com.sukisu.s789"\n    }' manager/app/build.gradle.kts
           
           # 2. 修改应用名
           sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/' manager/app/src/main/res/values/strings.xml
           
-          # 3. 修改底部导航栏 - 只保留 Home 和 SuperUser
-          cat > manager/app/src/main/java/com/sukisu/ultra/ui/screen/BottomBarDestination.kt << 'NAVEOF'
-          package com.sukisu.ultra.ui.screen
-
-          import androidx.annotation.StringRes
-          import androidx.compose.material.icons.Icons
-          import androidx.compose.material.icons.filled.Home
-          import androidx.compose.material.icons.filled.Security
-          import androidx.compose.material.icons.outlined.Home
-          import androidx.compose.material.icons.outlined.Security
-          import androidx.compose.ui.graphics.vector.ImageVector
-          import com.sukisu.ultra.R
-
-          enum class BottomBarDestination(
-              val direction: com.ramcosta.composedestinations.spec.DirectionDestinationSpec,
-              @StringRes val label: Int,
-              val iconSelected: ImageVector,
-              val iconNotSelected: ImageVector,
-              val rootRequired: Boolean
-          ) {
-              Home(HomeScreenDestination, R.string.home, Icons.Filled.Home, Icons.Outlined.Home, false),
-              SuperUser(SuperUserScreenDestination, R.string.superuser, Icons.Filled.Security, Icons.Outlined.Security, true)
-          }
-          NAVEOF
+          # 3. 修改底部导航栏 - 在 BottomBar.kt 中过滤只显示 Home 和 SuperUser
+          sed -i 's/BottomBarDestination.entries.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser }.forEach/' manager/app/src/main/java/com/sukisu/ultra/ui/activity/component/BottomBar.kt
           
           # 4. 修改 Settings 中简洁模式默认值
           find manager/app/src/main/java -name "*.kt" -exec grep -l "is_simple_mode" {} \; | while read f; do
