@@ -1,0 +1,287 @@
+name: Build Dual APKs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-original:
+    name: Build Original (My Sign)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Original APK
+        working-directory: manager
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/key.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > $KEYSTORE_FILE
+          ./gradlew assembleRelease
+
+      - name: Find APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find manager/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK_PATH"
+
+      - name: Extract Certificate Info
+        run: |
+          APK_PATH="${{ steps.find_apk.outputs.apk_path }}"
+          
+          # 使用 apksigner 提取证书信息
+          echo "=== Certificate Info ===" > cert_info_original.txt
+          
+          # 获取签名块信息
+          python3 << 'EOF'
+          import zipfile
+          import hashlib
+          import struct
+          
+          def find_v2_signature(apk_path):
+              with open(apk_path, 'rb') as f:
+                  f.seek(-22, 2)
+                  eocd = f.read(22)
+                  if eocd[0:4] != b'\x50\x4b\x05\x06':
+                      print("EOCD not found")
+                      return
+                  
+                  cd_offset = struct.unpack('<I', eocd[16:20])[0]
+                  f.seek(cd_offset - 16)
+                  magic_check = f.read(16)
+                  if magic_check != b'APK Sig Block 42':
+                      print("APK Sig Block magic not found")
+                      return
+                  
+                  f.seek(cd_offset - 24)
+                  block_size = struct.unpack('<Q', f.read(8))[0]
+                  block_start = cd_offset - block_size - 8
+                  f.seek(block_start)
+                  
+                  block_size_check = struct.unpack('<Q', f.read(8))[0]
+                  
+                  while f.tell() < cd_offset - 24:
+                      pair_size = struct.unpack('<Q', f.read(8))[0]
+                      pair_id = struct.unpack('<I', f.read(4))[0]
+                      
+                      if pair_id == 0x7109871a:
+                          v2_block = f.read(pair_size - 4)
+                          
+                          offset = 0
+                          signers_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4
+                          
+                          signer_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4
+                          
+                          signed_data_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4
+                          
+                          digests_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4 + digests_size
+                          
+                          certs_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4
+                          
+                          cert_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4
+                          
+                          cert_data = v2_block[offset:offset+cert_size]
+                          
+                          cert_hash = hashlib.sha256(cert_data).hexdigest()
+                          
+                          print(f"Certificate Size: {cert_size}")
+                          print(f"Certificate SHA256: {cert_hash}")
+                          print(f"Config: {cert_size}:{cert_hash}")
+                          
+                          with open("cert_info_original.txt", "a") as out:
+                              out.write(f"Size: {cert_size}\n")
+                              out.write(f"SHA256: {cert_hash}\n")
+                              out.write(f"Config Command:\n")
+                              out.write(f"su -c \"echo '{cert_size}:{cert_hash}' > /data/adb/ksu/dynamic_manager\"\n")
+                          return
+                      else:
+                          f.seek(pair_size - 4, 1)
+          
+          find_v2_signature("${{ steps.find_apk.outputs.apk_path }}")
+          EOF
+
+      - name: Upload Original APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SukiSU-Original-MySign
+          path: |
+            ${{ steps.find_apk.outputs.apk_path }}
+            cert_info_original.txt
+
+  build-modified:
+    name: Build Modified (S789)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Modify Package Name and UI
+        run: |
+          # 1. 修改包名 (applicationId)
+          sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.sukisu.s789"\n    }/' manager/app/build.gradle.kts
+          
+          # 2. 修改应用名
+          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/' manager/app/src/main/res/values/strings.xml
+          
+          # 3. 修改底部导航栏 - 只保留 Home 和 SuperUser
+          cat > manager/app/src/main/java/com/sukisu/ultra/ui/screen/BottomBarDestination.kt << 'NAVEOF'
+          package com.sukisu.ultra.ui.screen
+
+          import androidx.annotation.StringRes
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.filled.Home
+          import androidx.compose.material.icons.filled.Security
+          import androidx.compose.material.icons.outlined.Home
+          import androidx.compose.material.icons.outlined.Security
+          import androidx.compose.ui.graphics.vector.ImageVector
+          import com.sukisu.ultra.R
+
+          enum class BottomBarDestination(
+              val direction: com.ramcosta.composedestinations.spec.DirectionDestinationSpec,
+              @StringRes val label: Int,
+              val iconSelected: ImageVector,
+              val iconNotSelected: ImageVector,
+              val rootRequired: Boolean
+          ) {
+              Home(HomeScreenDestination, R.string.home, Icons.Filled.Home, Icons.Outlined.Home, false),
+              SuperUser(SuperUserScreenDestination, R.string.superuser, Icons.Filled.Security, Icons.Outlined.Security, true)
+          }
+          NAVEOF
+          
+          # 4. 修改 Settings 中简洁模式默认值
+          find manager/app/src/main/java -name "*.kt" -exec grep -l "is_simple_mode" {} \; | while read f; do
+            sed -i 's/getBoolean("is_simple_mode", false)/getBoolean("is_simple_mode", true)/' "$f"
+          done
+          
+          # 5. 修改检测更新默认值
+          find manager/app/src/main/java -name "*.kt" -exec grep -l "check_update" {} \; | while read f; do
+            sed -i 's/getBoolean("check_update", true)/getBoolean("check_update", false)/' "$f"
+          done
+          
+          # 6. 修改状态标签
+          find manager/app/src/main/java -name "*.kt" -exec grep -l '"LKM"' {} \; | while read f; do
+            sed -i 's/"LKM"/"姜太公钓瑜"/g' "$f"
+          done
+          find manager/app/src/main/java -name "*.kt" -exec grep -l '"Built-in"' {} \; | while read f; do
+            sed -i 's/"Built-in"/"姜太公钓瑜"/g' "$f"
+          done
+          
+          echo "Modifications applied"
+
+      - name: Build Modified APK
+        working-directory: manager
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/key.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > $KEYSTORE_FILE
+          ./gradlew assembleRelease
+
+      - name: Find APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find manager/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+
+      - name: Extract Certificate Info
+        run: |
+          python3 << 'EOF'
+          import hashlib
+          import struct
+          
+          def find_v2_signature(apk_path):
+              with open(apk_path, 'rb') as f:
+                  f.seek(-22, 2)
+                  eocd = f.read(22)
+                  if eocd[0:4] != b'\x50\x4b\x05\x06':
+                      return
+                  
+                  cd_offset = struct.unpack('<I', eocd[16:20])[0]
+                  f.seek(cd_offset - 16)
+                  magic_check = f.read(16)
+                  if magic_check != b'APK Sig Block 42':
+                      return
+                  
+                  f.seek(cd_offset - 24)
+                  block_size = struct.unpack('<Q', f.read(8))[0]
+                  block_start = cd_offset - block_size - 8
+                  f.seek(block_start)
+                  f.read(8)
+                  
+                  while f.tell() < cd_offset - 24:
+                      pair_size = struct.unpack('<Q', f.read(8))[0]
+                      pair_id = struct.unpack('<I', f.read(4))[0]
+                      
+                      if pair_id == 0x7109871a:
+                          v2_block = f.read(pair_size - 4)
+                          offset = 0
+                          offset += 4
+                          offset += 4
+                          offset += 4
+                          digests_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4 + digests_size
+                          offset += 4
+                          cert_size = struct.unpack('<I', v2_block[offset:offset+4])[0]
+                          offset += 4
+                          cert_data = v2_block[offset:offset+cert_size]
+                          cert_hash = hashlib.sha256(cert_data).hexdigest()
+                          
+                          with open("cert_info_modified.txt", "w") as out:
+                              out.write(f"Package: com.sukisu.s789\n")
+                              out.write(f"Size: {cert_size}\n")
+                              out.write(f"SHA256: {cert_hash}\n")
+                              out.write(f"Config:\nsu -c \"echo '{cert_size}:{cert_hash}' > /data/adb/ksu/dynamic_manager\"\n")
+                          return
+                      else:
+                          f.seek(pair_size - 4, 1)
+          
+          find_v2_signature("${{ steps.find_apk.outputs.apk_path }}")
+          EOF
+
+      - name: Upload Modified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SukiSU-S789-Modified
+          path: |
+            ${{ steps.find_apk.outputs.apk_path }}
+            cert_info_modified.txt
