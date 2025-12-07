@@ -124,45 +124,8 @@ jobs:
           # 复制 APK 到根目录
           cp app/build/outputs/apk/release/*.apk ${{ github.workspace }}/SukiSU-S789.apk
 
-      - name: Extract Cert Info
-        working-directory: ${{ github.workspace }}
-        run: |
-          ls -la SukiSU-S789.apk
-          python3 << 'EOF'
-          import struct, hashlib
-          apk = "SukiSU-S789.apk"
-          with open(apk, 'rb') as f:
-              f.seek(-22, 2)
-              eocd = f.read(22)
-              cd_offset = struct.unpack('<I', eocd[16:20])[0]
-              f.seek(cd_offset - 24)
-              block_size = struct.unpack('<Q', f.read(8))[0]
-              f.seek(cd_offset - block_size - 8 + 8)
-              while True:
-                  pair_size = struct.unpack('<Q', f.read(8))[0]
-                  pair_id = struct.unpack('<I', f.read(4))[0]
-                  if pair_id == 0x7109871a:
-                      data = f.read(pair_size - 4)
-                      off = 4
-                      off += struct.unpack('<I', data[off:off+4])[0] + 4
-                      off += struct.unpack('<I', data[off:off+4])[0] + 4
-                      cert_size = struct.unpack('<I', data[off:off+4])[0]
-                      cert = data[off+4:off+4+cert_size]
-                      sha = hashlib.sha256(cert).hexdigest()
-                      with open("cert_info.txt", "w") as out:
-                          out.write(f"Package: com.sukisu.s789\n")
-                          out.write(f"Size: {cert_size}\n")
-                          out.write(f"SHA256: {sha}\n")
-                          out.write(f"Command: su -c \"echo '{cert_size}:{sha}' > /data/adb/ksu/dynamic_manager\"\n")
-                      print(f"Cert: {cert_size}:{sha}")
-                      break
-                  f.seek(pair_size - 4, 1)
-          EOF
-
       - name: Upload Modified APK
         uses: actions/upload-artifact@v4
         with:
           name: SukiSU-S789-Modified
-          path: |
-            SukiSU-S789.apk
-            cert_info.txt
+          path: SukiSU-S789.apk
