@@ -95,48 +95,6 @@ jobs:
           ./gradlew assembleRelease
           cp app/build/outputs/apk/release/*.apk ${{ github.workspace }}/SukiSU-S789.apk
 
-      - name: Extract Cert Info
-        run: |
-          python3 << 'PYEOF'
-          import struct, hashlib
-          
-          def get_cert(apk):
-              with open(apk, 'rb') as f:
-                  f.seek(-22, 2)
-                  eocd = f.read(22)
-                  cd_offset = struct.unpack('<I', eocd[16:20])[0]
-                  f.seek(cd_offset - 16)
-                  if f.read(16) != b'APK Sig Block 42':
-                      return None, None
-                  f.seek(cd_offset - 24)
-                  block_size = struct.unpack('<Q', f.read(8))[0]
-                  f.seek(cd_offset - block_size - 8 + 8)
-                  remaining = block_size - 24
-                  while remaining > 0:
-                      pair_size = struct.unpack('<Q', f.read(8))[0]
-                      pair_id = struct.unpack('<I', f.read(4))[0]
-                      if pair_id == 0x7109871a:
-                          data = f.read(pair_size - 4)
-                          off = 4
-                          off += struct.unpack('<I', data[off:off+4])[0] + 4
-                          off += struct.unpack('<I', data[off:off+4])[0] + 4
-                          cert_size = struct.unpack('<I', data[off:off+4])[0]
-                          cert = data[off+4:off+4+cert_size]
-                          return cert_size, hashlib.sha256(cert).hexdigest()
-                      f.seek(pair_size - 4, 1)
-                      remaining -= 8 + pair_size
-              return None, None
-          
-          with open("cert_info.txt", "w") as out:
-              for apk in ["SukiSU-Original.apk", "SukiSU-S789.apk"]:
-                  size, sha = get_cert(apk)
-                  if size:
-                      out.write(f"{apk}:\n  Size: {size}\n  SHA256: {sha}\n")
-                      out.write(f"  Command: su -c \"echo '{size}:{sha}' > /data/adb/ksu/dynamic_manager\"\n\n")
-                      print(f"{apk}: {size}:{sha[:16]}...")
-          PYEOF
-          cat cert_info.txt
-
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
@@ -144,4 +102,3 @@ jobs:
           path: |
             SukiSU-Original.apk
             SukiSU-S789.apk
-            cert_info.txt
