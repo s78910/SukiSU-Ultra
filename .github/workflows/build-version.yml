@@ -125,7 +125,9 @@ jobs:
           cp app/build/outputs/apk/release/*.apk ${{ github.workspace }}/SukiSU-S789.apk
 
       - name: Extract Cert Info
+        working-directory: ${{ github.workspace }}
         run: |
+          ls -la SukiSU-S789.apk
           python3 << 'EOF'
           import struct, hashlib
           apk = "SukiSU-S789.apk"
