@@ -1,0 +1,135 @@
+name: Build S789 Modified
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '指定版本 tag 或 commit (留空用最新)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  build-original:
+    name: Build Original (For Cert Reference)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.version || 'main' }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Original APK
+        working-directory: manager
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/key.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > $KEYSTORE_FILE
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/*.apk ${{ github.workspace }}/SukiSU-Original.apk
+
+      - name: Upload Original APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SukiSU-Original
+          path: SukiSU-Original.apk
+
+  build-s789:
+    name: Build S789 Modified
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.version || 'main' }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Apply All Modifications
+        run: |
+          echo "=== 1. 修改包名为 com.susu.s789 ==="
+          # 在 build.gradle.kts 中添加 applicationId
+          sed -i '/namespace = "com.sukisu.ultra"/a\    defaultConfig {\n        applicationId = "com.susu.s789"\n    }' manager/app/build.gradle.kts
+          
+          echo "=== 2. 修改应用名为 S789 ==="
+          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">S789<\/string>/' manager/app/src/main/res/values/strings.xml
+          
+          echo "=== 3. 修改首页左上角标题 ==="
+          # 在 Home.kt 中将 stringResource(R.string.app_name) 替换为硬编码字符串
+          sed -i 's/text = stringResource(R.string.app_name)/text = "刷机做环境找微信S78910JQKKKAA"/' manager/app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt
+          
+          echo "=== 4. 修改底部导航栏 - 只保留 Home 和 SuperUser ==="
+          sed -i 's/BottomBarDestination.entries.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser }.forEach/' manager/app/src/main/java/com/sukisu/ultra/ui/activity/component/BottomBar.kt
+          
+          echo "=== 5. 简洁模式默认开启 ==="
+          find manager/app/src/main/java -name "*.kt" -exec grep -l "is_simple_mode" {} \; | while read f; do
+            sed -i 's/getBoolean("is_simple_mode", false)/getBoolean("is_simple_mode", true)/g' "$f"
+          done
+          
+          echo "=== 6. 检测更新默认关闭 ==="
+          find manager/app/src/main/java -name "*.kt" -exec grep -l "check_update" {} \; | while read f; do
+            sed -i 's/getBoolean("check_update", true)/getBoolean("check_update", false)/g' "$f"
+          done
+          
+          echo "=== 7. 修改状态标签 LKM/Built-in -> 姜太公钓瑜 ==="
+          find manager/app/src/main/java -name "*.kt" -exec grep -l '"LKM"' {} \; | while read f; do
+            sed -i 's/"LKM"/"姜太公钓瑜"/g' "$f"
+          done
+          find manager/app/src/main/java -name "*.kt" -exec grep -l '"Built-in"' {} \; | while read f; do
+            sed -i 's/"Built-in"/"姜太公钓瑜"/g' "$f"
+          done
+          
+          echo "=== 验证修改 ==="
+          echo "--- strings.xml app_name ---"
+          grep "app_name" manager/app/src/main/res/values/strings.xml
+          echo "--- Home.kt title ---"
+          grep -n "刷机做环境找微信" manager/app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt || echo "Title not found in Home.kt"
+          echo "--- build.gradle.kts applicationId ---"
+          grep -A2 "defaultConfig" manager/app/build.gradle.kts | head -5
+          
+          echo "=== Modifications completed ==="
+
+      - name: Build S789 APK
+        working-directory: manager
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/key.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > $KEYSTORE_FILE
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/*.apk ${{ github.workspace }}/SukiSU-S789.apk
+
+      - name: Upload S789 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SukiSU-S789
+          path: SukiSU-S789.apk
