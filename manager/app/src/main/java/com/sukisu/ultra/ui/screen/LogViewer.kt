@@ -516,7 +516,6 @@ private fun LogList(
     val listState = rememberLazyListState()
 
     LazyColumn(
-        state = listState,
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
         verticalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)

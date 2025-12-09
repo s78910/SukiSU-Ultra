@@ -688,7 +688,7 @@ fun ModulePager(
                         navigator,
                         viewModel = viewModel,
                         modifier = Modifier
-                            .height(getWindowSize().height.dp)
+                            .fillMaxHeight()
                             .scrollEndHaptic()
                             .overScrollVertical()
                             .nestedScroll(scrollBehavior.nestedScrollConnection)

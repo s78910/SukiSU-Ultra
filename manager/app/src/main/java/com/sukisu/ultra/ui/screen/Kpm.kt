@@ -675,9 +675,8 @@ private fun KpmList(
         ),
     ) {
         LazyColumn(
-            state = listState,
             modifier = Modifier
-                .height(getWindowSize().height.dp)
+                .fillMaxHeight()
                 .scrollEndHaptic()
                 .overScrollVertical()
                 .nestedScroll(scrollBehavior.nestedScrollConnection)

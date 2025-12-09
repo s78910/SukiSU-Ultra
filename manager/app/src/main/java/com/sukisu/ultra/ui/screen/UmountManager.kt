@@ -125,7 +125,7 @@ fun UmountManager(navigator: DestinationsNavigator) {
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .height(getWindowSize().height.dp)
+                .fillMaxHeight()
                 .scrollEndHaptic()
                 .overScrollVertical()
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
