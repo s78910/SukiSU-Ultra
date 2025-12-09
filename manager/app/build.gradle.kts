@@ -138,7 +138,7 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.core)
 
-    implementation(libs.markdown)
+    implementation(libs.markwon)
 
     implementation(libs.androidx.webkit)
 
