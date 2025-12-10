@@ -17,6 +17,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.LocalHandlePageChange
 import com.sukisu.ultra.ui.LocalSelectedPage
 import com.sukisu.ultra.ui.LocalPagerState
 import com.sukisu.ultra.ui.util.rootAvailable
