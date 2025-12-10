@@ -81,16 +81,28 @@ jobs:
         if: inputs.build_type == 'both' || inputs.build_type == 's789-only'
         run: |
           cd manager
+          
+          # 1. Change app name
           sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' app/src/main/res/values/strings.xml
-          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
-          cat >> app/build.gradle.kts << 'EOF'
-          android { defaultConfig { applicationId = "com.susu.s789" } }
-          EOF
+          sed -i 's/<string name="app_name">SukiSU Ultra<\\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
+          
+          # 2. Change package name using sed (fix: not append)
+          sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.susu.s789"\n    }/' app/build.gradle.kts
+          
+          # 3. Hide navigation items
           BOTTOMBAR="app/src/main/java/com/sukisu/ultra/ui/activity/component/BottomBar.kt"
           [ -f "$BOTTOMBAR" ] && sed -i 's/BottomBarDestination\.entries\.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser }.forEach/' "$BOTTOMBAR"
+          
+          # 4. Simple mode default ON
           find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("is_simple_mode", false)/getBoolean("is_simple_mode", true)/g' {} \;
+          
+          # 5. Check update default OFF
           find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("check_update", true)/getBoolean("check_update", false)/g' {} \;
+          
+          # 6. Change status label
           find app/src/main/java -name "*.kt" -exec sed -i 's/"LKM"/"姜太公钓瑜"/g; s/"Built-in"/"姜太公钓瑜"/g' {} \;
+          
+          echo "S789 modifications applied"
 
       - name: Build S789 APK
         if: inputs.build_type == 'both' || inputs.build_type == 's789-only'
