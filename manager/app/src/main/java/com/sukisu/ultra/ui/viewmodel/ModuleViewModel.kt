@@ -25,8 +25,6 @@ import com.sukisu.ultra.ui.component.SearchStatus
 import com.sukisu.ultra.ui.util.HanziToPinyin
 import com.sukisu.ultra.ui.util.isNetworkAvailable
 import com.sukisu.ultra.ui.util.listModules
-import com.sukisu.ultra.ui.util.module.RepoSummary
-import com.sukisu.ultra.ui.util.module.fetchRepoIndex
 import com.sukisu.ultra.ui.util.module.sanitizeVersionString
 import org.json.JSONArray
 import org.json.JSONObject
@@ -231,22 +229,6 @@ class ModuleViewModel : ViewModel() {
         }
     }
 
-    private val _repoIndex = mutableStateMapOf<String, RepoSummary>()
-
-    suspend fun refreshRepoIndex() {
-        val parsed = withContext(Dispatchers.IO) {
-            val map = fetchRepoIndex()
-            if (map.isEmpty()) null else map.entries.map { it.key to it.value }
-        }
-
-        withContext(Dispatchers.Main) {
-            if (parsed != null) {
-                _repoIndex.clear()
-                parsed.forEach { (id, summary) -> _repoIndex[id] = summary }
-            }
-        }
-    }
-
     private fun ModuleInfo.toSignature(): ModuleUpdateSignature {
         return ModuleUpdateSignature(
             updateJson = updateJson,
@@ -297,21 +279,6 @@ class ModuleViewModel : ViewModel() {
                     changedEntries += id to entry.info
                 }
                 updateInfoInFlight.remove(id)
-            }
-
-            modules.forEach { m ->
-                val cache = updateInfoCache[m.id]
-                val hasUpdateJson = cache?.info?.downloadUrl?.isNotEmpty() == true
-                if (!hasUpdateJson) {
-                    val repo = _repoIndex[m.id]
-                    if (repo != null) {
-                        if (repo.versionCode > m.versionCode && repo.downloadUrl.isNotBlank()) {
-                            val info = ModuleUpdateInfo(downloadUrl = repo.downloadUrl, version = repo.latestVersion, changelog = "")
-                            updateInfoCache[m.id] = ModuleUpdateCache(m.toSignature(), info)
-                            changedEntries += m.id to info
-                        }
-                    }
-                }
             }
         }
 
