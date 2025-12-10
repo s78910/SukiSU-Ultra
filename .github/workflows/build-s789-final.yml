@@ -1,0 +1,209 @@
+name: Build S789 Final (Dual APKs)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (tag/commit/branch, empty=latest)'
+        required: false
+        default: ''
+        type: string
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - s789-only
+          - original-only
+
+env:
+  KEYSTORE_FILE: ${{ github.workspace }}/key.jks
+
+jobs:
+  build:
+    name: Build APKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || '' }}
+          fetch-depth: 0
+
+      - name: Get Version Info
+        id: version
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
+          COMMIT=$(git rev-parse --short HEAD)
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "Building: $TAG ($COMMIT)"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Prepare Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > $KEYSTORE_FILE
+          echo "Keystore prepared"
+
+      # === Build Original (Unchanged) ===
+      - name: Build Original APK
+        if: inputs.build_type == 'both' || inputs.build_type == 'original-only'
+        working-directory: manager
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          mkdir -p ../output
+          cp "$APK" ../output/SukiSU-Original-${{ steps.version.outputs.tag }}.apk
+          echo "Original APK built"
+
+      - name: Clean for S789 Build
+        if: inputs.build_type == 'both'
+        run: |
+          cd manager && ./gradlew clean
+          git checkout -- .
+
+      # === Build S789 (Modified) ===
+      - name: Apply S789 Modifications
+        if: inputs.build_type == 'both' || inputs.build_type == 's789-only'
+        run: |
+          cd manager
+          
+          # 1. Change app name to S789
+          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">S789<\/string>/g' app/src/main/res/values/strings.xml
+          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">S789<\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
+          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">S789<\/string>/g' app/src/main/res/values-zh-rTW/strings.xml 2>/dev/null || true
+          
+          # 2. Change package name (applicationId)
+          cat >> app/build.gradle.kts << 'GRADLE_EOF'
+          
+          android {
+              defaultConfig {
+                  applicationId = "com.susu.s789"
+              }
+          }
+          GRADLE_EOF
+          
+          # 3. Hide navigation items (keep only Home and SuperUser)
+          BOTTOMBAR="app/src/main/java/com/sukisu/ultra/ui/activity/component/BottomBar.kt"
+          if [ -f "$BOTTOMBAR" ]; then
+            sed -i 's/BottomBarDestination\.entries\.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser }.forEach/' "$BOTTOMBAR"
+          fi
+          
+          # 4. Simple mode default ON
+          find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("is_simple_mode", false)/getBoolean("is_simple_mode", true)/g' {} \;
+          
+          # 5. Check update default OFF
+          find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("check_update", true)/getBoolean("check_update", false)/g' {} \;
+          
+          # 6. Change status label
+          find app/src/main/java -name "*.kt" -exec sed -i 's/"LKM"/"S789"/g; s/"Built-in"/"S789"/g' {} \;
+          
+          # 7. Change Home screen title
+          HOME_KT="app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt"
+          if [ -f "$HOME_KT" ]; then
+            sed -i 's/SukiSU/S789/g' "$HOME_KT"
+          fi
+          
+          echo "=== S789 Modifications Applied ==="
+          echo "- App name: S789"
+          echo "- Package: com.susu.s789"
+          echo "- Navigation: Home + SuperUser only"
+          echo "- Simple mode: ON by default"
+          echo "- Check update: OFF by default"
+
+      - name: Build S789 APK
+        if: inputs.build_type == 'both' || inputs.build_type == 's789-only'
+        working-directory: manager
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          mkdir -p ../output
+          cp "$APK" ../output/SukiSU-S789-${{ steps.version.outputs.tag }}.apk
+          echo "S789 APK built"
+
+      # === Extract Certificate Info ===
+      - name: Extract Certificate Info
+        run: |
+          cat > extract_cert.py << 'PYEOF'
+          import sys, struct, hashlib
+          
+          def get_cert(apk):
+              with open(apk, 'rb') as f:
+                  d = f.read()
+              eocd = d.rfind(b'\x50\x4b\x05\x06')
+              if eocd < 0: return None, None
+              cd = struct.unpack('<I', d[eocd+16:eocd+20])[0]
+              be = d.rfind(b'APK Sig Block 42', max(0, cd-0x10000), cd)
+              if be < 0: return None, None
+              bs = struct.unpack('<Q', d[be-8:be])[0]
+              pos = be - bs + 16
+              while pos < be - 16:
+                  ps = struct.unpack('<Q', d[pos:pos+8])[0]
+                  pid = struct.unpack('<I', d[pos+8:pos+12])[0]
+                  if pid == 0x7109871a:
+                      sig = d[pos+12:pos+8+ps]
+                      p = 12
+                      dl = struct.unpack('<I', sig[p:p+4])[0]
+                      p += 4 + dl + 4
+                      cl = struct.unpack('<I', sig[p:p+4])[0]
+                      p += 4
+                      cert = sig[p:p+cl]
+                      return cl, hashlib.sha256(cert).hexdigest()
+                  pos += 8 + ps
+              return None, None
+          
+          for apk in sys.argv[1:]:
+              s, h = get_cert(apk)
+              if s:
+                  print(f"{apk}: size={s}, hash={h}")
+          PYEOF
+          
+          echo "=== Certificate Info ===" > output/cert_info.txt
+          echo "Version: ${{ steps.version.outputs.tag }} (${{ steps.version.outputs.commit }})" >> output/cert_info.txt
+          echo "Build Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> output/cert_info.txt
+          echo "" >> output/cert_info.txt
+          
+          for apk in output/*.apk; do
+            if [ -f "$apk" ]; then
+              NAME=$(basename "$apk")
+              INFO=$(python3 extract_cert.py "$apk")
+              SIZE=$(echo "$INFO" | grep -oP 'size=\K\d+')
+              HASH=$(echo "$INFO" | grep -oP 'hash=\K[a-f0-9]+')
+              echo "=== $NAME ===" >> output/cert_info.txt
+              echo "Size: $SIZE" >> output/cert_info.txt
+              echo "Hash: $HASH" >> output/cert_info.txt
+              echo "Dynamic Manager Command:" >> output/cert_info.txt
+              echo "su -c \"echo '$SIZE:$HASH' > /data/adb/ksu/dynamic_manager\"" >> output/cert_info.txt
+              echo "" >> output/cert_info.txt
+            fi
+          done
+          
+          cat output/cert_info.txt
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SukiSU-APKs-${{ steps.version.outputs.tag }}-${{ steps.version.outputs.commit }}
+          path: output/
+          retention-days: 90
