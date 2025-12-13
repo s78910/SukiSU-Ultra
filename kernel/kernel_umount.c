@@ -18,7 +18,6 @@
 #include "ksud.h"
 #include "ksu.h"
 
-#include "umount_manager.h"
 #include "sulog.h"
 
 static bool ksu_kernel_umount_enabled = true;
@@ -82,13 +81,12 @@ static void umount_tw_func(struct callback_head *cb)
 
     struct mount_entry *entry;
     down_read(&mount_list_lock);
-    list_for_each_entry(entry, &mount_list, list) {
-        pr_info("%s: unmounting: %s flags 0x%x\n", __func__, entry->umountable, entry->flags);
+    list_for_each_entry (entry, &mount_list, list) {
+        pr_info("%s: unmounting: %s flags 0x%x\n", __func__, entry->umountable,
+                entry->flags);
         try_umount(entry->umountable, entry->flags);
     }
     up_read(&mount_list_lock);
-
-    ksu_umount_manager_execute_all(saved);
 
     revert_creds(saved);
 
@@ -158,11 +156,6 @@ int ksu_handle_umount(uid_t old_uid, uid_t new_uid)
 
 void ksu_kernel_umount_init(void)
 {
-    int rc = 0;
-    rc = ksu_umount_manager_init();
-    if (rc) {
-        pr_err("Failed to initialize umount manager: %d\n", rc);
-    }
     if (ksu_register_feature_handler(&kernel_umount_handler)) {
         pr_err("Failed to register kernel_umount feature handler\n");
     }
