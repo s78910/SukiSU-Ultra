@@ -13,10 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Android
+import androidx.compose.material.icons.rounded.FolderDelete
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -31,12 +34,14 @@ import androidx.core.content.edit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.Natives
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.util.toggleLauncherIcon
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -47,6 +52,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.extra.SuperDropdown
+import top.yukonga.miuix.kmp.extra.SuperSwitch
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -189,6 +195,33 @@ fun Personalization(
                             }
                         )
                     }
+                }
+                Card(
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .fillMaxWidth(),
+                ) {
+                    var useAltIcon by rememberSaveable {
+                        mutableStateOf(prefs.getBoolean("use_alt_icon", false))
+                    }
+                    SuperSwitch(
+                        title = stringResource(id = R.string.icon_switch_title),
+                        summary = stringResource(id = R.string.icon_switch_summary),
+                        leftAction = {
+                            Icon(
+                                Icons.Rounded.Android,
+                                modifier = Modifier.padding(end = 16.dp),
+                                contentDescription = stringResource(id = R.string.icon_switch_title),
+                                tint = colorScheme.onBackground
+                            )
+                        },
+                        checked = useAltIcon,
+                        onCheckedChange = {
+                            prefs.edit { putBoolean("use_alt_icon", it) }
+                            toggleLauncherIcon(context, it)
+                            useAltIcon = it
+                        }
+                    )
                 }
             }
         }
