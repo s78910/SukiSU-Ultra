@@ -489,16 +489,16 @@ fun restartApp(packageName: String) {
 }
 
 // KPM控制
-fun loadKpmModule(path: String, args: String? = null): String {
+fun loadKpmModule(path: String, args: String? = null): Boolean {
     val shell = getRootShell()
     val cmd = "${getKsuDaemonPath()} kpm load $path ${args ?: ""}"
-    return ShellUtils.fastCmd(shell, cmd)
+    return ShellUtils.fastCmdResult(shell, cmd)
 }
 
-fun unloadKpmModule(name: String): String {
+fun unloadKpmModule(name: String): Boolean {
     val shell = getRootShell()
     val cmd = "${getKsuDaemonPath()} kpm unload $name"
-    return ShellUtils.fastCmd(shell, cmd)
+    return ShellUtils.fastCmdResult(shell, cmd)
 }
 
 fun getKpmModuleCount(): Int {

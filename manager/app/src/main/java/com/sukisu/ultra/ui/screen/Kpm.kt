@@ -89,8 +89,7 @@ fun KpmScreen(
     val scope = rememberCoroutineScope()
     val confirmDialog = rememberConfirmDialog()
 
-    context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
-
+    val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
     val listState = rememberLazyListState()
     var fabVisible by remember { mutableStateOf(true) }
     var scrollDistance by remember { mutableFloatStateOf(0f) }
@@ -101,9 +100,14 @@ fun KpmScreen(
         derivedStateOf { 12.dp * (1f - scrollBehavior.state.collapsedFraction) }
     }
 
+    val showEmptyState by remember {
+        derivedStateOf {
+            viewModel.moduleList.isEmpty() && searchStatus.searchText.isEmpty()
+        }
+    }
+
     val moduleConfirmContentMap = viewModel.moduleList.associate { module ->
-        val moduleFileName = module.id
-        module.id to stringResource(R.string.confirm_uninstall_content, moduleFileName)
+        module.id to stringResource(R.string.confirm_uninstall_content, module.id)
     }
     val hazeState = remember { HazeState() }
     val hazeStyle = HazeStyle(
@@ -137,44 +141,24 @@ fun KpmScreen(
 
     var tempFileForInstall by remember { mutableStateOf<File?>(null) }
     var showInstallModeDialog by remember { mutableStateOf(false) }
-    val showInstallDialogState = remember { mutableStateOf(false) }
     var moduleName by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(tempFileForInstall) {
-        tempFileForInstall?.let { tempFile ->
-            try {
-                val shell = getRootShell()
-                val command = "strings ${tempFile.absolutePath} | grep 'name='"
-                val result = shell.newJob().add(command).to(ArrayList(), null).exec()
-                if (result.isSuccess) {
-                    for (line in result.out) {
-                        if (line.startsWith("name=")) {
-                            moduleName = line.substringAfter("name=").trim()
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("KsuCli", "Failed to get module name: ${e.message}", e)
-            }
-        }
+        moduleName = tempFileForInstall?.let { extractModuleName(it) }
     }
 
-    LaunchedEffect(showInstallModeDialog) {
-        showInstallDialogState.value = showInstallModeDialog
+    val clearInstallState: () -> Unit = {
+        tempFileForInstall?.delete()
+        tempFileForInstall = null
+        moduleName = null
+        showInstallModeDialog = false
     }
 
     if (showInstallModeDialog) {
         SuperDialog(
-            show = showInstallDialogState,
+            show = remember { mutableStateOf(true) },
             title = kpmInstallMode,
-            onDismissRequest = {
-                showInstallDialogState.value = false
-                showInstallModeDialog = false
-                tempFileForInstall?.delete()
-                tempFileForInstall = null
-                moduleName = null
-            },
+            onDismissRequest = clearInstallState,
             content = {
                 Column {
                     moduleName?.let {
@@ -190,11 +174,11 @@ fun KpmScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    showInstallDialogState.value = false
-                                    showInstallModeDialog = false
-                                    tempFileForInstall?.let { tempFile ->
+                                    val tempFile = tempFileForInstall
+                                    clearInstallState()
+                                    tempFile?.let {
                                         handleModuleInstall(
-                                            tempFile = tempFile,
+                                            tempFile = it,
                                             isEmbed = false,
                                             viewModel = viewModel,
                                             showToast = showToast,
@@ -202,8 +186,6 @@ fun KpmScreen(
                                             kpmInstallFailed = kpmInstallFailed
                                         )
                                     }
-                                    tempFileForInstall = null
-                                    moduleName = null
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -219,11 +201,11 @@ fun KpmScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    showInstallDialogState.value = false
-                                    showInstallModeDialog = false
-                                    tempFileForInstall?.let { tempFile ->
+                                    val tempFile = tempFileForInstall
+                                    clearInstallState()
+                                    tempFile?.let {
                                         handleModuleInstall(
-                                            tempFile = tempFile,
+                                            tempFile = it,
                                             isEmbed = true,
                                             viewModel = viewModel,
                                             showToast = showToast,
@@ -231,8 +213,6 @@ fun KpmScreen(
                                             kpmInstallFailed = kpmInstallFailed
                                         )
                                     }
-                                    tempFileForInstall = null
-                                    moduleName = null
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -252,13 +232,7 @@ fun KpmScreen(
                     ) {
                         TextButton(
                             text = cancel,
-                            onClick = {
-                                showInstallDialogState.value = false
-                                showInstallModeDialog = false
-                                tempFileForInstall?.delete()
-                                tempFileForInstall = null
-                                moduleName = null
-                            },
+                            onClick = clearInstallState,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -285,27 +259,12 @@ fun KpmScreen(
                 }
             }
 
-            val mimeType = context.contentResolver.getType(uri)
-            val isCorrectMimeType = mimeType == null || mimeType.contains("application/octet-stream")
-
-            if (!isCorrectMimeType) {
-                var shouldShowToast = true
-                try {
-                    val matchCount = checkStringsCommand(tempFile)
-                    val isElf = isElfFile(tempFile)
-
-                    if (matchCount >= 1 || isElf) {
-                        shouldShowToast = false
-                    }
-                } catch (e: Exception) {
-                    Log.e("KsuCli", "Failed to execute checks: ${e.message}", e)
-                }
-                if (shouldShowToast) {
-                    showToast(invalidFileTypeMessage)
-                }
+            if (!isValidKpmFile(tempFile, context.contentResolver.getType(uri))) {
+                showToast(invalidFileTypeMessage)
                 tempFile.delete()
                 return@launch
             }
+            
             tempFileForInstall = tempFile
             showInstallModeDialog = true
         }
@@ -318,20 +277,18 @@ fun KpmScreen(
         }
     }
 
-    val nestedScrollConnection = remember {
+    val nestedScrollConnection = remember(listState) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val isScrolledToEnd =
-                    (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index == listState.layoutInfo.totalItemsCount - 1
-                            && (listState.layoutInfo.visibleItemsInfo.lastOrNull()?.size
-                        ?: 0) < listState.layoutInfo.viewportEndOffset)
-                val delta = available.y
-                if (!isScrolledToEnd) {
-                    scrollDistance += delta
-                    if (scrollDistance < -50f) {
+                if (isScrolledToEnd(listState)) return Offset.Zero
+                
+                scrollDistance += available.y
+                when {
+                    scrollDistance < -50f -> {
                         if (fabVisible) fabVisible = false
                         scrollDistance = 0f
-                    } else if (scrollDistance > 50f) {
+                    }
+                    scrollDistance > 50f -> {
                         if (!fabVisible) fabVisible = true
                         scrollDistance = 0f
                     }
@@ -435,72 +392,45 @@ fun KpmScreen(
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current
-        when {
-            viewModel.moduleList.isEmpty() && searchStatus.searchText.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(
-                            top = innerPadding.calculateTopPadding(),
-                            start = innerPadding.calculateStartPadding(layoutDirection),
-                            end = innerPadding.calculateEndPadding(layoutDirection),
-                            bottom = bottomInnerPadding
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Code,
-                            contentDescription = null,
-                            tint = colorScheme.primary.copy(alpha = 0.6f),
-                            modifier = Modifier
-                                .size(96.dp)
-                                .padding(bottom = 16.dp)
-                        )
-                        Text(
-                            stringResource(R.string.kpm_empty),
-                            textAlign = TextAlign.Center,
-                            color = colorScheme.onBackground
-                        )
-                    }
-                }
-            }
-            else -> {
-                searchStatus.SearchBox(
-                    searchBarTopPadding = dynamicTopPadding,
-                    contentPadding = PaddingValues(
-                        top = innerPadding.calculateTopPadding(),
-                        start = innerPadding.calculateStartPadding(layoutDirection),
-                        end = innerPadding.calculateEndPadding(layoutDirection)
-                    ),
+        
+        if (showEmptyState) {
+            EmptyStateView(
+                innerPadding = innerPadding,
+                bottomInnerPadding = bottomInnerPadding,
+                layoutDirection = layoutDirection
+            )
+        } else {
+            searchStatus.SearchBox(
+                searchBarTopPadding = dynamicTopPadding,
+                contentPadding = PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    end = innerPadding.calculateEndPadding(layoutDirection)
+                ),
+                hazeState = hazeState,
+                hazeStyle = hazeStyle
+            ) { boxHeight ->
+                KpmList(
+                    viewModel = viewModel,
+                    listState = listState,
+                    scope = scope,
+                    moduleConfirmContentMap = moduleConfirmContentMap,
+                    showToast = showToast,
+                    kpmUninstallSuccess = kpmUninstallSuccess,
+                    kpmUninstallFailed = kpmUninstallFailed,
+                    failedToCheckModuleFile = failedToCheckModuleFile,
+                    uninstall = uninstall,
+                    cancel = cancel,
+                    confirmDialog = confirmDialog,
+                    confirmTitle = confirmTitle,
+                    scrollBehavior = scrollBehavior,
+                    nestedScrollConnection = nestedScrollConnection,
                     hazeState = hazeState,
-                    hazeStyle = hazeStyle
-                ) { boxHeight ->
-                    KpmList(
-                        viewModel = viewModel,
-                        listState = listState,
-                        scope = scope,
-                        moduleConfirmContentMap = moduleConfirmContentMap,
-                        showToast = showToast,
-                        kpmUninstallSuccess = kpmUninstallSuccess,
-                        kpmUninstallFailed = kpmUninstallFailed,
-                        failedToCheckModuleFile = failedToCheckModuleFile,
-                        uninstall = uninstall,
-                        cancel = cancel,
-                        confirmDialog = confirmDialog,
-                        confirmTitle = confirmTitle,
-                        scrollBehavior = scrollBehavior,
-                        nestedScrollConnection = nestedScrollConnection,
-                        hazeState = hazeState,
-                        innerPadding = innerPadding,
-                        bottomInnerPadding = bottomInnerPadding,
-                        boxHeight = boxHeight,
-                        layoutDirection = layoutDirection
-                    )
-                }
+                    innerPadding = innerPadding,
+                    bottomInnerPadding = bottomInnerPadding,
+                    boxHeight = boxHeight,
+                    layoutDirection = layoutDirection
+                )
             }
         }
     }
@@ -514,24 +444,8 @@ private suspend fun handleModuleInstall(
     kpmInstallSuccess: String,
     kpmInstallFailed: String
 ) {
-    var moduleId: String? = null
-    try {
-        val shell = getRootShell()
-        val command = "strings ${tempFile.absolutePath} | grep 'name='"
-        val result = shell.newJob().add(command).to(ArrayList(), null).exec()
-        if (result.isSuccess) {
-            for (line in result.out) {
-                if (line.startsWith("name=")) {
-                    moduleId = line.substringAfter("name=").trim()
-                    break
-                }
-            }
-        }
-    } catch (e: Exception) {
-        Log.e("KsuCli", "Failed to get module ID from strings command: ${e.message}", e)
-    }
-
-    if (moduleId == null || moduleId.isEmpty()) {
+    val moduleId = extractModuleName(tempFile)
+    if (moduleId.isNullOrEmpty()) {
         Log.e("KsuCli", "Failed to extract module ID from file: ${tempFile.name}")
         showToast(kpmInstallFailed)
         tempFile.delete()
@@ -548,8 +462,8 @@ private suspend fun handleModuleInstall(
         }
 
         val loadResult = loadKpmModule(tempFile.absolutePath)
-        if (loadResult.startsWith("Error")) {
-            Log.e("KsuCli", "Failed to load KPM module: $loadResult")
+        if (!loadResult) {
+            Log.e("KsuCli", "Failed to load KPM module")
             showToast(kpmInstallFailed)
         } else {
             viewModel.fetchModuleList()
@@ -598,8 +512,8 @@ private suspend fun handleModuleUninstall(
     if (confirmResult == ConfirmResult.Confirmed) {
         try {
             val unloadResult = unloadKpmModule(module.id)
-            if (unloadResult.startsWith("Error")) {
-                Log.e("KsuCli", "Failed to unload KPM module: $unloadResult")
+            if (!unloadResult) {
+                Log.e("KsuCli", "Failed to unload KPM module")
                 showToast(kpmUninstallFailed)
                 return
             }
@@ -991,29 +905,54 @@ private fun KpmModuleItem(
     }
 }
 
+private fun extractModuleName(file: File): String? {
+    return try {
+        val shell = getRootShell()
+        val command = "strings ${file.absolutePath} | grep 'name='"
+        val result = shell.newJob().add(command).to(ArrayList(), null).exec()
+        if (result.isSuccess) {
+            result.out.firstOrNull { it.startsWith("name=") }
+                ?.substringAfter("name=")
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+        } else null
+    } catch (e: Exception) {
+        Log.e("KsuCli", "Failed to extract module name: ${e.message}", e)
+        null
+    }
+}
+
+private fun isValidKpmFile(file: File, mimeType: String?): Boolean {
+    val isCorrectMimeType = mimeType == null || mimeType.contains("application/octet-stream")
+    if (isCorrectMimeType) return true
+    
+    return try {
+        checkStringsCommand(file) >= 1 || isElfFile(file)
+    } catch (e: Exception) {
+        Log.e("KsuCli", "Failed to validate file: ${e.message}", e)
+        false
+    }
+}
+
 private fun checkStringsCommand(tempFile: File): Int {
     val shell = getRootShell()
     val command = "strings ${tempFile.absolutePath} | grep -E 'name=|version=|license=|author='"
     val result = shell.newJob().add(command).to(ArrayList(), null).exec()
 
-    if (!result.isSuccess) {
-        return 0
-    }
+    if (!result.isSuccess) return 0
 
-    var matchCount = 0
     val keywords = listOf("name=", "version=", "license=", "author=")
     var nameExists = false
+    var matchCount = 0
 
     for (line in result.out) {
-        if (!nameExists && line.startsWith("name=")) {
-            nameExists = true
-            matchCount++
-        } else if (nameExists) {
-            for (keyword in keywords) {
-                if (line.startsWith(keyword)) {
-                    matchCount++
-                    break
-                }
+        when {
+            !nameExists && line.startsWith("name=") -> {
+                nameExists = true
+                matchCount++
+            }
+            nameExists && keywords.any { line.startsWith(it) } -> {
+                matchCount++
             }
         }
     }
@@ -1022,10 +961,59 @@ private fun checkStringsCommand(tempFile: File): Int {
 }
 
 private fun isElfFile(tempFile: File): Boolean {
-    val elfMagic = byteArrayOf(0x7F, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte())
-    val fileBytes = ByteArray(4)
-    FileInputStream(tempFile).use { input ->
-        input.read(fileBytes)
+    val elfMagic = byteArrayOf(0x7F, 0x45, 0x4C, 0x46) // "\u007FELF"
+    return try {
+        FileInputStream(tempFile).use { input ->
+            val bytes = ByteArray(4)
+            input.read(bytes) == 4 && bytes.contentEquals(elfMagic)
+        }
+    } catch (e: Exception) {
+        Log.e("KsuCli", "Failed to check ELF file: ${e.message}", e)
+        false
     }
-    return fileBytes.contentEquals(elfMagic)
+}
+
+private fun isScrolledToEnd(listState: LazyListState): Boolean {
+    val layoutInfo = listState.layoutInfo
+    val lastItem = layoutInfo.visibleItemsInfo.lastOrNull() ?: return false
+    return lastItem.index == layoutInfo.totalItemsCount - 1 &&
+            lastItem.size < layoutInfo.viewportEndOffset
+}
+
+@Composable
+private fun EmptyStateView(
+    innerPadding: PaddingValues,
+    bottomInnerPadding: Dp,
+    layoutDirection: LayoutDirection
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                top = innerPadding.calculateTopPadding(),
+                start = innerPadding.calculateStartPadding(layoutDirection),
+                end = innerPadding.calculateEndPadding(layoutDirection),
+                bottom = bottomInnerPadding
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Code,
+                contentDescription = null,
+                tint = colorScheme.primary.copy(alpha = 0.6f),
+                modifier = Modifier
+                    .size(96.dp)
+                    .padding(bottom = 16.dp)
+            )
+            Text(
+                stringResource(R.string.kpm_empty),
+                textAlign = TextAlign.Center,
+                color = colorScheme.onBackground
+            )
+        }
+    }
 }
