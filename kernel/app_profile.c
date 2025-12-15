@@ -12,6 +12,7 @@
 #include "app_profile.h"
 #include "klog.h" // IWYU pragma: keep
 #include "selinux/selinux.h"
+#include "su_mount_ns.h"
 #include "syscall_hook_manager.h"
 #include "sucompat.h"
 
@@ -144,6 +145,7 @@ void escape_with_root_profile(void)
     spin_unlock_irq(&current->sighand->siglock);
 
     setup_selinux(profile->selinux_domain);
+
 #if __SULOG_GATE
     ksu_sulog_report_su_grant(current_euid().val, NULL, "escape_to_root");
 #endif
@@ -151,6 +153,8 @@ void escape_with_root_profile(void)
     for_each_thread (p, t) {
         ksu_set_task_tracepoint_flag(t);
     }
+
+    setup_mount_ns(profile->namespaces);
 }
 
 void escape_to_root_for_init(void)
@@ -311,6 +315,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
     for_each_thread (p, t) {
         ksu_set_task_tracepoint_flag(t);
     }
+    setup_mount_ns(profile->namespaces);
     pr_info("cmd_su: privilege escalation completed for UID: %d, PID: %d\n",
             target_uid, target_pid);
 }
