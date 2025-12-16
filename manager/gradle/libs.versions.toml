@@ -1,6 +1,5 @@
 [versions]
 agp = "8.13.2"
-gson = "2.13.2"
 kotlin = "2.2.21"
 ksp = "2.3.3"
 compose-bom = "2025.12.00"
@@ -17,10 +16,11 @@ ndk = "29.0.14206865"
 libsu = "6.0.0"
 apksign = "1.4"
 cmaker = "1.2"
-miuix = "0.7.1"
+miuix = "0.7.2"
 haze = "1.7.1"
 capsule = "2.1.2"
 documentfile = "1.1.0"
+gson = "2.13.2"
 
 [plugins]
 agp-app = { id = "com.android.application", version.ref = "agp" }
