@@ -1,16 +1,10 @@
 package com.sukisu.ultra.ui.screen.settings
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.add
@@ -22,9 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.FolderDelete
 import androidx.compose.material.icons.rounded.Restore
@@ -42,22 +33,13 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.edit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.UmountManagerDestination
-import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.ConfirmResult
 import com.sukisu.ultra.ui.component.DynamicManagerCard
 import com.sukisu.ultra.ui.component.KsuIsValid
-import com.sukisu.ultra.ui.component.rememberConfirmDialog
-import com.sukisu.ultra.ui.util.cleanRuntimeEnvironment
-import com.sukisu.ultra.ui.util.getUidMultiUserScan
-import com.sukisu.ultra.ui.util.readUidScannerFile
-import com.sukisu.ultra.ui.util.setUidAutoScan
-import com.sukisu.ultra.ui.util.setUidMultiUserScan
 import com.sukisu.ultra.ui.util.getSELinuxStatus
 import com.topjohnwu.superuser.Shell
 import dev.chrisbanes.haze.HazeState
@@ -138,14 +120,6 @@ fun Tools(
                 KsuIsValid {
                     SelinuxToggleSection(scope = scope, context = context)
 
-                    Card(
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        UidScannerSection(prefs = prefs, scope = scope, context = context)
-                    }
-
                     DynamicManagerCard()
 
                     Card(
@@ -174,153 +148,6 @@ fun Tools(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun UidScannerSection(
-    prefs: SharedPreferences,
-    scope: CoroutineScope,
-    context: Context
-) {
-    val realAuto = Natives.isUidScannerEnabled()
-    val realMulti = getUidMultiUserScan()
-
-    var autoOn by remember { mutableStateOf(realAuto) }
-    var multiOn by remember { mutableStateOf(realMulti) }
-
-    LaunchedEffect(Unit) {
-        autoOn = realAuto
-        multiOn = realMulti
-        prefs.edit {
-            putBoolean("uid_auto_scan", autoOn)
-            putBoolean("uid_multi_user_scan", multiOn)
-        }
-    }
-
-    SuperSwitch(
-        title = stringResource(R.string.uid_auto_scan_title),
-        summary = stringResource(R.string.uid_auto_scan_summary),
-        leftAction = {
-            Icon(
-                imageVector = Icons.Filled.Scanner,
-                modifier = Modifier.padding(end = 16.dp),
-                contentDescription = stringResource(R.string.uid_auto_scan_title),
-                tint = colorScheme.onBackground
-            )
-        },
-        checked = autoOn,
-        onCheckedChange = { target ->
-            autoOn = target
-            if (!target) multiOn = false
-
-            scope.launch(Dispatchers.IO) {
-                setUidAutoScan(target)
-                val actual = Natives.isUidScannerEnabled() || readUidScannerFile()
-                withContext(Dispatchers.Main) {
-                    autoOn = actual
-                    if (!actual) multiOn = false
-                    prefs.edit {
-                        putBoolean("uid_auto_scan", actual)
-                        putBoolean("uid_multi_user_scan", multiOn)
-                    }
-                    if (actual != target) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.uid_scanner_setting_failed),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            }
-        }
-    )
-
-    AnimatedVisibility(
-        visible = autoOn,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-    ) {
-        SuperSwitch(
-            title = stringResource(R.string.uid_multi_user_scan_title),
-            summary = stringResource(R.string.uid_multi_user_scan_summary),
-            leftAction = {
-                Icon(
-                    imageVector = Icons.Filled.Groups,
-                    modifier = Modifier.padding(end = 16.dp),
-                    contentDescription = stringResource(R.string.uid_multi_user_scan_title),
-                    tint = colorScheme.onBackground
-                )
-            },
-            checked = multiOn,
-            onCheckedChange = { target ->
-                scope.launch(Dispatchers.IO) {
-                    val ok = setUidMultiUserScan(target)
-                    withContext(Dispatchers.Main) {
-                        if (ok) {
-                            multiOn = target
-                            prefs.edit { putBoolean("uid_multi_user_scan", target) }
-                        } else {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.uid_scanner_setting_failed),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        )
-    }
-
-    AnimatedVisibility(
-        visible = autoOn,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-    ) {
-        val confirmDialog = rememberConfirmDialog()
-        SuperArrow(
-            title = stringResource(R.string.clean_runtime_environment),
-            summary = stringResource(R.string.clean_runtime_environment_summary),
-            leftAction = {
-                Icon(
-                    imageVector = Icons.Filled.CleaningServices,
-                    modifier = Modifier.padding(end = 16.dp),
-                    contentDescription = stringResource(R.string.clean_runtime_environment),
-                    tint = colorScheme.onBackground
-                )
-            },
-            onClick = {
-                scope.launch {
-                    if (confirmDialog.awaitConfirm(
-                            title = context.getString(R.string.clean_runtime_environment),
-                            content = context.getString(R.string.clean_runtime_environment_confirm)
-                        ) == ConfirmResult.Confirmed
-                    ) {
-                        if (cleanRuntimeEnvironment()) {
-                            autoOn = false
-                            multiOn = false
-                            prefs.edit {
-                                putBoolean("uid_auto_scan", false)
-                                putBoolean("uid_multi_user_scan", false)
-                            }
-                            Natives.setUidScannerEnabled(false)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.clean_runtime_environment_success),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.clean_runtime_environment_failed),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                }
-            }
-        )
     }
 }
 
