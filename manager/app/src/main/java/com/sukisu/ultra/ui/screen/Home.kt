@@ -627,31 +627,6 @@ private fun InfoCard() {
                 title = stringResource(R.string.home_manager_version),
                 content = "${managerVersion.first} (${managerVersion.second})"
             )
-            val managersList = remember { Natives.getManagersList() }
-            val dynamicValid = remember { Natives.getDynamicManager()?.isValid() == true }
-            if (dynamicValid && managersList != null) {
-                val signatureMap = managersList.managers.groupBy { it.signatureIndex }
-                val showDetailed = signatureMap.isNotEmpty() || signatureMap.keys.firstOrNull() != 0
-                if (showDetailed) {
-                    val managersText = buildString {
-                        signatureMap.toSortedMap().forEach { (idx, list) ->
-                            append(list.joinToString(", ") { "UID: ${it.uid}" })
-                            append(
-                                when (idx) {
-                                    0    -> " (${stringResource(R.string.default_signature)})"
-                                    100  -> " (${stringResource(R.string.dynamic_managerature)})"
-                                    else -> " (${stringResource(R.string.signature_index, idx)})"
-                                }
-                            )
-                            append(" | ")
-                        }
-                    }.trimEnd(' ', '|')
-                    InfoText(
-                        title = stringResource(R.string.multi_manager_list),
-                        content = managersText
-                    )
-                }
-            }
             if (isSusfsSupported) {
                 InfoText(
                     title = stringResource(R.string.home_susfs_version),

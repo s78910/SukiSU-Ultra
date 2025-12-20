@@ -38,7 +38,6 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.UmountManagerDestination
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.DynamicManagerCard
 import com.sukisu.ultra.ui.component.KsuIsValid
 import com.sukisu.ultra.ui.util.getSELinuxStatus
 import com.topjohnwu.superuser.Shell
@@ -119,8 +118,6 @@ fun Tools(
             item {
                 KsuIsValid {
                     SelinuxToggleSection(scope = scope, context = context)
-
-                    DynamicManagerCard()
 
                     Card(
                         modifier = Modifier
