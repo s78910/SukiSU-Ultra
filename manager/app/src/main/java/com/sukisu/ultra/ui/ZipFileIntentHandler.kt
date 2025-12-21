@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,6 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
@@ -28,6 +30,7 @@ import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import com.sukisu.ultra.Natives
 
 private sealed class DialogState {
     data object None : DialogState()
@@ -49,6 +52,17 @@ fun HandleZipFileIntent(
     var dialogState by remember { mutableStateOf<DialogState>(DialogState.None) }
     var selectedSlot by remember { mutableStateOf<String?>(null) }
     var kpmPatchOption by remember { mutableStateOf(KpmPatchOption.FOLLOW_KERNEL) }
+    val isSafeMode = Natives.isSafeMode
+
+    val isSafeModeString = stringResource(R.string.safe_mode_module_disabled)
+    val zipTypeModuleString = stringResource(R.string.zip_type_module)
+    val zipTypeKernelString = stringResource(R.string.zip_type_kernel)
+    val zipFileUnknownString = stringResource(R.string.zip_file_unknown)
+    val mixedInstallPromptWithName = stringResource(R.string.mixed_install_prompt_with_name)
+    val kernelInstallPromptWithName = stringResource(R.string.kernel_install_prompt_with_name)
+    val moduleInstallPromptWithName = stringResource(R.string.module_install_prompt_with_name)
+    val horizonKernelString = stringResource(R.string.horizon_kernel)
+    val moduleString = stringResource(R.string.module)
     
     LaunchedEffect(intent) {
         if (intent == null || processed) return@LaunchedEffect
@@ -123,31 +137,31 @@ fun HandleZipFileIntent(
             val finalModuleUris = moduleUris + unknownUris
             
             val fileNames = zipUrisList.mapIndexed { index, uri -> 
-                val fileName = uri.getFileName(context) ?: context.getString(R.string.zip_file_unknown)
+                val fileName = uri.getFileName(context) ?: zipFileUnknownString
                 val type = when (zipTypes[index]) {
-                    ZipType.MODULE -> context.getString(R.string.zip_type_module)
-                    ZipType.KERNEL -> context.getString(R.string.zip_type_kernel)
-                    ZipType.UNKNOWN -> context.getString(R.string.zip_type_unknown)
+                    ZipType.MODULE -> zipTypeModuleString
+                    ZipType.KERNEL -> zipTypeKernelString
+                    ZipType.UNKNOWN -> zipFileUnknownString
                 }
                 "\n${index + 1}. $fileName$type"
             }.joinToString("")
             
             val confirmContent = when {
                 moduleUris.isNotEmpty() && kernelUris.isNotEmpty() -> {
-                    context.getString(R.string.mixed_install_prompt_with_name, fileNames)
+                    mixedInstallPromptWithName.format(fileNames)
                 }
                 kernelUris.isNotEmpty() -> {
-                    context.getString(R.string.kernel_install_prompt_with_name, fileNames)
+                    kernelInstallPromptWithName.format(fileNames)
                 }
                 else -> {
-                    context.getString(R.string.module_install_prompt_with_name, fileNames)
+                    moduleInstallPromptWithName.format(fileNames)
                 }
             }
             
             val confirmTitle = if (kernelUris.isNotEmpty() && moduleUris.isEmpty()) {
-                context.getString(R.string.horizon_kernel)
+                horizonKernelString
             } else {
-                context.getString(R.string.module)
+                moduleString
             }
             
             val result = confirmDialog.awaitConfirm(
@@ -157,8 +171,13 @@ fun HandleZipFileIntent(
             
             if (result == ConfirmResult.Confirmed) {
                 if (finalModuleUris.isNotEmpty()) {
-                    navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(finalModuleUris))) {
-                        launchSingleTop = true
+                    // 如果处于安全模式，禁止安装模块
+                    if (isSafeMode) {
+                        Toast.makeText(context, isSafeModeString, Toast.LENGTH_SHORT).show()
+                    } else {
+                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(finalModuleUris))) {
+                            launchSingleTop = true
+                        }
                     }
                 }
                 
