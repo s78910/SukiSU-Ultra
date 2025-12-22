@@ -47,15 +47,6 @@ pub fn on_post_data_fs() -> Result<()> {
 
     assets::ensure_binaries(true).with_context(|| "Failed to extract bin assets")?;
 
-    // Start UID scanner daemon with highest priority
-    crate::uid_scanner::start_uid_scanner_daemon()?;
-
-    if is_safe_mode() {
-        warn!("safe mode, skip load feature config");
-    } else if let Err(e) = crate::umount_manager::load_and_apply_config() {
-        warn!("Failed to load umount config: {e}");
-    }
-
     // if we are in safe mode, we should disable all modules
     if safe_mode {
         warn!("safe mode, skip post-fs-data scripts and disable all modules!");
@@ -94,13 +85,8 @@ pub fn on_post_data_fs() -> Result<()> {
     }
 
     #[cfg(target_arch = "aarch64")]
-    if let Err(e) = kpm::start_kpm_watcher() {
+    if let Err(e) = kpm::booted_load() {
         warn!("KPM: Failed to start KPM watcher: {e}");
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    if let Err(e) = kpm::load_kpm_modules() {
-        warn!("KPM: Failed to load KPM modules: {e}");
     }
 
     // execute metamodule post-fs-data script first (priority)
@@ -122,6 +108,11 @@ pub fn on_post_data_fs() -> Result<()> {
     // execute metamodule mount script
     if let Err(e) = metamodule::exec_mount_script(module_dir) {
         warn!("execute metamodule mount failed: {e}");
+    }
+
+    // Load umount config and apply to kernel
+    if let Err(e) = crate::umount::load_umount_config() {
+        warn!("load umount config failed: {e}");
     }
 
     run_stage("post-mount", true);

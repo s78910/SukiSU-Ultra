@@ -2,14 +2,14 @@ use anyhow::{Context, Ok, Result};
 use clap::Parser;
 use std::path::PathBuf;
 
-#[cfg(target_os = "android")]
 use android_logger::Config;
-#[cfg(target_os = "android")]
 use log::LevelFilter;
 
 use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
+#[cfg(target_arch = "aarch64")]
+use crate::susfs;
 use crate::{
-    apk_sign, assets, debug, defs, init_event, ksucalls, module, module_config, susfs, utils,
+    apk_sign, assets, debug, defs, init_event, ksucalls, module, module_config, umount, utils,
 };
 
 /// KernelSU userspace cli
@@ -37,6 +37,7 @@ enum Commands {
     /// Trigger `boot-complete` event
     BootCompleted,
 
+    #[cfg(target_arch = "aarch64")]
     /// Susfs
     Susfs {
         #[command(subcommand)]
@@ -398,6 +399,31 @@ enum Kernel {
 }
 
 #[derive(clap::Subcommand, Debug)]
+enum Umount {
+    /// Add mount point to umount list
+    Add {
+        /// mount point path
+        mnt: String,
+        /// umount flags (default: 0, MNT_DETACH: 2)
+        #[arg(short, long, default_value = "0")]
+        flags: u32,
+    },
+    /// Remove mount point from umount list
+    Remove {
+        /// mount point path
+        mnt: String,
+    },
+    /// List all mount points in umount list
+    List,
+    /// Save current umount list to file
+    Save,
+    /// Apply saved umount list from file to kernel
+    Apply,
+    /// Clear custom umount paths (wipe kernel list)
+    ClearCustom,
+}
+
+#[derive(clap::Subcommand, Debug)]
 enum UmountOp {
     /// Add mount point to umount list
     Add {
@@ -440,6 +466,7 @@ mod kpm_cmd {
     }
 }
 
+#[cfg(target_arch = "aarch64")]
 #[derive(clap::Subcommand, Debug)]
 enum Susfs {
     /// Get SUSFS Status
@@ -450,53 +477,12 @@ enum Susfs {
     Features,
 }
 
-#[derive(clap::Subcommand, Debug)]
-enum Umount {
-    /// Add custom umount path
-    Add {
-        /// Mount path to add
-        path: String,
-
-        /// Check mount type (overlay)
-        #[arg(long, default_value = "false")]
-
-        /// Umount flags (0 or 8 for MNT_DETACH)
-        #[arg(long, default_value = "-1")]
-        flags: i32,
-    },
-
-    /// Remove custom umount path
-    Remove {
-        /// Mount path to remove
-        path: String,
-    },
-
-    /// List all umount paths
-    List,
-
-    /// Clear all recorded umount paths
-    ClearCustom,
-
-    /// Save configuration to file
-    Save,
-
-    /// Load and apply configuration from file
-    Load,
-
-    /// Apply current configuration to kernel
-    Apply,
-}
-
 pub fn run() -> Result<()> {
-    #[cfg(target_os = "android")]
     android_logger::init_once(
         Config::default()
-            .with_max_level(LevelFilter::Trace) // limit log level
-            .with_tag("KernelSU"), // logs will show under mytag tag
+            .with_max_level(crate::debug_select!(LevelFilter::Trace, LevelFilter::Info))
+            .with_tag("KernelSU"),
     );
-
-    #[cfg(not(target_os = "android"))]
-    env_logger::init();
 
     // the kernel executes su with argv[0] = "su" and replace it with us
     let arg0 = std::env::args().next().unwrap_or_default();
@@ -514,6 +500,7 @@ pub fn run() -> Result<()> {
             init_event::on_boot_completed();
             Ok(())
         }
+        #[cfg(target_arch = "aarch64")]
         Commands::Susfs { command } => {
             match command {
                 Susfs::Version => println!("{}", susfs::get_susfs_version()),
@@ -525,10 +512,7 @@ pub fn run() -> Result<()> {
             Ok(())
         }
         Commands::Module { command } => {
-            #[cfg(any(target_os = "linux", target_os = "android"))]
-            {
-                utils::switch_mnt_ns(1)?;
-            }
+            utils::switch_mnt_ns(1)?;
             match command {
                 Module::Install { zip } => module::install_module(&zip),
                 Module::UndoUninstall { id } => module::undo_uninstall_module(&id),
@@ -722,6 +706,18 @@ pub fn run() -> Result<()> {
             }
         },
         Commands::BootRestore(boot_restore) => crate::boot_patch::restore(boot_restore),
+        Commands::Umount { command } => match command {
+            Umount::Add { mnt, flags } => ksucalls::umount_list_add(&mnt, flags),
+            Umount::Remove { mnt } => umount::remove_umount_entry_from_config(&mnt),
+            Umount::List => {
+                let list = ksucalls::umount_list_list()?;
+                print!("{list}");
+                Ok(())
+            }
+            Umount::Save => umount::save_umount_config(),
+            Umount::Apply => umount::apply_umount_config(),
+            Umount::ClearCustom => umount::clear_umount_config(),
+        },
         Commands::Kernel { command } => match command {
             Kernel::NukeExt4Sysfs { mnt } => ksucalls::nuke_ext4_sysfs(&mnt),
             Kernel::Umount { command } => match command {
@@ -739,29 +735,20 @@ pub fn run() -> Result<()> {
             use crate::cli::kpm_cmd::Kpm;
             match command {
                 Kpm::Load { path, args } => {
-                    crate::kpm::kpm_load(path.to_str().unwrap(), args.as_deref())
+                    crate::kpm::load_module(path.to_str().unwrap(), args.as_deref())
                 }
-                Kpm::Unload { name } => crate::kpm::kpm_unload(&name),
-                Kpm::Num => crate::kpm::kpm_num().map(|_| ()),
-                Kpm::List => crate::kpm::kpm_list(),
-                Kpm::Info { name } => crate::kpm::kpm_info(&name),
+                Kpm::Unload { name } => crate::kpm::unload_module(name),
+                Kpm::Num => crate::kpm::num().map(|_| ()),
+                Kpm::List => crate::kpm::list(),
+                Kpm::Info { name } => crate::kpm::info(name),
                 Kpm::Control { name, args } => {
-                    let ret = crate::kpm::kpm_control(&name, &args)?;
+                    let ret = crate::kpm::control(name, args)?;
                     println!("{ret}");
                     Ok(())
                 }
-                Kpm::Version => crate::kpm::kpm_version_loader(),
+                Kpm::Version => crate::kpm::version(),
             }
         }
-        Commands::Umount { command } => match command {
-            Umount::Add { path, flags } => crate::umount_manager::add_umount_path(&path, flags),
-            Umount::Remove { path } => crate::umount_manager::remove_umount_path(&path),
-            Umount::List => crate::umount_manager::list_umount_paths(),
-            Umount::ClearCustom => crate::umount_manager::clear_custom_paths(),
-            Umount::Save => crate::umount_manager::save_umount_config(),
-            Umount::Load => crate::umount_manager::load_and_apply_config(),
-            Umount::Apply => crate::umount_manager::apply_config_to_kernel(),
-        },
     };
 
     if let Err(e) = &result {

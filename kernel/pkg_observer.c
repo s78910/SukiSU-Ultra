@@ -9,7 +9,6 @@
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
 #include "throne_tracker.h"
-#include "throne_comm.h"
 
 #define MASK_SYSTEM (FS_CREATE | FS_MOVE | FS_EVENT_ON_CHILD)
 
@@ -24,19 +23,15 @@ struct watch_dir {
 static struct fsnotify_group *g;
 
 static int ksu_handle_inode_event(struct fsnotify_mark *mark, u32 mask,
-                  struct inode *inode, struct inode *dir,
-                  const struct qstr *file_name, u32 cookie)
+                                  struct inode *inode, struct inode *dir,
+                                  const struct qstr *file_name, u32 cookie)
 {
     if (!file_name)
         return 0;
     if (mask & FS_ISDIR)
         return 0;
-    if (file_name->len == 13 &&
-        !memcmp(file_name->name, "packages.list", 13)) {
+    if (file_name->len == 13 && !memcmp(file_name->name, "packages.list", 13)) {
         pr_info("packages.list detected: %d\n", mask);
-        if (ksu_uid_scanner_enabled) {
-            ksu_request_userspace_scan();
-        }
         track_throne(false);
     }
     return 0;
@@ -47,7 +42,7 @@ static const struct fsnotify_ops ksu_ops = {
 };
 
 static int add_mark_on_inode(struct inode *inode, u32 mask,
-                 struct fsnotify_mark **out)
+                             struct fsnotify_mark **out)
 {
     struct fsnotify_mark *m;
 
@@ -106,7 +101,7 @@ static void unwatch_one_dir(struct watch_dir *wd)
 }
 
 static struct watch_dir g_watch = { .path = "/data/system",
-                    .mask = MASK_SYSTEM };
+                                    .mask = MASK_SYSTEM };
 
 int ksu_observer_init(void)
 {
