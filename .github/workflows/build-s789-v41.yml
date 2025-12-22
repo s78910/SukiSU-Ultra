@@ -8,18 +8,19 @@ on:
       build_type:
         description: 'Build type'
         required: true
-        default: 's789-only'
+        default: 'both'
         type: choice
         options:
-          - s789-only
           - both
+          - s789-only
+          - original-only
 
 env:
   KEYSTORE_FILE: ${{ github.workspace }}/key.jks
 
 jobs:
   build:
-    name: Build S789 APK (v4.1+)
+    name: Build APK (v4.1+)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout upstream SukiSU-Ultra
@@ -31,7 +32,6 @@ jobs:
       - name: Get Version Info
         id: version
         run: |
-          # Calculate version like upstream does
           GIT_COUNT=$(git rev-list --count HEAD)
           VERSION_CODE=$((40000 + GIT_COUNT - 2815))
           VERSION_NAME=$(git describe --tags --always --abbrev=0 2>/dev/null || echo "v4.1.0")
@@ -60,31 +60,40 @@ jobs:
       - name: Determine Build Type
         id: build_type
         run: |
-          BUILD_TYPE="${{ github.event.client_payload.build_type || inputs.build_type || 's789-only' }}"
+          BUILD_TYPE="${{ github.event.client_payload.build_type || inputs.build_type || 'both' }}"
           echo "type=$BUILD_TYPE" >> $GITHUB_OUTPUT
           echo "Build type: $BUILD_TYPE"
 
+      # ========== Build Original (Unmodified) APK ==========
       - name: Build Original APK
-        if: steps.build_type.outputs.type == 'both'
+        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 'original-only'
         working-directory: manager
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          echo "Building Original (Unmodified) APK..."
           ./gradlew assembleRelease
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           mkdir -p ../output
           cp "$APK" ../output/SukiSU-Original-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk
-          ./gradlew clean
+          echo "Original APK built successfully"
 
+      - name: Clean for S789 Build
+        if: steps.build_type.outputs.type == 'both'
+        working-directory: manager
+        run: ./gradlew clean
+
+      # ========== Build S789 Modified APK ==========
       - name: Apply S789 Modifications
+        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 's789-only'
         run: |
           cd manager
           
-          # 1. Change app name to S789
-          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">S789<\/string>/g' app/src/main/res/values/strings.xml
-          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">S789<\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
+          # 1. Change app name to S789 custom name
+          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' app/src/main/res/values/strings.xml
+          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
           
           # 2. Change package name
           sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.susu.s789"\n    }/' app/build.gradle.kts
@@ -107,17 +116,21 @@ jobs:
           echo "S789 modifications applied"
 
       - name: Build S789 APK
+        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 's789-only'
         working-directory: manager
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          echo "Building S789 Modified APK..."
           ./gradlew assembleRelease
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           mkdir -p ../output
           cp "$APK" ../output/SukiSU-S789-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}.apk
+          echo "S789 APK built successfully"
 
+      # ========== Extract Certificate Info ==========
       - name: Extract Certificate Info
         run: |
           cat > extract_cert.py << 'PYEOF'
@@ -145,9 +158,13 @@ jobs:
               s, h = get_cert(apk)
               if s: print(f"{apk}: size={s}, hash={h}")
           PYEOF
+          
+          mkdir -p output
           echo "=== Certificate Info ===" > output/cert_info.txt
           echo "Version: ${{ steps.version.outputs.name }} (${{ steps.version.outputs.code }})" >> output/cert_info.txt
+          echo "Build Type: ${{ steps.build_type.outputs.type }}" >> output/cert_info.txt
           echo "" >> output/cert_info.txt
+          
           for apk in output/*.apk; do
             [ -f "$apk" ] || continue
             INFO=$(python3 extract_cert.py "$apk")
@@ -164,6 +181,6 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SukiSU-S789-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
+          name: SukiSU-${{ steps.build_type.outputs.type }}-${{ steps.version.outputs.name }}-${{ steps.version.outputs.code }}
           path: output/
           retention-days: 90
