@@ -1,6 +1,8 @@
 name: Build S789 Final (Dual APKs)
 
 on:
+  repository_dispatch:
+    types: [build-s789]
   workflow_dispatch:
     inputs:
       version:
@@ -29,7 +31,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.version || '' }}
+          ref: ${{ github.event.client_payload.version || inputs.version || '' }}
           fetch-depth: 0
 
       - name: Get Version Info
@@ -58,8 +60,15 @@ jobs:
           echo "${{ secrets.KEYSTORE }}" | base64 -d > $KEYSTORE_FILE
           echo "Keystore prepared"
 
+      - name: Determine Build Type
+        id: build_type
+        run: |
+          BUILD_TYPE="${{ github.event.client_payload.build_type || inputs.build_type || 's789-only' }}"
+          echo "type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+          echo "Build type: $BUILD_TYPE"
+
       - name: Build Original APK
-        if: inputs.build_type == 'both' || inputs.build_type == 'original-only'
+        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 'original-only'
         working-directory: manager
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -72,19 +81,19 @@ jobs:
           cp "$APK" ../output/SukiSU-Original-${{ steps.version.outputs.tag }}.apk
 
       - name: Clean for S789 Build
-        if: inputs.build_type == 'both'
+        if: steps.build_type.outputs.type == 'both'
         run: |
           cd manager && ./gradlew clean
           git checkout -- .
 
       - name: Apply S789 Modifications
-        if: inputs.build_type == 'both' || inputs.build_type == 's789-only'
+        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 's789-only'
         run: |
           cd manager
           
           # 1. Change app name
           sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' app/src/main/res/values/strings.xml
-          sed -i 's/<string name="app_name">SukiSU Ultra<\\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
+          sed -i 's/<string name="app_name">SukiSU Ultra<\\\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\\\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
           
           # 2. Change package name using sed (fix: not append)
           sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.susu.s789"\n    }/' app/build.gradle.kts
@@ -105,7 +114,7 @@ jobs:
           echo "S789 modifications applied"
 
       - name: Build S789 APK
-        if: inputs.build_type == 'both' || inputs.build_type == 's789-only'
+        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 's789-only'
         working-directory: manager
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
