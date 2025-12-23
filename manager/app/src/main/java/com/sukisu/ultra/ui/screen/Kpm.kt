@@ -70,7 +70,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import top.yukonga.miuix.kmp.utils.getWindowSize
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -89,7 +88,6 @@ fun KpmScreen(
     val scope = rememberCoroutineScope()
     val confirmDialog = rememberConfirmDialog()
 
-    val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
     val listState = rememberLazyListState()
     var fabVisible by remember { mutableStateOf(true) }
     var scrollDistance by remember { mutableFloatStateOf(0f) }
@@ -119,7 +117,6 @@ fun KpmScreen(
         viewModel.updateSearchText(searchStatus.searchText)
     }
 
-
     val kpmInstallSuccess = stringResource(R.string.kpm_install_success)
     val kpmInstallFailed = stringResource(R.string.kpm_install_failed)
     val cancel = stringResource(R.string.cancel)
@@ -141,24 +138,36 @@ fun KpmScreen(
 
     var tempFileForInstall by remember { mutableStateOf<File?>(null) }
     var showInstallModeDialog by remember { mutableStateOf(false) }
+    val showInstallDialogState = remember { mutableStateOf(false) }
     var moduleName by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(tempFileForInstall) {
         moduleName = tempFileForInstall?.let { extractModuleName(it) }
     }
 
-    val clearInstallState: () -> Unit = {
-        tempFileForInstall?.delete()
-        tempFileForInstall = null
-        moduleName = null
-        showInstallModeDialog = false
+    LaunchedEffect(showInstallModeDialog) {
+        showInstallDialogState.value = showInstallModeDialog
+    }
+    
+    fun clearInstallState() {
+        runCatching {
+            showInstallDialogState.value = false
+            showInstallModeDialog = false
+            runCatching { tempFileForInstall?.delete() }
+            tempFileForInstall = null
+            moduleName = null
+        }.onFailure {
+            Log.e("KsuCli", "clearInstallState: ${it.message}", it)
+        }
     }
 
     if (showInstallModeDialog) {
         SuperDialog(
-            show = remember { mutableStateOf(true) },
+            show = showInstallDialogState,
             title = kpmInstallMode,
-            onDismissRequest = clearInstallState,
+            onDismissRequest = {
+                clearInstallState()
+            },
             content = {
                 Column {
                     moduleName?.let {
@@ -175,7 +184,6 @@ fun KpmScreen(
                             onClick = {
                                 scope.launch {
                                     val tempFile = tempFileForInstall
-                                    clearInstallState()
                                     tempFile?.let {
                                         handleModuleInstall(
                                             tempFile = it,
@@ -186,6 +194,7 @@ fun KpmScreen(
                                             kpmInstallFailed = kpmInstallFailed
                                         )
                                     }
+                                    clearInstallState()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -202,7 +211,6 @@ fun KpmScreen(
                             onClick = {
                                 scope.launch {
                                     val tempFile = tempFileForInstall
-                                    clearInstallState()
                                     tempFile?.let {
                                         handleModuleInstall(
                                             tempFile = it,
@@ -213,6 +221,7 @@ fun KpmScreen(
                                             kpmInstallFailed = kpmInstallFailed
                                         )
                                     }
+                                    clearInstallState()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -232,7 +241,9 @@ fun KpmScreen(
                     ) {
                         TextButton(
                             text = cancel,
-                            onClick = clearInstallState,
+                            onClick = {
+                                clearInstallState()
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -281,18 +292,21 @@ fun KpmScreen(
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (isScrolledToEnd(listState)) return Offset.Zero
-                
+
                 scrollDistance += available.y
-                when {
-                    scrollDistance < -50f -> {
-                        if (fabVisible) fabVisible = false
-                        scrollDistance = 0f
-                    }
-                    scrollDistance > 50f -> {
-                        if (!fabVisible) fabVisible = true
-                        scrollDistance = 0f
-                    }
+
+                if (scrollDistance <= -50f && fabVisible) {
+                    fabVisible = false
+                    scrollDistance = 0f
+                    return Offset(0f, available.y)
                 }
+
+                if (scrollDistance >= 50f && !fabVisible) {
+                    fabVisible = true
+                    scrollDistance = 0f
+                    return Offset(0f, available.y)
+                }
+
                 return Offset.Zero
             }
         }
@@ -412,7 +426,6 @@ fun KpmScreen(
             ) { boxHeight ->
                 KpmList(
                     viewModel = viewModel,
-                    listState = listState,
                     scope = scope,
                     moduleConfirmContentMap = moduleConfirmContentMap,
                     showToast = showToast,
@@ -535,7 +548,6 @@ private suspend fun handleModuleUninstall(
 @Composable
 private fun KpmList(
     viewModel: KpmViewModel,
-    listState: LazyListState,
     scope: CoroutineScope,
     moduleConfirmContentMap: Map<String, String>,
     showToast: suspend (String) -> Unit,
