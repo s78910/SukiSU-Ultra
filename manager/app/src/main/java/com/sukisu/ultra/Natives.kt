@@ -113,14 +113,6 @@ object Natives {
      */
     external fun getUserName(uid: Int): String?
 
-    /**
-     * Su Log can be enabled/disabled.
-     *  0: disabled
-     *  1: enabled
-     *  negative : error
-     */
-    external fun isSuLogEnabled(): Boolean
-    external fun setSuLogEnabled(enabled: Boolean): Boolean
     external fun getHookType(): String
 
     private const val NON_ROOT_DEFAULT_PROFILE_KEY = "$"

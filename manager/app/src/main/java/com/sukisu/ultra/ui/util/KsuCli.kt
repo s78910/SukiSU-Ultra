@@ -516,6 +516,26 @@ fun runCmd(shell: Shell, cmd: String): String {
         .joinToString("\n")
 }
 
+suspend fun streamFile(path: String): List<String> = withContext(Dispatchers.IO) {
+    val shell = getRootShell()
+    val outLines = mutableListOf<String>()
+
+    val stdoutCallback: CallbackList<String?> = object : CallbackList<String?>() {
+        override fun onAddElement(s: String?) {
+            if (s != null) outLines.add(s)
+        }
+    }
+
+    val stderrCallback: CallbackList<String?> = object : CallbackList<String?>() {
+        override fun onAddElement(s: String?) {
+            // ignore stderr for now
+        }
+    }
+
+    shell.newJob().add("cat $path || true").to(stdoutCallback, stderrCallback).exec()
+    outLines
+}
+
 fun listKpmModules(): String {
     val shell = getRootShell()
     val cmd = "${getKsuDaemonPath()} kpm list"
@@ -618,6 +638,14 @@ fun applyUmountConfigToKernel(): Boolean {
     val cmd = "${getKsuDaemonPath()} umount apply"
     val result = ShellUtils.fastCmdResult(shell, cmd)
     Log.i(TAG, "apply umount config to kernel result: $result")
+    return result
+}
+
+fun retrieveSulogLogs(): Boolean {
+    val shell = getRootShell()
+    val cmd = "${getKsuDaemonPath()} sulog-dump"
+    val result = ShellUtils.fastCmdResult(shell, cmd)
+    Log.i(TAG, "save umount config result: $result")
     return result
 }
 

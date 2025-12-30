@@ -188,49 +188,15 @@
     <string name="inline_hook">Inline Hook</string>
     <string name="tracepoint_hook">Tracepoint Hook</string>
     <string name="home_susfs_version">SuSFS Version</string>
-    <string name="multi_manager_list">Active Manager</string>
-    <string name="default_signature">SukiSU</string>
-    <string name="dynamic_managerature">Dynamic</string>
-    <string name="signature_index">Signature %1$d</string>
-    <string name="settings_disable_sulog">Disable superuser logging</string>
-    <string name="settings_disable_sulog_summary">Disable KernelSU superuser access logging</string>
     <!-- Log Viewer -->
     <string name="log_viewer_title">Log Viewer</string>
+    <string name="settings_view_sulog">View sulog logs</string>
+    <string name="settings_view_sulog_summary">Open sulog viewer</string>
     <string name="log_viewer_back">Back</string>
-    <string name="log_viewer_search">Search</string>
-    <string name="log_viewer_clear_logs">Clear Logs</string>
-    <string name="log_viewer_clear_logs_confirm">Are you sure you want to clear the selected log file? This action cannot be undone.</string>
-    <string name="log_viewer_filter_type">Filter by Type</string>
-    <string name="log_viewer_all_types">All Types</string>
-    <string name="log_viewer_showing_entries">Showing %1$d of %2$d entries</string>
-    <string name="log_viewer_no_logs">No logs found</string>
-    <string name="log_viewer_no_matching_logs">No matching logs found</string>
-    <string name="log_viewer_refresh">Refresh</string>
-    <string name="log_viewer_raw_log">Raw Log</string>
-    <string name="log_viewer_search_placeholder">Search by UID, command, or details…</string>
-    <string name="log_viewer_view_logs">View KernelSU superuser access logs</string>
-    <string name="log_viewer_exclude_subtypes">Exclude sub-types</string>
-    <string name="log_viewer_exclude_current_app">Current App</string>
-    <string name="log_viewer_page_info">Page: %1$d/%2$d | Total logs: %3$d</string>
-    <string name="log_viewer_too_many_logs">Too many logs, showing only the latest %1$d entries</string>
-    <string name="log_viewer_load_more">Load More Logs</string>
-    <string name="log_viewer_all_logs_loaded">All logs displayed</string>
-    <string name="log_viewer_settings">Settings</string>
-    <string name="log_viewer_collapse">Collapse</string>
-    <string name="log_viewer_expand">Expand</string>
-    <!-- dynamic Manager -->
-    <string name="dynamic_manager_title">Dynamic Manager Configuration</string>
-    <string name="dynamic_manager_enabled_summary">Enabled (Size: %s)</string>
-    <string name="dynamic_manager_disabled">Disabled</string>
-    <string name="enable_dynamic_manager">Enable Dynamic Manager</string>
-    <string name="signature_size">Dynamic Manager Signature Size</string>
-    <string name="signature_hash">Dynamic Manager Signature Hash</string>
-    <string name="dynamic_manager_set_success">Dynamic Manager configuration set successfully</string>
-    <string name="dynamic_manager_set_failed">Failed to set dynamic Manager configuration</string>
-    <string name="invalid_sign_config">Invalid Manager configuration</string>
-    <string name="dynamic_manager_disabled_success">Dynamic Manager disabled</string>
-    <string name="dynamic_manager_clear_failed">Failed to clear dynamic Manager</string>
-    <!-- UID Scanner Settings -->
+    <string name="sulog_blocked_label">Blocked</string>
+    <string name="sulog_allowed_label">Allowed</string>
+    <string name="sulog_ioctl_label">Ioctl Escalation</string>
+    <string name="sulog_other_label">Other</string>
     <!-- umount Manager -->
     <string name="umount_path_manager">Umount Path Management</string>
     <string name="umount_path_restart_notice">A reboot is required for changes to take effect. The system will apply the new configuration on the next boot.</string>
@@ -348,7 +314,6 @@
     <!-- Zip File Type Labels -->
     <string name="zip_type_module"> (Module)</string>
     <string name="zip_type_kernel"> (Kernel)</string>
-    <string name="zip_type_unknown"> (Unknown)</string>
     <string name="zip_file_unknown">unknown.zip</string>
     <!-- Zip Install Prompts -->
     <string name="kernel_install_prompt_with_name">The following kernels will be installed: %1$s</string>

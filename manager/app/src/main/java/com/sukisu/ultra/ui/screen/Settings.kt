@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Code
@@ -38,6 +39,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -53,11 +55,11 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AboutScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.AppProfileTemplateScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.LogViewerDestination
 import com.ramcosta.composedestinations.generated.destinations.KpmScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PersonalizationDestination
 import com.ramcosta.composedestinations.generated.destinations.SuSFSConfigScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ToolsDestination
+import com.ramcosta.composedestinations.generated.destinations.SulogScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -75,6 +77,9 @@ import com.sukisu.ultra.ui.util.getFeatureStatus
 import com.sukisu.ultra.ui.util.rememberKpmAvailable
 import com.sukisu.ultra.ui.util.getFeaturePersistValue
 import com.sukisu.ultra.ui.util.getSuSFSStatus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -128,7 +133,6 @@ fun SettingPager(
         val uninstallDialog = UninstallDialog(showUninstallDialog, navigator)
         val showSendLogDialog = rememberSaveable { mutableStateOf(false) }
         val sendLogDialog = SendLogDialog(showSendLogDialog, loadingDialog)
-        var isSuLogEnabled by remember { mutableStateOf(Natives.isSuLogEnabled()) }
 
         LazyColumn(
             modifier = Modifier
@@ -524,69 +528,6 @@ fun SettingPager(
                                 }
                             }
                         )
-
-                        val currentsuLogEnabled = Natives.isSuLogEnabled()
-                        var suLogMode by rememberSaveable { mutableIntStateOf(if (!currentsuLogEnabled) 1 else 0) }
-                        val suLogPersistValue by produceState(initialValue = null as Long?) {
-                            value = getFeaturePersistValue("sulog")
-                        }
-                        LaunchedEffect(suLogPersistValue) {
-                            suLogPersistValue?.let { v ->
-                                suLogMode = if (v == 0L) 2 else if (!currentsuLogEnabled) 1 else 0
-                            }
-                        }
-                        val suLogStatus by produceState(initialValue = "") {
-                            value = getFeatureStatus("sulog")
-                        }
-                        val suLogSummary = when (suLogStatus) {
-                            "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
-                            "managed" -> stringResource(id = R.string.feature_status_managed_summary)
-                            else -> stringResource(id = R.string.settings_disable_sulog_summary)
-                        }
-                        SuperDropdown(
-                            title = stringResource(id = R.string.settings_disable_sulog),
-                            summary = suLogSummary,
-                            items = modeItems,
-                            leftAction = {
-                                Icon(
-                                    Icons.Rounded.RemoveCircle,
-                                    modifier = Modifier.padding(end = 16.dp),
-                                    contentDescription = stringResource(id = R.string.settings_disable_sulog),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            enabled = suLogStatus == "supported",
-                            selectedIndex = suLogMode,
-                            onSelectedIndexChange = { index ->
-                                when (index) {
-                                    // Default: enable and save to persist
-                                    0 -> if (Natives.setSuLogEnabled(true)) {
-                                        execKsud("feature save", true)
-                                        prefs.edit { putInt("sulog_mode", 0) }
-                                        suLogMode = 0
-                                        isSuLogEnabled = true
-                                    }
-
-                                    // Temporarily disable: save enabled state first, then disable
-                                    1 -> if (Natives.setSuLogEnabled(true)) {
-                                        execKsud("feature save", true)
-                                        if (Natives.setSuLogEnabled(false)) {
-                                            prefs.edit { putInt("sulog_mode", 0) }
-                                            suLogMode = 1
-                                            isSuLogEnabled = false
-                                        }
-                                    }
-
-                                    // Permanently disable: disable and save
-                                    2 -> if (Natives.setSuLogEnabled(false)) {
-                                        execKsud("feature save", true)
-                                        prefs.edit { putInt("sulog_mode", 2) }
-                                        suLogMode = 2
-                                        isSuLogEnabled = false
-                                    }
-                                }
-                            }
-                        )
                     }
 
                     Card(
@@ -670,24 +611,25 @@ fun SettingPager(
                         .padding(vertical = 12.dp)
                         .fillMaxWidth(),
                 ) {
-                    if (isSuLogEnabled) {
-                        val sulog = stringResource(id = R.string.log_viewer_view_logs)
-                        SuperArrow(
-                            title = sulog,
-                            leftAction = {
-                                Icon(
-                                    Icons.Rounded.BugReport,
-                                    modifier = Modifier.padding(end = 16.dp),
-                                    contentDescription = sulog,
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            onClick = {
-                                navigator.navigate(LogViewerDestination) {
-                                }
+                    val scope = rememberCoroutineScope()
+
+                    SuperArrow(
+                        title = stringResource(id = R.string.settings_view_sulog),
+                        summary = stringResource(id = R.string.settings_view_sulog_summary),
+                        leftAction = {
+                            Icon(
+                                Icons.AutoMirrored.Rounded.Article,
+                                modifier = Modifier.padding(end = 16.dp),
+                                contentDescription = stringResource(id = R.string.settings_view_sulog),
+                                tint = colorScheme.onBackground
+                            )
+                        },
+                        onClick = {
+                            navigator.navigate(SulogScreenDestination) {
+                                launchSingleTop = true
                             }
-                        )
-                    }
+                        }
+                    )
                     SuperArrow(
                         title = stringResource(id = R.string.send_log),
                         leftAction = {

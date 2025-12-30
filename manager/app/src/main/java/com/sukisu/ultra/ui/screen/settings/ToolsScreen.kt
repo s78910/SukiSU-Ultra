@@ -81,7 +81,6 @@ fun Tools(
     )
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val prefs = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
 
     Scaffold(
         topBar = {
