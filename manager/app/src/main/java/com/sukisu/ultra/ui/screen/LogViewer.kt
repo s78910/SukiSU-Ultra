@@ -39,6 +39,9 @@ import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -227,13 +230,13 @@ fun LogViewer(navigator: DestinationsNavigator) {
                 actions = {
                     IconButton(onClick = { showSearchBar = !showSearchBar }) {
                         Icon(
-                            imageVector = MiuixIcons.Basic.Search,
+                            imageVector = MiuixIcons.Search,
                             contentDescription = stringResource(R.string.log_viewer_search)
                         )
                     }
                     IconButton(onClick = onManualRefresh) {
                         Icon(
-                            imageVector = MiuixIcons.Useful.Refresh,
+                            imageVector = MiuixIcons.Refresh,
                             contentDescription = stringResource(R.string.log_viewer_refresh)
                         )
                     }

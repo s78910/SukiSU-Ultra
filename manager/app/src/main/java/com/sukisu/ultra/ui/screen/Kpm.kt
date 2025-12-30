@@ -67,7 +67,7 @@ import dev.chrisbanes.haze.hazeSource
 import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -327,7 +327,7 @@ fun KpmScreen(
                             onClick = { viewModel.fetchModuleList() }
                         ) {
                             Icon(
-                                imageVector = MiuixIcons.Useful.Refresh,
+                                imageVector = MiuixIcons.Refresh,
                                 contentDescription = stringResource(R.string.refresh),
                                 tint = colorScheme.onBackground
                             )
