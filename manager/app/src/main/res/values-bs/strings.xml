@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="profile_namespace">Imenski prostor nosača</string>
+    <string name="profile_namespace_inherited">Naslijeđen</string>
+    <string name="profile_namespace_global">Globalan</string>
+    <string name="profile_namespace_individual">Pojedinačan</string>
     <string name="profile_groups">Grupe</string>
     <string name="profile_capabilities">Sposobnosti</string>
     <string name="profile_selinux_context">SELinux kontekst</string>
@@ -31,9 +35,7 @@
     <string name="settings">Podešavanja</string>
     <string name="module_version">Verzija</string>
     <string name="module_author">Autor</string>
-    <string name="refresh">Osvježi</string>
     <string name="show_system_apps">Prikažite sistemske aplikacije</string>
-    <string name="hide_system_apps">Sakrijte sistemske aplikacije</string>
     <string name="safe_mode">Sigurnosni mod</string>
     <string name="reboot_to_apply">Ponovo pokrenite da bi proradilo</string>
     <string name="module_magisk_conflict">"Moduli su nedostupni  jer su u sukobu sa Magisk-om!"</string>

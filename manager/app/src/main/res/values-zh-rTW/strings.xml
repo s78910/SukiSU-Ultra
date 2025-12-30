@@ -36,9 +36,7 @@
     <string name="module_uninstall_failed">無法解除安裝：%s</string>
     <string name="module_version">版本</string>
     <string name="module_author">作者</string>
-    <string name="refresh">重新載入</string>
     <string name="show_system_apps">顯示系統程式</string>
-    <string name="hide_system_apps">隱藏系統程式</string>
     <string name="send_log">傳送日誌</string>
     <string name="safe_mode">安全模式</string>
     <string name="reboot_to_apply">將在重新啟動時生效</string>
@@ -63,6 +61,10 @@
     <string name="restart_app">重新執行</string>
     <string name="profile_template">範本</string>
     <string name="profile_name">Profile 名稱</string>
+    <string name="profile_namespace">命名空間掛載</string>
+    <string name="profile_namespace_inherited">繼承</string>
+    <string name="profile_namespace_global">全域</string>
+    <string name="profile_namespace_individual">個體</string>
     <string name="profile_groups">群組</string>
     <string name="profile_selinux_context">SELinux 上下文</string>
     <string name="profile_selinux_domain">定域</string>
@@ -85,7 +87,6 @@
     <string name="app_profile_template_id_exist">編號已由其他範本領有！</string>
     <string name="app_profile_import_from_clipboard">自剪貼簿匯入</string>
     <string name="app_profile_template_name">名稱</string>
-    <string name="app_profile_template_sync">同步線上範本</string>
     <string name="app_profile_import_export">匯入／匯出</string>
     <string name="app_profile_template_save_failed">無法儲存範本</string>
     <string name="app_profile_template_description">說明</string>
@@ -132,4 +133,16 @@
     <string name="refresh_release">鬆開刷新</string>
     <string name="refresh_refresh">正在刷新…</string>
     <string name="refresh_complete">刷新成功</string>
+    <string name="module_repos">模組倉庫</string>
+    <string name="module_repos_source_code">源碼</string>
+    <string name="module_repos_sort_name">按名稱排序</string>
+    <string name="undo">撤銷</string>
+    <string name="settings_theme">主題</string>
+    <string name="settings_theme_mode_system">跟隨系統</string>
+    <string name="settings_theme_mode_monet_system">Monet (跟隨系統)</string>
+    <string name="settings_theme_mode_light">淺色</string>
+    <string name="settings_theme_mode_monet_light">Monet (淺色)</string>
+    <string name="settings_theme_mode_dark">深色</string>
+    <string name="settings_theme_mode_monet_dark">Monet (深色)</string>
+    <string name="settings_theme_summary">選擇應用的主題模式。</string>
 </resources>

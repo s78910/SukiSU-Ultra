@@ -36,9 +36,7 @@
     <string name="module_uninstall_failed">Impossibile disinstallare: %s</string>
     <string name="module_version">Versione</string>
     <string name="module_author">Autore</string>
-    <string name="refresh">Ricarica</string>
     <string name="show_system_apps">Mostra app di sistema</string>
-    <string name="hide_system_apps">Nascondi app di sistema</string>
     <string name="send_log">Invia log</string>
     <string name="safe_mode">Modalità provvisoria</string>
     <string name="reboot_to_apply">Riavvia per applicare la modifica</string>
@@ -50,7 +48,11 @@
     <string name="home_support_content">KernelSU è, e sempre sarà, gratuito e open source. Puoi comunque mostrarci il tuo apprezzamento facendo una donazione.</string>
     <string name="about_source_code"><![CDATA[Visualizza il codice sorgente su %1$s<br/>Unisciti al nostro canale %2$s]]></string>
     <string name="profile_name">Nome profilo</string>
+    <string name="profile_namespace">Spazio dei nomi del mount</string>
+    <string name="profile_namespace_global">Globale</string>
     <string name="profile_groups">Gruppi</string>
+    <string name="profile_namespace_inherited">Ereditato</string>
+    <string name="profile_namespace_individual">Individuale</string>
     <string name="profile_default">Predefinito</string>
     <string name="profile_custom">Personalizzato</string>
     <string name="profile_template">Modello</string>
@@ -85,7 +87,6 @@
     <string name="app_profile_export_to_clipboard">Esporta negli appunti</string>
     <string name="app_profile_template_export_empty">Impossibile trovare un modello locale da esportare!</string>
     <string name="app_profile_template_import_success">Importato con successo</string>
-    <string name="app_profile_template_sync">Sincronizza i modelli remoti</string>
     <string name="app_profile_template_import_empty">Gli appunti sono vuoti!</string>
     <string name="grant_root_failed">Impossibile ottenere l\'accesso root!</string>
     <string name="settings_profile_template">Modelli App Profile</string>

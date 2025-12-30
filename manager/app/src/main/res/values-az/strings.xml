@@ -37,9 +37,7 @@
     <string name="reboot_edl">EDL rejimində yenidən başlat</string>
     <string name="module_uninstall_failed">Silmək mümkün olmadı: %s</string>
     <string name="module_uninstall_success">%s silindi</string>
-    <string name="hide_system_apps">Sistem proqramlarını gizlət</string>
     <string name="send_log">Log-u göndər</string>
-    <string name="refresh">Yenilə</string>
     <string name="safe_mode">Təhlükəsiz rejimi</string>
     <string name="reboot_to_apply">Qüvvəyə minməsi üçün yenidən başlat</string>
     <string name="module_magisk_conflict">Modular deaktiv edilir,çünki o Magisk-in modulları ilə toqquşur!</string>
@@ -55,6 +53,10 @@
     <string name="profile_name">Profil adı</string>
     <string name="profile_capabilities">Bacarıqlar</string>
     <string name="profile_umount_modules">Modulları umount et</string>
+    <string name="profile_namespace_inherited">Miras qalmış</string>
+    <string name="profile_namespace_global">Qlobal</string>
+    <string name="profile_namespace">Bölmənin ad sahəsi</string>
+    <string name="profile_namespace_individual">Fərdi</string>
     <string name="profile_groups">Qruplar</string>
     <string name="settings_umount_modules_default">Defolt olaraq modulları umount et</string>
     <string name="profile_selinux_context">SELinux konteksi</string>

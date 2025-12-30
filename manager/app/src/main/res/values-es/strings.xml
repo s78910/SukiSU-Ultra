@@ -37,9 +37,7 @@
     <string name="module_uninstall_failed">Fallo al desinstalar: %s</string>
     <string name="module_version">Versión</string>
     <string name="module_author">Autor</string>
-    <string name="refresh">Refrescar</string>
     <string name="show_system_apps">Mostrar aplicaciones del sistema</string>
-    <string name="hide_system_apps">Ocultar aplicaciones del sistema</string>
     <string name="send_log">Enviar registros</string>
     <string name="safe_mode">Modo seguro</string>
     <string name="reboot_to_apply">Reinicia para aplicar cambios</string>
@@ -54,6 +52,10 @@
     <string name="profile_template">Plantilla</string>
     <string name="profile_custom">Personalizado</string>
     <string name="profile_name">Nombre de perfil</string>
+    <string name="profile_namespace">Montaje del espacio de nombres</string>
+    <string name="profile_namespace_inherited">Heredado</string>
+    <string name="profile_namespace_global">Global</string>
+    <string name="profile_namespace_individual">Individual</string>
     <string name="profile_groups">Grupos</string>
     <string name="profile_capabilities">Capacidades</string>
     <string name="profile_selinux_context">Contexto SELinux</string>
@@ -81,7 +83,6 @@
     <string name="app_profile_import_from_clipboard">Importar desde el portapapeles</string>
     <string name="app_profile_template_name">Nombre</string>
     <string name="app_profile_template_id_invalid">ID de plantilla no válida</string>
-    <string name="app_profile_template_sync">Sincronizar plantillas en línea</string>
     <string name="app_profile_template_create">Crear plantilla</string>
     <string name="app_profile_import_export">Importar/Exportar</string>
     <string name="app_profile_template_save_failed">No se ha podido guardar la plantilla</string>

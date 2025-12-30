@@ -37,9 +37,7 @@
     <string name="module_uninstall_failed">Kaldırma başarısız: %s</string>
     <string name="module_version">Sürüm</string>
     <string name="module_author">Geliştirici</string>
-    <string name="refresh">Yenile</string>
     <string name="show_system_apps">Sistem uygulamalarını göster</string>
-    <string name="hide_system_apps">Sistem uygulamalarını gizle</string>
     <string name="send_log">Günlükleri gönder</string>
     <string name="safe_mode">Güvenli mod</string>
     <string name="reboot_to_apply">Değişikliklerin uygulanması için cihazı yeniden başlat</string>
@@ -47,14 +45,18 @@
     <string name="home_learn_kernelsu">KernelSU\'yu öğrenin</string>
     <string name="home_learn_kernelsu_url">https://kernelsu.org/guide/what-is-kernelsu.html</string>
     <string name="home_click_to_learn_kernelsu">KernelSU\'nun nasıl kurulacağını ve modüllerin nasıl kullanılacağını öğrenin</string>
-    <string name="home_support_title">Bizi destekleyin</string>
-    <string name="home_support_content">KernelSU ücretsiz ve açık kaynaklı bir yazılımdır ve her zaman öyle kalacaktır. Ancak bağış yaparak bize destek olduğunuzu gösterebilirsiniz</string>
+    <string name="home_support_title">Bizi Destekleyin</string>
+    <string name="home_support_content">KernelSU ücretsiz ve açık kaynaklı bir yazılımdır ve her zaman öyle kalacaktır. Ancak bağış yaparak bize destek olduğunuzu gösterebilirsiniz.</string>
     <string name="about_source_code"><![CDATA[%1$s adresinde kaynak kodunu görüntüleyin.<br/>%2$s kanalımıza katılın.]]></string>
     <string name="profile" translatable="false">Uygulama profili</string>
     <string name="profile_default">Varsayılan</string>
     <string name="profile_template">Şablon</string>
     <string name="profile_custom">Özel</string>
     <string name="profile_name">Profil adı</string>
+    <string name="profile_namespace">Ad alanını bağla</string>
+    <string name="profile_namespace_inherited">Kalıtsal</string>
+    <string name="profile_namespace_global">Küresel</string>
+    <string name="profile_namespace_individual">Bireysel</string>
     <string name="profile_groups">Gruplar</string>
     <string name="profile_capabilities">Yetkinlikler</string>
     <string name="profile_selinux_context">SELinux içeriği</string>
@@ -92,7 +94,6 @@
     <string name="app_profile_export_to_clipboard">Panodan dışa aktar</string>
     <string name="app_profile_template_export_empty">Dışa aktarmak için yerel şablon bulunamadı!</string>
     <string name="app_profile_template_import_success">Başarıyla içe aktarıldı</string>
-    <string name="app_profile_template_sync">Çevrimiçi şablonları senkronize et</string>
     <string name="app_profile_template_save_failed">Şablon kaydedilemedi</string>
     <string name="app_profile_template_import_empty">Pano boş!</string>
     <string name="settings_check_update">Güncellemeleri denetle</string>
@@ -131,4 +132,9 @@
     <string name="module_sort_action_first">Sırala (Action önce)</string>
     <string name="module_sort_enabled_first">Sırala (Etkin olanlar önce)</string>
     <string name="settings_disable_su">Su uyumluluğunu devre dışı bırak</string>
+    <string name="module_repos">Depolar</string>
+    <string name="module_repos_sort_name">Ad (A → Z)</string>
+    <string name="module_repos_source_code">Kaynak kodu</string>
+    <string name="metamodule_uninstall_confirm">%s modülünü kaldırmak istediğinizden emin misiniz? Bu eylem tüm modülleri etkileyecek ve metamodül (örneğin bağlama özelliği) tarafından sunulan belli özellikler artık çalışmayacaktır.</string>
+    <string name="home_gki_warning">v3.0.0 sürümünden itibaren GKI çalışma modu yalnızca test ortamlarında kullanılacaktır. Günlük kullanım için tavsiye etmiyoruz ve imaj dosyaları artık sunulmayacaktır.</string>
 </resources>

@@ -20,10 +20,8 @@
     <string name="module_version">Versija</string>
     <string name="module_author">Autorius</string>
     <string name="show_system_apps">Rodyti sistemos programas</string>
-    <string name="hide_system_apps">Slėpti sistemos programas</string>
     <string name="send_log">Siųsti žurnalą</string>
     <string name="reboot">Paleisti iš naujo</string>
-    <string name="refresh">Atšviežinti</string>
     <string name="safe_mode">Saugus rėžimas</string>
     <string name="reboot_to_apply">Paleiskite iš naujo, kad įsigaliotų</string>
     <string name="module_magisk_conflict">Moduliai yra išjungti, nes jie konfliktuoja su Magisk\'s!</string>
@@ -35,6 +33,10 @@
     <string name="profile_template">Šablonas</string>
     <string name="profile_custom">Pasirinktinis</string>
     <string name="profile_name">Profilio pavadinimas</string>
+    <string name="profile_namespace">Prijungti vardų erdvę</string>
+    <string name="profile_namespace_inherited">Paveldėtas</string>
+    <string name="profile_namespace_global">Globalus</string>
+    <string name="profile_namespace_individual">Individualus</string>
     <string name="profile_groups">Grupės</string>
     <string name="profile_capabilities">Galimybės</string>
     <string name="profile_selinux_context">SELinux kontekstas</string>

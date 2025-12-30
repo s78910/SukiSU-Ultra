@@ -8,7 +8,6 @@
     <string name="app_profile_export_to_clipboard">Eksportēt starpliktuvē</string>
     <string name="app_profile_import_from_clipboard">Importēt no starpliktuves</string>
     <string name="app_profile_template_import_success">Importēts veiksmīgi</string>
-    <string name="app_profile_template_sync">Sinhronizēt tiešsaistes veidnes</string>
     <string name="home">Sākums</string>
     <string name="home_not_installed">Nav uzstādīts</string>
     <string name="home_click_to_install">Noklikšķiniet, lai uzstādītu</string>
@@ -40,9 +39,7 @@
     <string name="module_uninstall_success">%s noņemts</string>
     <string name="module_uninstall_failed">Neizdevās noņemt: %s</string>
     <string name="module_author">Autors</string>
-    <string name="refresh">Atsvaidzināt</string>
     <string name="show_system_apps">Rādīt sistēmas lietotnes</string>
-    <string name="hide_system_apps">Slēpt sistēmas lietotnes</string>
     <string name="send_log">Sūtīt žurnālus</string>
     <string name="reboot_to_apply">Restartējiet, lai stātos spēkā</string>
     <string name="home_learn_kernelsu">Uzzināt par KernelSU</string>
@@ -54,6 +51,8 @@
     <string name="profile_template">Veidne</string>
     <string name="profile_custom">Pielāgots</string>
     <string name="profile_name">Profila vārds</string>
+    <string name="profile_namespace">Mount nosaukumvieta</string>
+    <string name="profile_namespace_individual">Individuāls</string>
     <string name="profile_capabilities">Iespējas</string>
     <string name="profile_selinux_context">SELinux konteksts</string>
     <string name="profile_umount_modules">Atvienot moduļus</string>
@@ -97,6 +96,7 @@
     <string name="enable_web_debugging">Iespējot WebView atkļūdošanu</string>
     <string name="select_file_tip">Ieteicams %1$s nodalījuma attēls</string>
     <string name="install_next">Nākamais</string>
+    <string name="profile_namespace_inherited">Mantots</string>
     <string name="select_file">Izvēlieties failu</string>
     <string name="install_inactive_slot">Instalēt neaktīvajā slotā (pēc OTA)</string>
     <string name="install_inactive_slot_warning">Pēc restartēšanas jūsu ierīce tiks **PIESPIESTI** palaista pašreizējā neaktīvajā slotā!

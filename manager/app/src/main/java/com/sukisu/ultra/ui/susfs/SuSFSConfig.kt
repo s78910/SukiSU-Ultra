@@ -555,8 +555,12 @@ fun SuSFSConfigScreen(
                             navigator.popBackStack()
                         }
                     }) {
+                        val layoutDirection = LocalLayoutDirection.current
                         Icon(
-                            MiuixIcons.Useful.Back,
+                            modifier = Modifier.graphicsLayer {
+                                if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                            },
+                            imageVector = MiuixIcons.Back,
                             contentDescription = stringResource(R.string.log_viewer_back),
                             tint = colorScheme.onBackground
                         )

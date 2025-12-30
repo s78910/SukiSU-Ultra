@@ -92,8 +92,12 @@ fun UmountManager(navigator: DestinationsNavigator) {
                 title = stringResource(R.string.umount_path_manager),
                 navigationIcon = {
                     IconButton(onClick = { navigator.navigateUp() }) {
+                        val layoutDirection = LocalLayoutDirection.current
                         Icon(
-                            imageVector = MiuixIcons.Useful.Back,
+                            modifier = Modifier.graphicsLayer {
+                                if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                            },
+                            imageVector = MiuixIcons.Back,
                             contentDescription = null
                         )
                     }
@@ -354,7 +358,7 @@ fun UmountPathCard(
                 }
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Useful.Delete,
+                    imageVector = MiuixIcons.Delete,
                     contentDescription = null,
                     tint = colorScheme.primary
                 )

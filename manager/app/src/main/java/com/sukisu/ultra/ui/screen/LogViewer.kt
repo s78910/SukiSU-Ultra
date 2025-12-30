@@ -15,11 +15,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.ramcosta.composedestinations.annotation.Destination
@@ -35,10 +38,7 @@ import top.yukonga.miuix.kmp.basic.*
 import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.icons.useful.Back
-import top.yukonga.miuix.kmp.icon.icons.useful.Delete
-import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
-import top.yukonga.miuix.kmp.icon.icons.basic.Search
+import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -214,8 +214,12 @@ fun LogViewer(navigator: DestinationsNavigator) {
                         onClick = { navigator.navigateUp() },
                         modifier = Modifier.padding(start = 12.dp)
                     ) {
+                        val layoutDirection = LocalLayoutDirection.current
                         Icon(
-                            imageVector = MiuixIcons.Useful.Back,
+                            modifier = Modifier.graphicsLayer {
+                                if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                            },
+                            imageVector = MiuixIcons.Back,
                             contentDescription = stringResource(R.string.log_viewer_back)
                         )
                     }
@@ -238,7 +242,7 @@ fun LogViewer(navigator: DestinationsNavigator) {
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
                         Icon(
-                            imageVector = MiuixIcons.Useful.Delete,
+                            imageVector = MiuixIcons.Delete,
                             contentDescription = stringResource(R.string.log_viewer_clear_logs)
                         )
                     }

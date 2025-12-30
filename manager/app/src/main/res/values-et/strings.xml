@@ -18,6 +18,7 @@
     <string name="home_learn_kernelsu">Õpi KernelSUd</string>
     <string name="home_learn_kernelsu_url">https://kernelsu.org/guide/what-is-kernelsu.html</string>
     <string name="profile_default">Vaikimisi</string>
+    <string name="profile_namespace">Haagi nimeruum</string>
     <string name="profile_umount_modules">Lahtihaagitud moodulid</string>
     <string name="failed_to_update_app_profile">Rakenduseprofiili uuendamine %s jaoks ebaõnnestus</string>
     <string name="settings_umount_modules_default">Haagi moodulid vaikimisi lahti</string>
@@ -28,7 +29,6 @@
     <string name="app_profile_template_id">ID</string>
     <string name="app_profile_template_id_exist">Malli ID juba eksisteerib!</string>
     <string name="app_profile_export_to_clipboard">Ekspordi lõikelauale</string>
-    <string name="app_profile_template_sync">Sünkrooni võrgumallid</string>
     <string name="home">Kodu</string>
     <string name="home_click_to_install">Klõpsa paigaldamiseks</string>
     <string name="home_not_installed">Pole paigaldatud</string>
@@ -50,12 +50,10 @@
     <string name="reboot_userspace">Pehme taaskäivitus</string>
     <string name="reboot_download">Taaskäivita allalaadimisrežiimi</string>
     <string name="reboot_edl">Taaskäivita EDL-i</string>
-    <string name="refresh">Värskenda</string>
     <string name="module_author">Autor</string>
     <string name="module_uninstall_failed">Eemaldamine ebaõnnestus: %s</string>
     <string name="module_version">Versioon</string>
     <string name="show_system_apps">Kuva süsteemirakendused</string>
-    <string name="hide_system_apps">Peida süsteemirakendused</string>
     <string name="module_magisk_conflict">Moodulid pole saadaval Magiski konflikti tõttu!</string>
     <string name="home_click_to_learn_kernelsu">Õpi KernelSUd paigaldama ja mooduleid kasutama</string>
     <string name="home_support_title">Toeta meid</string>
@@ -65,6 +63,9 @@
     <string name="about_source_code">Vaata lähtekoodi %1$sis<br/>Liitu meie %2$si kanaliga</string>
     <string name="profile_name">Profiili nimi</string>
     <string name="profile_custom">Kohandatud</string>
+    <string name="profile_namespace_inherited">Päritud</string>
+    <string name="profile_namespace_global">Globaalne</string>
+    <string name="profile_namespace_individual">Individuaalne</string>
     <string name="profile_capabilities">Võimekused</string>
     <string name="app_profile_template_id_invalid">Sobimatu malli ID</string>
     <string name="profile_selinux_context">SELinux kontekst</string>
