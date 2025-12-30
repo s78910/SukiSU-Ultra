@@ -358,9 +358,9 @@ const KSU_IOCTL_GET_SULOG_DUMP: i32 = _IOWR::<()>(K, 201);
 
 #[repr(C)]
 struct SulogEntryRcvPtr {
-    index_ptr: u64,
-    buf_ptr: u64,
-    uptime_ptr: u64,
+    index: u64,
+    buf: u64,
+    uptime: u64,
 }
 
 /// Fetch sulog from kernel and save to `/data/adb/ksu/log/sulog.log`
@@ -374,20 +374,20 @@ pub fn dump_sulog_to_file() -> anyhow::Result<()> {
 
     // Allocate recv struct on heap so pointer is stable
     let mut recv = SulogEntryRcvPtr {
-        index_ptr: 0,
-        buf_ptr: 0,
-        uptime_ptr: 0,
+        index: 0,
+        buf: 0,
+        uptime: 0,
     };
     // pointer-to-pointer required by kernel handler
-    let recv_ptr: *mut SulogEntryRcvPtr = &mut recv;
+    let recv_ptr: *mut SulogEntryRcvPtr = &raw mut recv;
 
     unsafe {
-        (*recv_ptr).index_ptr = (&mut index as *mut u8) as u64;
-        (*recv_ptr).buf_ptr = buffer.as_mut_ptr() as u64;
-        (*recv_ptr).uptime_ptr = (&mut uptime as *mut u32) as u64;
+        (*recv_ptr).index = (&raw mut index) as u64;
+        (*recv_ptr).buf = buffer.as_mut_ptr() as u64;
+        (*recv_ptr).uptime = (&raw mut uptime) as u64;
 
         // Use ioctl to request sulog dump from kernel
-        let res = ksuctl(KSU_IOCTL_GET_SULOG_DUMP, &mut recv as *mut SulogEntryRcvPtr);
+        let res = ksuctl(KSU_IOCTL_GET_SULOG_DUMP, &raw mut recv);
         if let Err(e) = res {
             return Err(e.into());
         }
@@ -407,19 +407,21 @@ pub fn dump_sulog_to_file() -> anyhow::Result<()> {
         }
         let uid = data & 0x00FF_FFFF;
         let sym = ((data >> 24) & 0xFF) as u8;
-        let sym_char = if sym.is_ascii_graphic() { sym as char } else { '?' };
-        lines.push(format!("uptime_s={} uid={} sym={}\n", s_time, uid, sym_char));
+        let sym_char = if sym.is_ascii_graphic() {
+            sym as char
+        } else {
+            '?'
+        };
+        lines.push(format!("uptime_s={s_time} uid={uid} sym={sym_char}\n"));
     }
 
     // Prepare directory
     let log_dir = "/data/adb/ksu/log";
-    let log_path = format!("{}/sulog.log", log_dir);
+    let log_path = format!("{log_dir}/sulog.log");
 
     // Ensure log_dir is a directory (remove if it's a file)
-    if std::path::Path::new(log_dir).exists() {
-        if !std::path::Path::new(log_dir).is_dir() {
-            std::fs::remove_file(log_dir)?;
-        }
+    if std::path::Path::new(log_dir).exists() && !std::path::Path::new(log_dir).is_dir() {
+        std::fs::remove_file(log_dir)?;
     }
     std::fs::create_dir_all(log_dir)?;
 
