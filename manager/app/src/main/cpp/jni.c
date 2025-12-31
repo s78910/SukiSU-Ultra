@@ -311,14 +311,6 @@ NativeBridge(setKernelUmountEnabled, jboolean, jboolean enabled) {
     return set_kernel_umount_enabled(enabled);
 }
 
-NativeBridgeNP(isEnhancedSecurityEnabled, jboolean) {
-    return is_enhanced_security_enabled();
-}
-
-NativeBridge(setEnhancedSecurityEnabled, jboolean, jboolean enabled) {
-    return set_enhanced_security_enabled(enabled);
-}
-
 NativeBridge(getUserName, jstring, jint uid) {
     struct passwd *pw = getpwuid((uid_t) uid);
     if (pw && pw->pw_name && pw->pw_name[0] != '\0') {
