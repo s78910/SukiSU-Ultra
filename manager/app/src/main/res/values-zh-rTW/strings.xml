@@ -168,8 +168,6 @@
     <string name="settings_disable_su_summary">暫時禁止任何應用程式透過 su 命令取得 Root 權限（現有的 Root 處理程序不受影響）</string>
     <string name="settings_disable_kernel_umount">停用核心卸載</string>
     <string name="settings_disable_kernel_umount_summary">停用由 KernelSU 控制的核心等級卸載</string>
-    <string name="settings_enable_enhanced_security">啟用增強安全性</string>
-    <string name="settings_enable_enhanced_security_summary">啟用更嚴格的安全性策略</string>
     <string name="feature_status_unsupported_summary">核心不支援此功能</string>
     <string name="feature_status_managed_summary">這個功能由模組管理</string>
     <string name="settings_mode_default">預設值</string>
