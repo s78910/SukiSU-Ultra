@@ -111,7 +111,7 @@ object Natives {
     external fun isKPMEnabled(): Boolean
      * Get the user name for the uid.
      */
-    external fun getUserName(uid: Int): String?
+    external fun isKPMEnabled(): Boolean
 
     external fun getHookType(): String
 
