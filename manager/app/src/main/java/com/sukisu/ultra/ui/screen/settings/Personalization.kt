@@ -139,7 +139,7 @@ fun Personalization(
                         title = stringResource(id = R.string.settings_theme),
                         summary = stringResource(id = R.string.settings_theme_summary),
                         items = themeItems,
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 Icons.Rounded.Palette,
                                 modifier = Modifier.padding(end = 16.dp),
@@ -188,7 +188,7 @@ fun Personalization(
                             title = stringResource(id = R.string.settings_key_color),
                             summary = stringResource(id = R.string.settings_key_color_summary),
                             items = colorItems,
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.Palette,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -215,7 +215,7 @@ fun Personalization(
                     SuperSwitch(
                         title = stringResource(id = R.string.icon_switch_title),
                         summary = stringResource(id = R.string.icon_switch_summary),
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 Icons.Rounded.Android,
                                 modifier = Modifier.padding(end = 16.dp),

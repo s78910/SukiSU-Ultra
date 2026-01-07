@@ -108,7 +108,7 @@ fun BasicSettingsContent(
                 onExecuteInPostFsDataChange(index == 1)
             },
             enabled = !isLoading,
-            leftAction = {
+            startAction = {
                 Icon(
                     Icons.Default.LocationOn,
                     contentDescription = null,
@@ -182,7 +182,7 @@ fun BasicSettingsContent(
             } else {
                 stringResource(R.string.susfs_autostart_requirement)
             },
-            leftAction = {
+            startAction = {
                 Icon(
                     Icons.Default.AutoMode,
                     modifier = Modifier.padding(end = 16.dp),
@@ -199,7 +199,7 @@ fun BasicSettingsContent(
         SuperSwitch(
             title = stringResource(R.string.hide_bl_script),
             summary = stringResource(R.string.hide_bl_script_description),
-            leftAction = {
+            startAction = {
                 Icon(
                     Icons.Default.Security,
                     modifier = Modifier.padding(end = 16.dp),
@@ -216,7 +216,7 @@ fun BasicSettingsContent(
         SuperSwitch(
             title = stringResource(R.string.cleanup_residue),
             summary = stringResource(R.string.cleanup_residue_description),
-            leftAction = {
+            startAction = {
                 Icon(
                     Icons.Default.CleaningServices,
                     modifier = Modifier.padding(end = 16.dp),
@@ -233,7 +233,7 @@ fun BasicSettingsContent(
         SuperSwitch(
             title = stringResource(R.string.avc_log_spoofing),
             summary = stringResource(R.string.avc_log_spoofing_description),
-            leftAction = {
+            startAction = {
                 Icon(
                     Icons.Default.VisibilityOff,
                     modifier = Modifier.padding(end = 16.dp),
@@ -254,7 +254,7 @@ fun BasicSettingsContent(
             } else {
                 stringResource(R.string.susfs_hide_mounts_for_all_procs_disabled_description)
             },
-            leftAction = {
+            startAction = {
                 Icon(
                     if (hideSusMountsForAllProcs) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                     modifier = Modifier.padding(end = 16.dp),

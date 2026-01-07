@@ -324,7 +324,7 @@ fun InstallScreen(
                                 hasCustomSelected = true
                                 partitionSelectionIndex = index
                             },
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     MiuixIcons.ConvertFile,
                                     tint = colorScheme.onSurface,
@@ -351,7 +351,7 @@ fun InstallScreen(
                                 )
                             },
                             onClick = onLkmUpload,
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     MiuixIcons.MoveFile,
                                     tint = colorScheme.onSurface,
@@ -380,7 +380,7 @@ fun InstallScreen(
                                 onClick = {
                                     anyKernel3State.onReopenSlotDialog(method)
                                 },
-                                leftAction = {
+                                startAction = {
                                     Icon(
                                         Icons.Filled.SdStorage,
                                         tint = colorScheme.primary,
@@ -407,7 +407,7 @@ fun InstallScreen(
                             onClick = {
                                 anyKernel3State.onReopenKpmDialog(method)
                             },
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Filled.Security,
                                     tint = when (kpmPatchOption) {

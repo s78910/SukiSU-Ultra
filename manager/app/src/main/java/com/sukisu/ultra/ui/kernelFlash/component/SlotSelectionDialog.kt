@@ -142,7 +142,7 @@ fun SlotSelectionDialog(
                 slotOptions.forEach { option ->
                     SuperArrow(
                         title = option.titleText,
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 imageVector = option.icon,
                                 contentDescription = null,

@@ -23,7 +23,6 @@ import androidx.compose.material.icons.rounded.ContactPage
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.DeveloperMode
-import androidx.compose.material.icons.rounded.EnhancedEncryption
 import androidx.compose.material.icons.rounded.Fence
 import androidx.compose.material.icons.rounded.FolderDelete
 import androidx.compose.material.icons.rounded.RemoveCircle
@@ -160,7 +159,7 @@ fun SettingPager(
                     SuperSwitch(
                         title = stringResource(id = R.string.settings_check_update),
                         summary = stringResource(id = R.string.settings_check_update_summary),
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 Icons.Rounded.Update,
                                 modifier = Modifier.padding(end = 16.dp),
@@ -183,7 +182,7 @@ fun SettingPager(
                         SuperSwitch(
                             title = stringResource(id = R.string.settings_module_check_update),
                             summary = stringResource(id = R.string.settings_check_update_summary),
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.UploadFile,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -211,7 +210,7 @@ fun SettingPager(
                     SuperArrow(
                         title = personalization,
                         summary = stringResource(id = R.string.personalization_summary),
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 Icons.Rounded.Palette,
                                 modifier = Modifier.padding(end = 16.dp),
@@ -237,7 +236,7 @@ fun SettingPager(
                         SuperArrow(
                             title = toolsTitle,
                             summary = stringResource(id = R.string.settings_tools_summary),
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.DeveloperMode,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -264,7 +263,7 @@ fun SettingPager(
                         SuperArrow(
                             title = profileTemplate,
                             summary = stringResource(id = R.string.settings_profile_template_summary),
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.Fence,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -291,7 +290,7 @@ fun SettingPager(
                         SuperArrow(
                             title = kpmTitle,
                             summary = stringResource(id = R.string.settings_kpm_summary),
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.Code,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -320,7 +319,7 @@ fun SettingPager(
                             SuperArrow(
                                 title = susfsTitle,
                                 summary = stringResource(id = R.string.susfs_config_summary),
-                                leftAction = {
+                                startAction = {
                                     Icon(
                                         Icons.Rounded.Settings,
                                         modifier = Modifier.padding(end = 16.dp),
@@ -372,7 +371,7 @@ fun SettingPager(
                             title = stringResource(id = R.string.settings_disable_su),
                             summary = suSummary,
                             items = modeItems,
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.RemoveModerator,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -432,7 +431,7 @@ fun SettingPager(
                             title = stringResource(id = R.string.settings_disable_kernel_umount),
                             summary = umountSummary,
                             items = modeItems,
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.RemoveCircle,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -480,7 +479,7 @@ fun SettingPager(
                         SuperSwitch(
                             title = stringResource(id = R.string.settings_umount_modules_default),
                             summary = stringResource(id = R.string.settings_umount_modules_default_summary),
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.FolderDelete,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -502,7 +501,7 @@ fun SettingPager(
                         SuperSwitch(
                             title = stringResource(id = R.string.enable_web_debugging),
                             summary = stringResource(id = R.string.enable_web_debugging_summary),
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.DeveloperMode,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -530,7 +529,7 @@ fun SettingPager(
                             val uninstall = stringResource(id = R.string.settings_uninstall)
                             SuperArrow(
                                 title = uninstall,
-                                leftAction = {
+                                startAction = {
                                     Icon(
                                         Icons.Rounded.Delete,
                                         modifier = Modifier.padding(end = 16.dp),
@@ -557,7 +556,7 @@ fun SettingPager(
                     SuperArrow(
                         title = stringResource(id = R.string.settings_view_sulog),
                         summary = stringResource(id = R.string.settings_view_sulog_summary),
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 Icons.AutoMirrored.Rounded.Article,
                                 modifier = Modifier.padding(end = 16.dp),
@@ -573,7 +572,7 @@ fun SettingPager(
                     )
                     SuperArrow(
                         title = stringResource(id = R.string.send_log),
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 Icons.Rounded.BugReport,
                                 modifier = Modifier.padding(end = 16.dp),
@@ -589,7 +588,7 @@ fun SettingPager(
                     val about = stringResource(id = R.string.about)
                     SuperArrow(
                         title = about,
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 Icons.Rounded.ContactPage,
                                 modifier = Modifier.padding(end = 16.dp),

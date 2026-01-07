@@ -220,7 +220,7 @@ fun KpmPatchSelectionDialog(
                         onClick = {
                             selectedOption = option
                         },
-                        leftAction = {
+                        startAction = {
                             Icon(
                                 imageVector = Icons.Filled.Security,
                                 contentDescription = null,

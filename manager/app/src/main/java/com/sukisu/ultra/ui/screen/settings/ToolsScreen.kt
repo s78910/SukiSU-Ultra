@@ -133,7 +133,7 @@ fun Tools(
                         val umontManager = stringResource(id = R.string.umount_path_manager)
                         SuperArrow(
                             title = umontManager,
-                            leftAction = {
+                            startAction = {
                                 Icon(
                                     Icons.Rounded.FolderDelete,
                                     modifier = Modifier.padding(end = 16.dp),
@@ -180,7 +180,7 @@ fun SelinuxToggleSection(
                 R.string.tools_selinux_summary,
                 statusLabel
             ),
-            leftAction = {
+            startAction = {
                 Icon(
                     imageVector = Icons.Rounded.Security,
                     modifier = Modifier.padding(end = 16.dp),
@@ -286,7 +286,7 @@ private fun AllowlistBackupSection(
         SuperArrow(
             title = stringResource(R.string.allowlist_backup_title),
             summary = stringResource(R.string.allowlist_backup_summary_picker),
-            leftAction = {
+            startAction = {
                 Icon(
                     imageVector = Icons.Rounded.Backup,
                     modifier = Modifier.padding(end = 16.dp),
@@ -302,7 +302,7 @@ private fun AllowlistBackupSection(
         SuperArrow(
             title = stringResource(R.string.allowlist_restore_title),
             summary = stringResource(R.string.allowlist_restore_summary_picker),
-            leftAction = {
+            startAction = {
                 Icon(
                     imageVector = Icons.Rounded.Restore,
                     modifier = Modifier.padding(end = 16.dp),
