@@ -132,8 +132,6 @@ dependencies {
 
     implementation(libs.dev.rikka.rikkax.parcelablelist)
 
-    implementation(libs.io.coil.kt.coil.compose)
-
     implementation(libs.kotlinx.coroutines.core)
 
     implementation(libs.markwon)
@@ -144,6 +142,9 @@ dependencies {
 
     implementation(libs.miuix)
     implementation(libs.miuix.icons)
+
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.okhttp)
 
     implementation(libs.haze)
     implementation(libs.capsule)
