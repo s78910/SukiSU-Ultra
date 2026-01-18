@@ -1,6 +1,5 @@
 package com.sukisu.ultra.ui.screen.settings
 
-import android.R.attr.scaleX
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.WindowInsets
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Android
-import androidx.compose.material.icons.rounded.FolderDelete
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,8 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.sukisu.ultra.Natives
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -63,7 +60,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 @Composable
 @Destination<RootGraph>
 fun Personalization(
-    navigator: DestinationsNavigator
+    navigator: MiuixDestinationsNavigator
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }

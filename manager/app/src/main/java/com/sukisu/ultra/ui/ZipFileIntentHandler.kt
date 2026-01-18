@@ -15,7 +15,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.R
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.KernelFlashScreenDestination
@@ -42,7 +42,7 @@ private sealed class DialogState {
 @Composable
 fun HandleZipFileIntent(
     intent: Intent?,
-    navigator: DestinationsNavigator
+    navigator: MiuixDestinationsNavigator
 ) {
     val context = LocalContext.current
     val confirmDialog = rememberConfirmDialog()

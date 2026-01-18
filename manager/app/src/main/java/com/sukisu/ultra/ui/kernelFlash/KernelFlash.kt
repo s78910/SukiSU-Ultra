@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KeyEventBlocker
 import com.sukisu.ultra.ui.util.reboot
@@ -82,7 +82,7 @@ private object KernelFlashStateHolder {
 @Destination<RootGraph>
 @Composable
 fun KernelFlashScreen(
-    navigator: DestinationsNavigator,
+    navigator: MiuixDestinationsNavigator,
     kernelUri: Uri,
     selectedSlot: String? = null,
     kpmPatchEnabled: Boolean = false,

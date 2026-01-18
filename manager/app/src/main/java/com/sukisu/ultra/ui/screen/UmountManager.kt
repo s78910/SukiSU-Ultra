@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.ConfirmResult
@@ -62,7 +62,7 @@ data class UmountPathEntry(
 
 @Destination<RootGraph>
 @Composable
-fun UmountManager(navigator: DestinationsNavigator) {
+fun UmountManager(navigator: MiuixDestinationsNavigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

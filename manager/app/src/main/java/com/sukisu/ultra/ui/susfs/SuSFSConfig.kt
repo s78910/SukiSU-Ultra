@@ -35,7 +35,7 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.susfs.component.*
 import com.sukisu.ultra.ui.susfs.content.BasicSettingsContent
@@ -77,7 +77,7 @@ enum class SuSFSTab(val displayNameRes: Int) {
 @Destination<RootGraph>
 @Composable
 fun SuSFSConfigScreen(
-    navigator: DestinationsNavigator
+    navigator: MiuixDestinationsNavigator
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()

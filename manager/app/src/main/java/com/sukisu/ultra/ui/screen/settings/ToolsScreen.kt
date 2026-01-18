@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.ramcosta.composedestinations.generated.destinations.UmountManagerDestination
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KsuIsValid
@@ -71,7 +71,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 @Composable
 @Destination<RootGraph>
 fun Tools(
-    navigator: DestinationsNavigator
+    navigator: MiuixDestinationsNavigator
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }

@@ -24,7 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.R
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -55,7 +55,7 @@ import com.sukisu.ultra.ui.util.streamFile
 
 @Composable
 @Destination<RootGraph>
-fun SulogScreen(navigator: DestinationsNavigator) {
+fun SulogScreen(navigator: MiuixDestinationsNavigator) {
     val scrollBehavior = MiuixScrollBehavior()
     data class SulogEntry(val uptime: Int, val uid: Int, val sym: Char, val raw: String)
     var entries by remember { mutableStateOf(listOf<SulogEntry>()) }

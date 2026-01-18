@@ -16,8 +16,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.ui.screen.FlashIt
 import com.sukisu.ultra.ui.screen.UninstallType
 import com.sukisu.ultra.ui.screen.UninstallType.NONE
@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun UninstallDialog(
     showDialog: MutableState<Boolean>,
-    navigator: DestinationsNavigator,
+    navigator: MiuixDestinationsNavigator,
 ) {
     val context = LocalContext.current
     val options = listOf(

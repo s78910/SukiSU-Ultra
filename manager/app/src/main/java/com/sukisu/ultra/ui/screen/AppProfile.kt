@@ -54,8 +54,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.AppProfileTemplateScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.TemplateEditorScreenDestination
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.generated.destinations.TemplateScreenDestination
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -66,9 +65,11 @@ import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.AppIconImage
 import com.sukisu.ultra.ui.component.DropdownItem
+import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.ui.component.profile.AppProfileConfig
 import com.sukisu.ultra.ui.component.profile.RootProfileConfig
 import com.sukisu.ultra.ui.component.profile.TemplateConfig
+import com.sukisu.ultra.ui.component.sharedTransition.TransitionSource
 import com.sukisu.ultra.ui.util.forceStopApp
 import com.sukisu.ultra.ui.util.getSepolicy
 import com.sukisu.ultra.ui.util.launchApp
@@ -109,7 +110,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 @Composable
 @Destination<RootGraph>
 fun AppProfileScreen(
-    navigator: DestinationsNavigator,
+    navigator: MiuixDestinationsNavigator,
     appInfo: SuperUserViewModel.AppInfo,
 ) {
     val context = LocalContext.current
@@ -197,7 +198,7 @@ fun AppProfileScreen(
                     affectedApps = sameUidApps,
                     onViewTemplate = {
                         getTemplateInfoById(it)?.let { info ->
-                            navigator.navigate(TemplateEditorScreenDestination(info)) {
+                            navigator.navigate(TemplateScreenDestination(info, TransitionSource.NULL)) {
                                 launchSingleTop = true
                             }
                         }
