@@ -128,4 +128,11 @@
     <string name="log_saved">Nai-save ang mga log</string>
     <string name="settings_disable_su">I-disable ang su compatibility</string>
     <string name="settings_disable_su_summary">Pansamantalang i-disable ang kakayahan ng anumang app na makakuha ng pribilehiyong root sa pamamagitan ng su command (hindi maaapektuhan ang mga umiiral na root process).</string>
+    <string name="settings_sucompat">Klasikong su command</string>
+    <string name="settings_sucompat_summary">Payagan ang root access gamit ang /system/bin/su, sa mga bagong proseso.</string>
+    <string name="module_repos">Mga Repo</string>
+    <string name="module_repos_sort_name">Pangalan (A → Z)</string>
+    <string name="module_repos_source_code">Source code</string>
+    <string name="metamodule_uninstall_confirm">Sigurado ka ba gusto mong i-uninstall ang module na %s? Aapektuhan ng aksyon na ito ang lahat ng mga module, at hindi na gagana ang mga feature na ibinigay ng metamodule (tulad ng pag-mount).</string>
+    <string name="safe_mode_module_disabled">Naka-disable sa safe mode ang pag-install ng mga module</string>
 </resources>
