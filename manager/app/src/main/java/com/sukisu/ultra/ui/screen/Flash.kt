@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Environment
 import android.os.Parcelable
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -50,15 +49,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.dropUnlessResumed
 import kotlinx.coroutines.delay
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KeyEventBlocker
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.util.FlashResult
 import com.sukisu.ultra.ui.util.LkmSelection
 import com.sukisu.ultra.ui.util.flashModule
@@ -110,9 +107,8 @@ fun flashModulesSequentially(
 }
 
 @Composable
-@Destination<RootGraph>
 fun FlashScreen(
-    navigator: MiuixDestinationsNavigator,
+    navigator: Navigator,
     flashIt: FlashIt
 ) {
     var text by rememberSaveable { mutableStateOf("") }
@@ -173,14 +169,11 @@ fun FlashScreen(
         }
     }
 
-    BackHandler {
-        navigator.popBackStack()
-    }
     Scaffold(
         topBar = {
             TopBar(
                 flashing,
-                onBack = dropUnlessResumed { navigator.popBackStack() },
+                onBack = dropUnlessResumed { navigator.pop() },
                 onSave = {
                     scope.launch {
                         val format = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss", Locale.getDefault())

@@ -22,9 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -54,8 +52,7 @@ import com.sukisu.ultra.ui.util.retrieveSulogLogs
 import com.sukisu.ultra.ui.util.streamFile
 
 @Composable
-@Destination<RootGraph>
-fun SulogScreen(navigator: MiuixDestinationsNavigator) {
+fun SulogScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     data class SulogEntry(val uptime: Int, val uid: Int, val sym: Char, val raw: String)
     var entries by remember { mutableStateOf(listOf<SulogEntry>()) }
@@ -123,7 +120,7 @@ fun SulogScreen(navigator: MiuixDestinationsNavigator) {
                 title = stringResource(R.string.log_viewer_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navigator.popBackStack() }) {
+                    IconButton(onClick = { navigator.pop() }) {
                         val layoutDirection = LocalLayoutDirection.current
                         Icon(
                             modifier = Modifier.graphicsLayer {

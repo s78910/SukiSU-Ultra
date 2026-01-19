@@ -33,9 +33,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.susfs.component.*
 import com.sukisu.ultra.ui.susfs.content.BasicSettingsContent
@@ -74,10 +72,9 @@ enum class SuSFSTab(val displayNameRes: Int) {
 }
 
 @SuppressLint("SdCardPath", "AutoboxingStateCreation")
-@Destination<RootGraph>
 @Composable
 fun SuSFSConfigScreen(
-    navigator: MiuixDestinationsNavigator
+    navigator: Navigator
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -554,7 +551,7 @@ fun SuSFSConfigScreen(
                     IconButton(onClick = {
                         if (!isNavigating) {
                             isNavigating = true
-                            navigator.popBackStack()
+                            navigator.pop()
                         }
                     }) {
                         val layoutDirection = LocalLayoutDirection.current

@@ -28,9 +28,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KeyEventBlocker
 import com.sukisu.ultra.ui.util.reboot
@@ -79,10 +77,9 @@ private object KernelFlashStateHolder {
     }
 }
 
-@Destination<RootGraph>
 @Composable
 fun KernelFlashScreen(
-    navigator: MiuixDestinationsNavigator,
+    navigator: Navigator,
     kernelUri: Uri,
     selectedSlot: String? = null,
     kpmPatchEnabled: Boolean = false,
@@ -120,6 +117,8 @@ fun KernelFlashScreen(
         showFloatAction = true
         KernelFlashStateHolder.isFlashing = false
     }
+
+    val flashComplete = stringResource(R.string.horizon_flash_complete)
     
     // 如果是从外部打开的内核刷写，延迟1.5秒后自动退出
     LaunchedEffect(flashState.isCompleted, flashState.error) {
@@ -176,7 +175,7 @@ fun KernelFlashScreen(
             if (flashState.error.isNotEmpty()) {
                 logText += "\n${flashState.error}\n"
             } else if (flashState.isCompleted) {
-                logText += "\n${context.getString(R.string.horizon_flash_complete)}\n\n\n"
+                logText += "\n$flashComplete\n\n\n"
                 showFloatAction = true
             }
         }
@@ -187,7 +186,7 @@ fun KernelFlashScreen(
             if (flashState.isCompleted || flashState.error.isNotEmpty()) {
                 KernelFlashStateHolder.clear()
             }
-            navigator.popBackStack()
+            navigator.pop()
         }
     }
 

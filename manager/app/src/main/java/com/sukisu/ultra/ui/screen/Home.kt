@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.pm.PackageInfoCompat
-import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -67,8 +66,9 @@ import com.sukisu.ultra.getKernelVersion
 import com.sukisu.ultra.ui.LocalPagerState
 import com.sukisu.ultra.ui.component.DropdownItem
 import com.sukisu.ultra.ui.component.RebootListPopup
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
+import com.sukisu.ultra.ui.navigation3.Navigator
+import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.theme.isInDarkTheme
 import com.sukisu.ultra.ui.util.*
 import com.sukisu.ultra.ui.util.module.LatestVersionInfo
@@ -94,7 +94,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
 fun HomePager(
-    navigator: MiuixDestinationsNavigator,
+    navigator: Navigator,
     bottomInnerPadding: Dp
 ) {
     val kernelVersion = getKernelVersion()
@@ -162,9 +162,7 @@ fun HomePager(
                     StatusCard(
                         kernelVersion, ksuVersion, lkmMode,
                         onClickInstall = {
-                            navigator.navigate(InstallScreenDestination()) {
-                                launchSingleTop = true
-                            }
+                            navigator.push(Route.Install)
                         },
                         onClickSuperuser = {
                             coroutineScope.launch {

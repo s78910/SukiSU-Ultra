@@ -21,9 +21,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.ConfirmResult
@@ -60,9 +58,8 @@ data class UmountPathEntry(
     val flags: Int
 )
 
-@Destination<RootGraph>
 @Composable
-fun UmountManager(navigator: MiuixDestinationsNavigator) {
+fun UmountManager(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -93,7 +90,7 @@ fun UmountManager(navigator: MiuixDestinationsNavigator) {
             TopAppBar(
                 title = stringResource(R.string.umount_path_manager),
                 navigationIcon = {
-                    IconButton(onClick = { navigator.navigateUp() }) {
+                    IconButton(onClick = { navigator.pop() }) {
                         val layoutDirection = LocalLayoutDirection.current
                         Icon(
                             modifier = Modifier.graphicsLayer {

@@ -7,7 +7,6 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -57,10 +56,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.Security
 import androidx.lifecycle.compose.dropUnlessResumed
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.KernelFlashScreenDestination
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -69,8 +64,9 @@ import dev.chrisbanes.haze.hazeSource
 import com.sukisu.ultra.R
 import com.sukisu.ultra.getKernelVersion
 import com.sukisu.ultra.ui.component.ChooseKmiDialog
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
+import com.sukisu.ultra.ui.navigation3.Navigator
+import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.kernelFlash.KpmPatchOption
 import com.sukisu.ultra.ui.kernelFlash.KpmPatchSelectionDialog
 import com.sukisu.ultra.ui.kernelFlash.component.SlotSelectionDialog
@@ -108,9 +104,8 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  */
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
-@Destination<RootGraph>
 fun InstallScreen(
-    navigator: MiuixDestinationsNavigator,
+    navigator: Navigator,
     preselectedKernelUri: String? = null
 ) {
     val context = LocalContext.current
@@ -147,16 +142,14 @@ fun InstallScreen(
             when (method) {
                 is InstallMethod.HorizonKernel -> {
                     method.uri?.let { uri ->
-                        navigator.navigate(
-                            KernelFlashScreenDestination(
+                        navigator.push(
+                            Route.KernelFlash(
                                 kernelUri = uri,
                                 selectedSlot = method.slot,
                                 kpmPatchEnabled = kpmPatchOption == KpmPatchOption.PATCH_KPM,
                                 kpmUndoPatch = kpmPatchOption == KpmPatchOption.UNDO_PATCH_KPM
                             )
-                        ) {
-                            launchSingleTop = true
-                        }
+                        )
                     }
                 }
                 else -> {
@@ -168,9 +161,7 @@ fun InstallScreen(
                         ota = isOta,
                         partition = partitionSelection
                     )
-                    navigator.navigate(FlashScreenDestination(flashIt)) {
-                        launchSingleTop = true
-                    }
+                    navigator.push(Route.Flash(flashIt))
                 }
             }
         }
@@ -251,13 +242,10 @@ fun InstallScreen(
         tint = HazeTint(colorScheme.surface.copy(0.8f))
     )
 
-    BackHandler {
-        navigator.popBackStack()
-    }
     Scaffold(
         topBar = {
             TopBar(
-                onBack = dropUnlessResumed { navigator.popBackStack() },
+                onBack = dropUnlessResumed { navigator.pop() },
                 scrollBehavior = scrollBehavior,
                 hazeState = hazeState,
                 hazeStyle = hazeStyle,

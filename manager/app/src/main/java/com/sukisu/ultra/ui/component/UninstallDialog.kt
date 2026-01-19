@@ -15,9 +15,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
+import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.screen.FlashIt
 import com.sukisu.ultra.ui.screen.UninstallType
 import com.sukisu.ultra.ui.screen.UninstallType.NONE
@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun UninstallDialog(
     showDialog: MutableState<Boolean>,
-    navigator: MiuixDestinationsNavigator,
+    navigator: Navigator,
 ) {
     val context = LocalContext.current
     val options = listOf(
@@ -50,19 +50,9 @@ fun UninstallDialog(
 
     val run = { type: UninstallType ->
         when (type) {
-            PERMANENT -> navigator.navigate(FlashScreenDestination(FlashIt.FlashUninstall)) {
-                popUpTo(FlashScreenDestination) {
-                    inclusive = true
-                }
-                launchSingleTop = true
-            }
+            PERMANENT -> navigator.push(Route.Flash(FlashIt.FlashUninstall))
 
-            RESTORE_STOCK_IMAGE -> navigator.navigate(FlashScreenDestination(FlashIt.FlashRestore)) {
-                popUpTo(FlashScreenDestination) {
-                    inclusive = true
-                }
-                launchSingleTop = true
-            }
+            RESTORE_STOCK_IMAGE -> navigator.push(Route.Flash(FlashIt.FlashRestore))
 
             TEMPORARY -> showTodo()
             NONE -> Unit

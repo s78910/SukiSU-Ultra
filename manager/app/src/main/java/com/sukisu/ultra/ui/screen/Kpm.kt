@@ -43,9 +43,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CoroutineScope
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.foundation.isSystemInDarkTheme
-import com.ramcosta.composedestinations.annotation.Destination
-import com.sukisu.ultra.ui.component.TopAppBarAnim
-import com.ramcosta.composedestinations.annotation.RootGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -58,10 +55,10 @@ import com.sukisu.ultra.R
 import java.io.FileInputStream
 import java.net.*
 import android.app.Activity
-import androidx.compose.animation.core.rememberTransition
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.LayoutDirection
+import com.sukisu.ultra.ui.navigation3.Navigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -80,9 +77,9 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  * 以下内核模块功能由KernelPatch开发，经过修改后加入SukiSU Ultra的内核模块功能
  * 开发者：ShirkNeko, Liaokong
  */
-@Destination<RootGraph>
 @Composable
 fun KpmScreen(
+    navigator: Navigator,
     viewModel: KpmViewModel = viewModel(),
     bottomInnerPadding: Dp = 0.dp
 ) {
@@ -99,8 +96,6 @@ fun KpmScreen(
     val dynamicTopPadding by remember {
         derivedStateOf { 12.dp * (1f - scrollBehavior.state.collapsedFraction) }
     }
-
-    val searchTransition = rememberTransition(searchStatus.expandState)
 
     val showEmptyState by remember {
         derivedStateOf {
@@ -322,7 +317,7 @@ fun KpmScreen(
 
     Scaffold(
         topBar = {
-            searchTransition.TopAppBarAnim(hazeState = hazeState, hazeStyle = hazeStyle) {
+            searchStatus.TopAppBarAnim(hazeState = hazeState, hazeStyle = hazeStyle) {
                 TopAppBar(
                     color = Color.Transparent,
                     title = stringResource(R.string.kpm_title),
@@ -368,8 +363,7 @@ fun KpmScreen(
             }
         },
         popupHost = {
-            searchTransition.SearchPager(
-                searchStatus = searchStatus,
+            searchStatus.SearchPager(
                 defaultResult = {},
                 searchBarTopPadding = dynamicTopPadding,
             ) {
@@ -419,17 +413,16 @@ fun KpmScreen(
                 layoutDirection = layoutDirection
             )
         } else {
-            searchTransition.SearchBox(
-                    searchStatus = searchStatus,
-                    searchBarTopPadding = dynamicTopPadding,
-                    contentPadding = PaddingValues(
-                        top = innerPadding.calculateTopPadding(),
-                        start = innerPadding.calculateStartPadding(layoutDirection),
-                        end = innerPadding.calculateEndPadding(layoutDirection)
-                    ),
-                    hazeState = hazeState,
-                    hazeStyle = hazeStyle
-                ) { contentTopPadding ->
+            searchStatus.SearchBox(
+                searchBarTopPadding = dynamicTopPadding,
+                contentPadding = PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    start = innerPadding.calculateStartPadding(layoutDirection),
+                    end = innerPadding.calculateEndPadding(layoutDirection)
+                ),
+                hazeState = hazeState,
+                hazeStyle = hazeStyle
+            ) { boxHeight  ->
                 KpmList(
                     viewModel = viewModel,
                     scope = scope,
@@ -447,7 +440,7 @@ fun KpmScreen(
                     hazeState = hazeState,
                     innerPadding = innerPadding,
                     bottomInnerPadding = bottomInnerPadding,
-                    contentTopPadding = contentTopPadding,
+                    boxHeight = boxHeight,
                     layoutDirection = layoutDirection
                 )
             }
@@ -569,7 +562,7 @@ private fun KpmList(
     hazeState: HazeState,
     innerPadding: PaddingValues,
     bottomInnerPadding: Dp,
-    contentTopPadding: Dp,
+    boxHeight: MutableState<Dp>,
     layoutDirection: LayoutDirection
 ) {
     val context = LocalContext.current
@@ -601,7 +594,7 @@ private fun KpmList(
         onRefresh = { if (!isRefreshing) isRefreshing = true },
         refreshTexts = refreshTexts,
         contentPadding = PaddingValues(
-            top = innerPadding.calculateTopPadding() + contentTopPadding + 6.dp,
+            top = innerPadding.calculateTopPadding() + boxHeight.value + 6.dp,
             start = innerPadding.calculateStartPadding(layoutDirection),
             end = innerPadding.calculateEndPadding(layoutDirection),
         ),
@@ -615,7 +608,7 @@ private fun KpmList(
                 .nestedScroll(nestedScrollConnection)
                 .hazeSource(state = hazeState),
             contentPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding() + contentTopPadding + 6.dp,
+                top = innerPadding.calculateTopPadding() + boxHeight.value + 6.dp,
                 start = innerPadding.calculateStartPadding(layoutDirection),
                 end = innerPadding.calculateEndPadding(layoutDirection),
             ),

@@ -33,9 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -58,9 +56,8 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
-@Destination<RootGraph>
 fun Personalization(
-    navigator: MiuixDestinationsNavigator
+    navigator: Navigator
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }
@@ -83,7 +80,7 @@ fun Personalization(
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            navigator.popBackStack()
+                            navigator.pop()
                         }
                     ) {
                         val layoutDirection = LocalLayoutDirection.current

@@ -15,10 +15,8 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
-import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.KernelFlashScreenDestination
 import com.sukisu.ultra.ui.component.ConfirmResult
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.kernelFlash.KpmPatchOption
@@ -31,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import com.sukisu.ultra.Natives
+import com.sukisu.ultra.ui.navigation3.Route
 
 private sealed class DialogState {
     data object None : DialogState()
@@ -42,7 +41,7 @@ private sealed class DialogState {
 @Composable
 fun HandleZipFileIntent(
     intent: Intent?,
-    navigator: MiuixDestinationsNavigator
+    navigator: Navigator
 ) {
     val context = LocalContext.current
     val confirmDialog = rememberConfirmDialog()
@@ -175,9 +174,7 @@ fun HandleZipFileIntent(
                     if (isSafeMode) {
                         Toast.makeText(context, isSafeModeString, Toast.LENGTH_SHORT).show()
                     } else {
-                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(finalModuleUris))) {
-                            launchSingleTop = true
-                        }
+                        navigator.push(Route.Flash((FlashIt.FlashModules(finalModuleUris))))
                     }
                 }
                 
@@ -229,17 +226,15 @@ fun HandleZipFileIntent(
                 onOptionSelected = { option ->
                     kpmPatchOption = option
                     dialogState = DialogState.None
-                    
-                    navigator.navigate(
-                        KernelFlashScreenDestination(
+
+                    navigator.push(
+                        Route.KernelFlash(
                             kernelUri = state.kernelUri,
                             selectedSlot = state.slot,
                             kpmPatchEnabled = option == KpmPatchOption.PATCH_KPM,
                             kpmUndoPatch = option == KpmPatchOption.UNDO_PATCH_KPM
                         )
-                    ) {
-                        launchSingleTop = true
-                    }
+                    )
                     
                     selectedSlot = null
                     kpmPatchOption = KpmPatchOption.FOLLOW_KERNEL

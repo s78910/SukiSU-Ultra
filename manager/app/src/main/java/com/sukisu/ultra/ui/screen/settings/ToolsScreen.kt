@@ -36,12 +36,10 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootGraph
-import com.sukisu.ultra.ui.component.navigation.MiuixDestinationsNavigator
-import com.ramcosta.composedestinations.generated.destinations.UmountManagerDestination
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KsuIsValid
+import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.util.getSELinuxStatus
 import com.topjohnwu.superuser.Shell
 import dev.chrisbanes.haze.HazeState
@@ -69,9 +67,8 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
-@Destination<RootGraph>
 fun Tools(
-    navigator: MiuixDestinationsNavigator
+    navigator: Navigator
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }
@@ -94,7 +91,7 @@ fun Tools(
                 title = stringResource(R.string.tools),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navigator.popBackStack() }) {
+                    IconButton(onClick = { navigator.pop() }) {
                         val layoutDirection = LocalLayoutDirection.current
                         Icon(
                             modifier = Modifier.graphicsLayer {
@@ -142,7 +139,7 @@ fun Tools(
                                 )
                             },
                             onClick = {
-                                navigator.navigate(UmountManagerDestination)
+                                navigator.push(Route.UmountManager)
                             }
                         )
                     }
