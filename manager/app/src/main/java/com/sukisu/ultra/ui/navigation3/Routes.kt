@@ -39,10 +39,10 @@ sealed interface Route : NavKey {
     data object AppProfileTemplate : Route
 
     @Serializable
-    data class TemplateEditor(val template: @Contextual TemplateViewModel.TemplateInfo, val readOnly: Boolean) : Route
+    data class TemplateEditor(val template: TemplateViewModel.TemplateInfo, val readOnly: Boolean) : Route
 
     @Serializable
-    data class AppProfile(val appInfo: @Contextual SuperUserViewModel.AppInfo) : Route
+    data class AppProfile(val appInfo: SuperUserViewModel.AppInfo) : Route
 
     @Serializable
     data object Install : Route
@@ -66,17 +66,17 @@ sealed interface Route : NavKey {
     data object Kpm: Route
 
     @Serializable
-    data object Personalization: Route
+    data object SuSFS: Route
 
     @Serializable
     data object Tool: Route
+
+    @Serializable
+    data object Personalization: Route
 
     @Serializable
     data object UmountManager: Route
 
     @Serializable
     data object Sulog: Route
-
-    @Serializable
-    data object SuSFS: Route
 }

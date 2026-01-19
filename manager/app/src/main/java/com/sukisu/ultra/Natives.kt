@@ -4,6 +4,7 @@ import android.os.Parcelable
 import androidx.annotation.Keep
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
 /**
  * @author weishu
@@ -131,9 +132,10 @@ object Natives {
         return isVersionLessThan(getFullVersion(), MINIMAL_SUPPORTED_KERNEL_FULL)
     }
 
+    @Keep
     @Immutable
     @Parcelize
-    @Keep
+    @Serializable
     data class Profile(
         // and there is a default profile for root and non-root
         val name: String,

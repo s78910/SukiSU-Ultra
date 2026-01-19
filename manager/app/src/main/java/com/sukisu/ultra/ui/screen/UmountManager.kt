@@ -59,7 +59,7 @@ data class UmountPathEntry(
 )
 
 @Composable
-fun UmountManager(navigator: Navigator) {
+fun UmountManagerScreen(navigator: Navigator) {
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
