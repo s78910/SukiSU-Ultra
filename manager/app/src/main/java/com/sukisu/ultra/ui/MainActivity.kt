@@ -198,6 +198,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+                HandleZipFileIntent(intent, navigator)
             }
         }
     }
