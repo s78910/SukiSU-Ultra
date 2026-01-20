@@ -1,12 +1,9 @@
 package com.sukisu.ultra.ui
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.LocalActivity
@@ -31,11 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -51,9 +46,7 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import com.sukisu.ultra.Natives
-import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.BottomBar
-import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.kernelFlash.KernelFlashScreen
 import com.sukisu.ultra.ui.navigation3.DeepLinkResolver
 import com.sukisu.ultra.ui.navigation3.Navigator
@@ -62,7 +55,6 @@ import com.sukisu.ultra.ui.screen.AboutScreen
 import com.sukisu.ultra.ui.screen.AppProfileScreen
 import com.sukisu.ultra.ui.screen.AppProfileTemplateScreen
 import com.sukisu.ultra.ui.screen.ExecuteModuleActionScreen
-import com.sukisu.ultra.ui.screen.FlashIt
 import com.sukisu.ultra.ui.screen.FlashScreen
 import com.sukisu.ultra.ui.screen.HomePager
 import com.sukisu.ultra.ui.screen.InstallScreen
@@ -79,7 +71,6 @@ import com.sukisu.ultra.ui.screen.settings.Personalization
 import com.sukisu.ultra.ui.screen.settings.Tools
 import com.sukisu.ultra.ui.susfs.SuSFSConfigScreen
 import com.sukisu.ultra.ui.theme.KernelSUTheme
-import com.sukisu.ultra.ui.util.getFileName
 import com.sukisu.ultra.ui.util.install
 import com.sukisu.ultra.ui.webui.WebUIActivity
 import top.yukonga.miuix.kmp.basic.Scaffold
