@@ -64,11 +64,13 @@ import com.sukisu.ultra.ui.screen.SuperUserPager
 import com.sukisu.ultra.ui.theme.KernelSUTheme
 import com.sukisu.ultra.ui.util.install
 import com.sukisu.ultra.ui.webui.WebUIActivity
+import kotlinx.coroutines.flow.MutableStateFlow
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class MainActivity : ComponentActivity() {
 
+    private val intentState = MutableStateFlow(0)
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
