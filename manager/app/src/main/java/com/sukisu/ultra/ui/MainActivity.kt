@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ui.component.BottomBar
 import com.sukisu.ultra.ui.kernelFlash.KernelFlashScreen
-import com.sukisu.ultra.ui.navigation3.DeepLinkResolver
+import com.sukisu.ultra.ui.navigation3.HandleDeepLink
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.screen.AboutScreen
@@ -126,20 +126,20 @@ class MainActivity : ComponentActivity() {
             }
 
             KernelSUTheme(colorMode = colorMode, keyColor = keyColor) {
-                val intent = LocalActivity.current?.intent
                 val backStack: NavBackStack<NavKey> = rememberNavBackStack(Route.Main)
-                val initialStack = remember(intentState.collectAsState().value) {
-                    DeepLinkResolver.resolve(intent)
-                }
-                LaunchedEffect(initialStack) {
-                    if (initialStack.isNotEmpty()) {
-                        backStack.clear()
-                        backStack.addAll(initialStack)
-                    }
-                }
                 val navigator = remember { Navigator(backStack) }
 
+                HandleDeepLink(
+                    intentState = intentState.collectAsState(),
+                    backStack = backStack
+                )
+
                 ShortcutIntentHandler(
+                    intentState = intentState,
+                    navigator = navigator
+                )
+
+                HandleZipFileIntent(
                     intentState = intentState,
                     navigator = navigator
                 )
@@ -189,7 +189,6 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
-                HandleZipFileIntent(intent, navigator)
             }
         }
     }

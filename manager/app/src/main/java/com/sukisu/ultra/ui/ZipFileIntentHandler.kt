@@ -5,8 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ui.navigation3.Route
+import kotlinx.coroutines.flow.MutableStateFlow
 
 private sealed class DialogState {
     data object None : DialogState()
@@ -40,7 +43,7 @@ private sealed class DialogState {
 @SuppressLint("StringFormatInvalid")
 @Composable
 fun HandleZipFileIntent(
-    intent: Intent?,
+    intentState: MutableStateFlow<Int>,
     navigator: Navigator
 ) {
     val context = LocalContext.current
@@ -62,11 +65,14 @@ fun HandleZipFileIntent(
     val moduleInstallPromptWithName = stringResource(R.string.module_install_prompt_with_name)
     val horizonKernelString = stringResource(R.string.horizon_kernel)
     val moduleString = stringResource(R.string.module)
+
+    val intentStateValue by intentState.collectAsState()
+    val activity = LocalActivity.current ?: return
     
-    LaunchedEffect(intent) {
-        if (intent == null || processed) return@LaunchedEffect
-        
+    LaunchedEffect(intentStateValue) {
+        if (processed) return@LaunchedEffect
         val zipUris = mutableSetOf<Uri>()
+        val intent = activity.intent
         
         fun isModuleFile(uri: Uri?): Boolean {
             if (uri == null) return false
