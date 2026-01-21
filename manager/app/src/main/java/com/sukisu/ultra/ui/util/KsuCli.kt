@@ -22,6 +22,7 @@ import com.topjohnwu.superuser.ShellUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 import com.sukisu.ultra.BuildConfig
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ksuApp
@@ -260,9 +261,13 @@ fun uninstallPermanently(
 }
 
 @Parcelize
+@Serializable
 sealed class LkmSelection : Parcelable {
-    data class LkmUri(val uri: Uri) : LkmSelection()
+    @Serializable
+    data class LkmUri(@Serializable(with = UriSerializer::class) val uri: Uri) : LkmSelection()
+    @Serializable
     data class KmiString(val value: String) : LkmSelection()
+    @Serializable
     data object KmiNone : LkmSelection()
 }
 
