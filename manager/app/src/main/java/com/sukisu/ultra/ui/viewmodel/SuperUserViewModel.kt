@@ -28,7 +28,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
-import kotlinx.serialization.Serializable
 import com.sukisu.zako.IKsuInterface
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ksuApp
@@ -36,7 +35,6 @@ import com.sukisu.ultra.ui.KsuService
 import com.sukisu.ultra.ui.component.SearchStatus
 import com.sukisu.ultra.ui.util.HanziToPinyin
 import com.sukisu.ultra.ui.util.KsuCli
-import com.sukisu.ultra.ui.util.PackageInfoSerializer
 import java.text.Collator
 import java.util.Locale
 import kotlin.coroutines.resume
@@ -73,10 +71,8 @@ class SuperUserViewModel : ViewModel() {
     val searchStatus: State<SearchStatus> = _searchStatus
 
     @Parcelize
-    @Serializable
     data class AppInfo(
         val label: String,
-        @Serializable(PackageInfoSerializer::class)
         val packageInfo: PackageInfo,
         val profile: Natives.Profile?,
     ) : Parcelable {

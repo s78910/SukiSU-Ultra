@@ -37,6 +37,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.sukisu.ultra.ui.kernelFlash.state.*
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
@@ -79,12 +80,12 @@ private object KernelFlashStateHolder {
 
 @Composable
 fun KernelFlashScreen(
-    navigator: Navigator,
     kernelUri: Uri,
     selectedSlot: String? = null,
     kpmPatchEnabled: Boolean = false,
     kpmUndoPatch: Boolean = false
 ) {
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()

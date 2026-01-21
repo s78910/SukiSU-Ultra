@@ -31,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import com.sukisu.ultra.Natives
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Route
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -44,8 +45,8 @@ private sealed class DialogState {
 @Composable
 fun HandleZipFileIntent(
     intentState: MutableStateFlow<Int>,
-    navigator: Navigator
 ) {
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
     val confirmDialog = rememberConfirmDialog()
     val scope = rememberCoroutineScope()

@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KeyEventBlocker
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.util.runModuleAction
 import top.yukonga.miuix.kmp.basic.Icon
@@ -70,7 +71,8 @@ import java.util.Locale
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
-fun ExecuteModuleActionScreen(navigator: Navigator, moduleId: String) {
+fun ExecuteModuleActionScreen(moduleId: String) {
+    val navigator = LocalNavigator.current
     var text by rememberSaveable { mutableStateOf("") }
     var tempText: String
     val logContent = rememberSaveable { StringBuilder() }

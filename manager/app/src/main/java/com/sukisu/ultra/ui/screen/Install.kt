@@ -65,6 +65,7 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.getKernelVersion
 import com.sukisu.ultra.ui.component.ChooseKmiDialog
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.kernelFlash.KpmPatchOption
@@ -104,10 +105,8 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  */
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
-fun InstallScreen(
-    navigator: Navigator,
-    preselectedKernelUri: String? = null
-) {
+fun InstallScreen(preselectedKernelUri: String? = null) {
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
     val installMethodState = remember {
         mutableStateOf<InstallMethod?>(null)

@@ -25,6 +25,7 @@ import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.ConfirmResult
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,7 +60,8 @@ data class UmountPathEntry(
 )
 
 @Composable
-fun UmountManagerScreen(navigator: Navigator) {
+fun UmountManagerScreen() {
+    val navigator = LocalNavigator.current
     val scrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

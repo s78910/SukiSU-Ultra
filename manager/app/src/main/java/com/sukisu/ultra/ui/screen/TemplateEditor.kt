@@ -44,6 +44,7 @@ import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.EditText
 import com.sukisu.ultra.ui.component.profile.RootProfileConfig
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.util.deleteAppProfileTemplate
 import com.sukisu.ultra.ui.util.getAppProfileTemplate
@@ -71,11 +72,10 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  */
 @Composable
 fun TemplateEditorScreen(
-    navigator: Navigator,
     initialTemplate: TemplateViewModel.TemplateInfo,
     readOnly: Boolean = true,
 ) {
-
+    val navigator = LocalNavigator.current
     val isCreation = initialTemplate.id.isBlank()
     val autoSave = !isCreation
 

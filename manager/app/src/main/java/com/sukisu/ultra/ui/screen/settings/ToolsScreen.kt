@@ -36,9 +36,9 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KsuIsValid
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.util.getSELinuxStatus
 import com.topjohnwu.superuser.Shell
@@ -67,9 +67,8 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 @Composable
-fun Tools(
-    navigator: Navigator
-) {
+fun Tools() {
+    val navigator = LocalNavigator.current
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }
     val hazeStyle = HazeStyle(

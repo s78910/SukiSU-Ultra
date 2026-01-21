@@ -78,6 +78,7 @@ import kotlinx.coroutines.launch
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.DropdownItem
 import com.sukisu.ultra.ui.viewmodel.TemplateViewModel
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import top.yukonga.miuix.kmp.basic.Card
@@ -112,8 +113,8 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun AppProfileTemplateScreen(
-    navigator: Navigator
 ) {
+    val navigator = LocalNavigator.current
     val viewModel = viewModel<TemplateViewModel>()
     val scope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()

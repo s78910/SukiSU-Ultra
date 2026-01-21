@@ -32,6 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +66,7 @@ import com.sukisu.ultra.ui.component.DropdownItem
 import com.sukisu.ultra.ui.component.profile.AppProfileConfig
 import com.sukisu.ultra.ui.component.profile.RootProfileConfig
 import com.sukisu.ultra.ui.component.profile.TemplateConfig
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.util.forceStopApp
@@ -105,9 +108,9 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  */
 @Composable
 fun AppProfileScreen(
-    navigator: Navigator,
-    appInfo: SuperUserViewModel.AppInfo,
+    packageName: String,
 ) {
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = remember { HazeState() }
@@ -116,11 +119,21 @@ fun AppProfileScreen(
         tint = HazeTint(colorScheme.surface.copy(0.8f))
     )
     val scope = rememberCoroutineScope()
+    val appInfoState = remember(packageName) {
+        derivedStateOf {
+            SuperUserViewModel.apps.find { it.packageName == packageName }
+        }
+    }
+    val appInfo = appInfoState.value
+    if (appInfo == null) {
+        LaunchedEffect(Unit) {
+            navigator.pop()
+        }
+        return
+    }
     val failToUpdateAppProfile = stringResource(R.string.failed_to_update_app_profile).format(appInfo.label).format(appInfo.uid)
     val failToUpdateSepolicy = stringResource(R.string.failed_to_update_sepolicy).format(appInfo.label)
     val suNotAllowed = stringResource(R.string.su_not_allowed).format(appInfo.label)
-
-    val packageName = appInfo.packageName
     val sameUidApps = remember(appInfo.uid) {
         SuperUserViewModel.apps.filter { it.uid == appInfo.uid }
     }

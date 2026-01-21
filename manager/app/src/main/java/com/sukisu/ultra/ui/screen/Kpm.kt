@@ -58,7 +58,7 @@ import android.app.Activity
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.LayoutDirection
-import com.sukisu.ultra.ui.navigation3.Navigator
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -79,10 +79,10 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
  */
 @Composable
 fun KpmScreen(
-    navigator: Navigator,
     viewModel: KpmViewModel = viewModel(),
     bottomInnerPadding: Dp = 0.dp
 ) {
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val confirmDialog = rememberConfirmDialog()

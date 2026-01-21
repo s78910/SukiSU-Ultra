@@ -91,6 +91,7 @@ import com.sukisu.ultra.ui.component.GithubMarkdown
 import com.sukisu.ultra.ui.component.SearchBox
 import com.sukisu.ultra.ui.component.SearchPager
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.theme.isInDarkTheme
@@ -173,8 +174,8 @@ data class RepoModuleArg(
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
 fun ModuleRepoScreen(
-    navigator: Navigator,
 ) {
+    val navigator = LocalNavigator.current
     val viewModel = viewModel<ModuleRepoViewModel>()
     val installedVm = viewModel<ModuleViewModel>()
     val searchStatus by viewModel.searchStatus
@@ -1006,9 +1007,9 @@ fun InfoPage(
 @SuppressLint("StringFormatInvalid", "DefaultLocale")
 @Composable
 fun ModuleRepoDetailScreen(
-    navigator: Navigator,
     module: RepoModuleArg
 ) {
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val isDark = isInDarkTheme(prefs.getInt("color_mode", 0))

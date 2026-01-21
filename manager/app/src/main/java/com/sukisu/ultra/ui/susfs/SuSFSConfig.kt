@@ -35,6 +35,7 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.susfs.component.*
 import com.sukisu.ultra.ui.susfs.content.BasicSettingsContent
 import com.sukisu.ultra.ui.susfs.content.EnabledFeaturesContent
@@ -73,9 +74,8 @@ enum class SuSFSTab(val displayNameRes: Int) {
 
 @SuppressLint("SdCardPath", "AutoboxingStateCreation")
 @Composable
-fun SuSFSConfigScreen(
-    navigator: Navigator
-) {
+fun SuSFSConfigScreen() {
+    val navigator = LocalNavigator.current
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()

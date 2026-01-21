@@ -48,11 +48,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.util.retrieveSulogLogs
 import com.sukisu.ultra.ui.util.streamFile
 
 @Composable
-fun SulogScreen(navigator: Navigator) {
+fun SulogScreen() {
+    val navigator = LocalNavigator.current
     val scrollBehavior = MiuixScrollBehavior()
     data class SulogEntry(val uptime: Int, val uid: Int, val sym: Char, val raw: String)
     var entries by remember { mutableStateOf(listOf<SulogEntry>()) }
