@@ -45,7 +45,6 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.EditText
 import com.sukisu.ultra.ui.component.profile.RootProfileConfig
 import com.sukisu.ultra.ui.navigation3.LocalNavigator
-import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.util.deleteAppProfileTemplate
 import com.sukisu.ultra.ui.util.getAppProfileTemplate
 import com.sukisu.ultra.ui.util.setAppProfileTemplate

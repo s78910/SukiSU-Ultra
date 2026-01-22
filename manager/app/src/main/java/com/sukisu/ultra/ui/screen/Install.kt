@@ -66,7 +66,6 @@ import com.sukisu.ultra.getKernelVersion
 import com.sukisu.ultra.ui.component.ChooseKmiDialog
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.navigation3.LocalNavigator
-import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.kernelFlash.KpmPatchOption
 import com.sukisu.ultra.ui.kernelFlash.KpmPatchSelectionDialog

@@ -52,7 +52,6 @@ import kotlinx.coroutines.withContext
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.KeyEventBlocker
 import com.sukisu.ultra.ui.navigation3.LocalNavigator
-import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.util.runModuleAction
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
