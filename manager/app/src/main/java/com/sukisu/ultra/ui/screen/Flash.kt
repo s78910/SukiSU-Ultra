@@ -59,6 +59,7 @@ import com.sukisu.ultra.ui.component.KeyEventBlocker
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.util.FlashResult
 import com.sukisu.ultra.ui.util.LkmSelection
+import com.sukisu.ultra.ui.util.UriSerializer
 import com.sukisu.ultra.ui.util.flashModule
 import com.sukisu.ultra.ui.util.installBoot
 import com.sukisu.ultra.ui.util.reboot
