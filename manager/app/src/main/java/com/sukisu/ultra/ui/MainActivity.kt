@@ -20,6 +20,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import com.sukisu.ultra.Natives
@@ -49,6 +51,7 @@ import com.sukisu.ultra.ui.component.BottomBar
 import com.sukisu.ultra.ui.kernelFlash.KernelFlashScreen
 import com.sukisu.ultra.ui.navigation3.HandleDeepLink
 import com.sukisu.ultra.ui.navigation3.LocalNavigator
+import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.navigation3.rememberNavigator
 import com.sukisu.ultra.ui.screen.AboutScreen
@@ -215,20 +218,7 @@ fun MainScreen() {
         tint = HazeTint(MiuixTheme.colorScheme.surface.copy(0.8f))
     )
 
-    run {
-        val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
-        val isTopMain = navController.current() is Route.Main
-        val isPagerBackHandlerEnabled = isTopMain && navController.backStackSize() == 1 && pagerState.currentPage != 0
-        NavigationBackHandler(
-            state = navEventState,
-            isBackEnabled = isPagerBackHandlerEnabled,
-            onBackCompleted = {
-                coroutineScope.launch {
-                    pagerState.animateScrollToPage(page = 0, animationSpec = tween(easing = EaseInOut))
-                }
-            }
-        )
-    }
+    MainScreenBackHandler(pagerState, navController, coroutineScope)
 
     CompositionLocalProvider(
         LocalPagerState provides pagerState,
@@ -253,6 +243,31 @@ fun MainScreen() {
             }
         }
     }
+}
+
+@Composable
+private fun MainScreenBackHandler(
+    pagerState: PagerState,
+    navController: Navigator,
+    coroutineScope: CoroutineScope
+) {
+    val isPagerBackHandlerEnabled by remember {
+        derivedStateOf {
+            navController.current() is Route.Main && navController.backStackSize() == 1 && pagerState.targetPage != 0
+        }
+    }
+
+    val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
+
+    NavigationBackHandler(
+        state = navEventState,
+        isBackEnabled = isPagerBackHandlerEnabled,
+        onBackCompleted = {
+            coroutineScope.launch {
+                pagerState.animateScrollToPage(page = 0, animationSpec = tween(easing = EaseInOut))
+            }
+        }
+    )
 }
 
 @Composable
