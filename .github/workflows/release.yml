@@ -1,4 +1,7 @@
 name: Release
+permissions:
+  contents: write
+  actions: write
 on:
   push:
     tags:
@@ -63,6 +66,7 @@ jobs:
       - name: release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GH_TOKEN }}
           files: |
             manager/*.apk
             android*-lkm/*_kernelsu.ko
