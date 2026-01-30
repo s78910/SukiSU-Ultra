@@ -336,6 +336,7 @@ const SULOG_BUFSIZ: usize = SULOG_ENTRY_MAX * SULOG_ENTRY_SIZE;
 struct ListTryUmountCmd {
     arg: u64,
     buf_size: u32,
+    _padding: u32,
 }
 
 /// List all mount points in umount list
@@ -345,6 +346,7 @@ pub fn umount_list_list() -> anyhow::Result<String> {
     let mut cmd = ListTryUmountCmd {
         arg: buffer.as_mut_ptr() as u64,
         buf_size: BUF_SIZE as u32,
+        _padding: 0,
     };
     ksuctl(KSU_IOCTL_LIST_TRY_UMOUNT, &raw mut cmd)?;
 
