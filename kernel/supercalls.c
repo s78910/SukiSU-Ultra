@@ -612,7 +612,7 @@ static int do_get_sulog_dump(void __user *arg)
     int ret;
 
     if (current_uid().val != 0)
-		return -EFAULT;
+        return -EFAULT;
 
     ret = send_sulog_dump(arg);
     if (ret)
@@ -923,7 +923,6 @@ void ksu_supercalls_init(void)
     }
 
     sulog_init_heap(); // grab heap memory for sulog
-
 }
 
 void ksu_supercalls_exit(void)
