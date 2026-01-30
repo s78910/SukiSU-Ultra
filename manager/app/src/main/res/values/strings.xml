@@ -170,8 +170,6 @@
     <string name="settings_disable_su_summary">Disable the ability of any app to gain root privileges via the ⁠su command (existing root processes won\'t be affected)</string>
     <string name="settings_disable_kernel_umount">Disable kernel umount</string>
     <string name="settings_disable_kernel_umount_summary">Disable kernel-level umount behavior controlled by KernelSU</string>
-    <string name="settings_enable_enhanced_security">Enable enhanced security</string>
-    <string name="settings_enable_enhanced_security_summary">Enable stricter security policies</string>
     <string name="feature_status_unsupported_summary">Kernel does not support this feature</string>
     <string name="feature_status_managed_summary">This feature is managed by a module</string>
     <string name="settings_mode_default">Default</string>
@@ -666,7 +664,13 @@ Important Note:\n
     <string name="sus_maps_debug_info">First, find the target application\'s PID and UID using ps -enf, then check the relevant paths in /proc/&lt;pid&gt;/maps and compare the device numbers with those in /proc/1/mountinfo to ensure consistency. Only when the device numbers match can the map hiding function work properly</string>
     <!-- Log Viewer -->
     <string name="log_viewer_title">Log Viewer</string>
+    <string name="settings_view_sulog">View sulog logs</string>
+    <string name="settings_view_sulog_summary">Open sulog viewer</string>
     <string name="log_viewer_back">Back</string>
+    <string name="sulog_blocked_label">Blocked</string>
+    <string name="sulog_allowed_label">Allowed</string>
+    <string name="sulog_ioctl_label">Ioctl Escalation</string>
+    <string name="sulog_other_label">Other</string>
     <string name="log_viewer_search">Search</string>
     <string name="log_viewer_clear_logs">Clear Logs</string>
     <string name="log_viewer_clear_logs_confirm">Are you sure you want to clear the selected log file? This action cannot be undone</string>
