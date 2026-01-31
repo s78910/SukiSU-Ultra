@@ -26,7 +26,9 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
+    time::Duration,
 };
+use wait_timeout::ChildExt;
 use zip_extensions::inflate::zip_extract::zip_extract_file_to_memory;
 
 use crate::defs::{MODULE_DIR, MODULE_UPDATE_DIR, UPDATE_FILE_NAME};
@@ -167,7 +169,7 @@ pub fn load_sepolicy_rule() -> Result<()> {
     Ok(())
 }
 
-pub fn exec_script<T: AsRef<Path>>(path: T, wait: bool) -> Result<()> {
+pub fn exec_script<T: AsRef<Path>>(path: T, wait: bool, timeout: Duration) -> Result<()> {
     info!("exec {}", path.as_ref().display());
 
     let is_module_script = path.as_ref().starts_with(defs::MODULE_DIR);
@@ -230,10 +232,12 @@ pub fn exec_script<T: AsRef<Path>>(path: T, wait: bool) -> Result<()> {
         command = command.env("KSU_MODULE", id);
     }
 
-    let result = if wait {
-        command.status().map(|_| ())
-    } else {
-        command.spawn().map(|_| ())
+    let result = {
+        if wait {
+            command.spawn()?.wait_timeout(timeout).map(|_| ())
+        } else {
+            command.spawn().map(|_| ())
+        }
     };
     result.map_err(|e| anyhow!("Failed to exec {}: {e}", path.as_ref().display()))
 }
@@ -255,7 +259,7 @@ pub fn exec_stage_script(stage: &str, block: bool) -> Result<()> {
             return Ok(());
         }
 
-        exec_script(&script_path, block)
+        exec_script(&script_path, block, defs::EXEC_STAGE_TIMEOUT)
     })?;
 
     Ok(())
@@ -277,7 +281,7 @@ pub fn exec_common_scripts(dir: &str, wait: bool) -> Result<()> {
             continue;
         }
 
-        exec_script(path, wait)?;
+        exec_script(path, wait, defs::EXEC_STAGE_TIMEOUT)?;
     }
 
     Ok(())
@@ -477,7 +481,7 @@ pub fn prune_modules() -> Result<()> {
         // Then execute module's own uninstall.sh
         let uninstaller = module.join("uninstall.sh");
         if uninstaller.exists()
-            && let Err(e) = exec_script(uninstaller, true)
+            && let Err(e) = exec_script(uninstaller, true, defs::EXEC_STAGE_TIMEOUT)
         {
             warn!("Failed to exec uninstaller: {e}");
         }
@@ -751,7 +755,7 @@ pub fn run_action(id: &str) -> Result<()> {
     }
 
     #[cfg(not(all(target_os = "android", target_arch = "aarch64")))]
-    exec_script(&action_script_path, true)
+    exec_script(&action_script_path, true, crate::defs::EXEC_STAGE_TIMEOUT)
 }
 
 pub fn enable_module(id: &str) -> Result<()> {
