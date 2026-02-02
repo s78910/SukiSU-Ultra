@@ -199,8 +199,11 @@ fun InstallScreen(preselectedKernelUri: String? = null) {
     }
 
     val onClickNext = {
-        if (isGKI && lkmSelection == LkmSelection.KmiNone && currentKmi.isBlank() && installMethod !is InstallMethod.HorizonKernel) {
-            // no lkm file selected and cannot get current kmi
+        val isLkmSelected = lkmSelection != LkmSelection.KmiNone
+        val isKmiUnknown = currentKmi.isBlank()
+        val isSelectFileMode = installMethod is InstallMethod.SelectFile
+        if (isGKI && !isLkmSelected && (isKmiUnknown || isSelectFileMode) && installMethod !is InstallMethod.HorizonKernel) {
+            // no lkm file selected and cannot get current kmi or select file mode
             showChooseKmiDialog.value = true
             chooseKmiDialog
         } else {
@@ -469,12 +472,16 @@ private fun SelectInstallMethod(
     val defaultPartitionName = produceState(initialValue = "boot") {
         value = getDefaultPartition()
     }.value
+    val isGkiDevice = produceState(initialValue = false) {
+        value = getKernelVersion().isGKI()
+    }.value
     val horizonKernelSummary = stringResource(R.string.horizon_kernel_summary)
     val selectFileTip = stringResource(
         id = R.string.select_file_tip, defaultPartitionName
     )
-    val radioOptions = mutableListOf<InstallMethod>(InstallMethod.SelectFile(summary = selectFileTip))
-    if (rootAvailable) {
+    val selectFileTipNoGKI = stringResource(id = R.string.select_file_tip_nogki)
+    val radioOptions = mutableListOf<InstallMethod>(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGKI))
+    if (rootAvailable && isGkiDevice) {
         radioOptions.add(InstallMethod.DirectInstall)
 
         if (isAbDevice) {
