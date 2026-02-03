@@ -307,6 +307,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
            sizeof(newcreds->cap_bset));
 
     setup_groups(profile, newcreds);
+    setup_selinux(profile->selinux_domain, newcreds);
     task_lock(target_task);
 
     const struct cred *old_creds = get_task_cred(target_task);
@@ -319,7 +320,6 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
         disable_seccomp_for_task(target_task);
     }
 
-    setup_selinux(profile->selinux_domain);
     put_cred(old_creds);
     wake_up_process(target_task);
 
