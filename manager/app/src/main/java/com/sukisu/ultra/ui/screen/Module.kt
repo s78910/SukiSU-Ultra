@@ -645,12 +645,12 @@ fun ModulePager(
                 )
                 val selectZipLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
-                ) {
+                ) { result ->
                     val uris = mutableListOf<Uri>()
-                    if (it.resultCode != RESULT_OK) {
+                    if (result.resultCode != RESULT_OK) {
                         return@rememberLauncherForActivityResult
                     }
-                    val data = it.data ?: return@rememberLauncherForActivityResult
+                    val data = result.data ?: return@rememberLauncherForActivityResult
                     val clipData = data.clipData
 
                     if (clipData != null) {

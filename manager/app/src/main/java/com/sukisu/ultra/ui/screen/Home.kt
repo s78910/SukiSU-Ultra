@@ -62,7 +62,6 @@ import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.sukisu.ultra.getKernelVersion
 import com.sukisu.ultra.ui.LocalMainPagerState
-import com.sukisu.ultra.ui.LocalPagerState
 import com.sukisu.ultra.ui.component.DropdownItem
 import com.sukisu.ultra.ui.component.RebootListPopup
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
@@ -656,7 +655,7 @@ fun getManagerVersion(context: Context): Pair<String, Long> {
 }
 
 private enum class SusfsStatus {
-    Idle, Loading, Supported, Unsupported, Error
+    Idle, Supported, Unsupported, Error
 }
 
 private data class SusfsInfoState(
