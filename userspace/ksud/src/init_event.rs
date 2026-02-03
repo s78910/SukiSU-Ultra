@@ -102,7 +102,7 @@ pub fn on_post_data_fs() -> Result<()> {
 
     // exec lua script on post-fs-data
     #[cfg(all(target_os = "android", target_arch = "aarch64"))]
-    if let Err(e) = module::exec_stage_lua("post-fs-data", true, "kernelsu") {
+    if let Err(e) = crate::module::exec_stage_lua("post-fs-data", true, "kernelsu") {
         warn!("Failed to exec post-fs-data lua: {e}");
     }
 
@@ -157,7 +157,7 @@ fn run_stage(stage: &str, block: bool) {
 
     // run lua stage script
     #[cfg(all(target_os = "android", target_arch = "aarch64"))]
-    if let Err(e) = module::exec_stage_lua(stage, block, "kernelsu") {
+    if let Err(e) = crate::module::exec_stage_lua(stage, block, "kernelsu") {
         warn!("Failed to exec {stage} lua: {e}");
     }
 }

@@ -755,7 +755,7 @@ pub fn run_action(id: &str) -> Result<()> {
     }
 
     #[cfg(not(all(target_os = "android", target_arch = "aarch64")))]
-    exec_script(&action_script_path, true, crate::defs::EXEC_STAGE_TIMEOUT)
+    exec_script(&action_script_path, true, defs::EXEC_STAGE_TIMEOUT)
 }
 
 pub fn enable_module(id: &str) -> Result<()> {

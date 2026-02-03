@@ -270,7 +270,7 @@ pub fn exec_stage_script(stage: &str, block: bool) -> Result<()> {
     };
 
     info!("Executing metamodule {stage}.sh");
-    crate::module::exec_script(&script_path, block, crate::defs::EXEC_STAGE_TIMEOUT)?;
+    crate::module::exec_script(&script_path, block, defs::EXEC_STAGE_TIMEOUT)?;
     info!("Metamodule {stage}.sh executed successfully");
     Ok(())
 }
