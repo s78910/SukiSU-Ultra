@@ -94,6 +94,9 @@ jobs:
           # 1. Change app name (all language files)
           find app/src/main/res -name "strings.xml" -exec sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' {} \;
           
+          # 1.5. Change TopAppBar title in Home.kt (hardcode the title)
+          sed -i 's/text = stringResource(R.string.app_name)/text = "刷机做环境找微信S78910JQKKKAA"/' app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt
+          
           # 2. Change package name using sed (fix: not append)
           sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.susu.s789"\n    }/' app/build.gradle.kts
           
