@@ -8,7 +8,7 @@ on:
       version:
         description: 'Version (tag/commit/branch, empty=latest)'
         required: false
-        default: ''
+        default: '35659f6b821253a0bb6a3115f083bce5fc56c367'
         type: string
       build_type:
         description: 'Build type'
@@ -98,9 +98,9 @@ jobs:
           # 2. Change package name using sed (fix: not append)
           sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.susu.s789"\n    }/' app/build.gradle.kts
           
-          # 3. Hide navigation items
+          # 3. Hide navigation items (keep Home, SuperUser, Module, and Kpm with conditional display)
           BOTTOMBAR="app/src/main/java/com/sukisu/ultra/ui/activity/component/BottomBar.kt"
-          [ -f "$BOTTOMBAR" ] && sed -i 's/BottomBarDestination\.entries\.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser }.forEach/' "$BOTTOMBAR"
+          [ -f "$BOTTOMBAR" ] && sed -i 's/BottomBarDestination\.entries\.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser || it == BottomBarDestination.Module || it == BottomBarDestination.Kpm }.forEach/' "$BOTTOMBAR"
           
           # 4. Simple mode default ON
           find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("is_simple_mode", false)/getBoolean("is_simple_mode", true)/g' {} \;
