@@ -91,16 +91,15 @@ jobs:
         run: |
           cd manager
           
-          # 1. Change app name
-          sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' app/src/main/res/values/strings.xml
-          sed -i 's/<string name="app_name">SukiSU Ultra<\\\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\\\/string>/g' app/src/main/res/values-zh-rCN/strings.xml 2>/dev/null || true
+          # 1. Change app name (all language files)
+          find app/src/main/res -name "strings.xml" -exec sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' {} \;
           
           # 2. Change package name using sed (fix: not append)
           sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.susu.s789"\n    }/' app/build.gradle.kts
           
-          # 3. Hide navigation items (keep Home, SuperUser, Module, and Kpm with conditional display)
+          # 3. Hide navigation items (keep Home, SuperUser, and Kpm with conditional display - remove Module)
           BOTTOMBAR="app/src/main/java/com/sukisu/ultra/ui/activity/component/BottomBar.kt"
-          [ -f "$BOTTOMBAR" ] && sed -i 's/BottomBarDestination\.entries\.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser || it == BottomBarDestination.Module || it == BottomBarDestination.Kpm }.forEach/' "$BOTTOMBAR"
+          [ -f "$BOTTOMBAR" ] && sed -i 's/BottomBarDestination\.entries\.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser || it == BottomBarDestination.Kpm }.forEach/' "$BOTTOMBAR"
           
           # 4. Simple mode default ON
           find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("is_simple_mode", false)/getBoolean("is_simple_mode", true)/g' {} \;
