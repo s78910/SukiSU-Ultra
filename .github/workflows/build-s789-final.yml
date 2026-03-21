@@ -33,11 +33,41 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Prepare official manager native libs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official-40168.apk
+          python3 <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          request = urllib.request.Request(
+              "https://api.github.com/repos/SukiSU-Ultra/SukiSU-Ultra/releases/latest",
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+          with urllib.request.urlopen(request) as response:
+              release = json.load(response)
+
+          apk_asset = next(
+              asset for asset in release["assets"]
+              if asset["name"].endswith("-release.apk")
+          )
+
+          with open("official-manager.apk", "wb") as fp:
+              download_request = urllib.request.Request(
+                  apk_asset["browser_download_url"],
+                  headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}"},
+              )
+              with urllib.request.urlopen(download_request) as response:
+                  fp.write(response.read())
+          PY
           rm -rf manager/app/src/main/jniLibs
           mkdir -p manager/app/src/main/jniLibs
-          unzip -q official-40168.apk 'lib/*' -d extracted-libs
+          unzip -q official-manager.apk 'lib/*' -d extracted-libs
           cp -R extracted-libs/lib/. manager/app/src/main/jniLibs/
 
       - name: Configure signing
