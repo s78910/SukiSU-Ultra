@@ -47,6 +47,15 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Prepare official manager native libs
+        working-directory: upstream
+        run: |
+          wget -q "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/v4.0.0/SukiSU_v4.0.0_40168-release.apk" -O official-40168.apk
+          rm -rf manager/app/src/main/jniLibs
+          mkdir -p manager/app/src/main/jniLibs
+          unzip -q official-40168.apk 'lib/*' -d extracted-libs
+          cp -R extracted-libs/lib/. manager/app/src/main/jniLibs/
+
       - name: Configure signing
         working-directory: upstream/manager
         run: |
