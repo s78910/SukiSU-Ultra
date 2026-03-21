@@ -65,9 +65,13 @@ jobs:
               with urllib.request.urlopen(download_request) as response:
                   fp.write(response.read())
           PY
-          mkdir -p manager/app/src/main/jniLibs
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          mkdir -p manager/app/src/main/jniLibs/x86_64
+          mkdir -p manager/app/src/main/jniLibs/armeabi-v7a
           unzip -q official-manager.apk 'lib/*' -d extracted-libs
-          cp -R extracted-libs/lib/. manager/app/src/main/jniLibs/
+          find extracted-libs/lib -name 'libksud.so' -path '*/arm64-v8a/*' -exec cp -f {} manager/app/src/main/jniLibs/arm64-v8a/ \;
+          find extracted-libs/lib -name 'libksud.so' -path '*/x86_64/*' -exec cp -f {} manager/app/src/main/jniLibs/x86_64/ \;
+          find extracted-libs/lib -name 'libksud.so' -path '*/armeabi-v7a/*' -exec cp -f {} manager/app/src/main/jniLibs/armeabi-v7a/ \;
 
       - name: Configure signing
         working-directory: manager
