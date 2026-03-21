@@ -1,47 +1,24 @@
-name: Build S789 Final (Dual APKs)
+name: Build S789 Final
 
 on:
-  repository_dispatch:
-    types: [build-s789]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version (tag/commit/branch, empty=latest)'
-        required: false
-        default: '35659f6b821253a0bb6a3115f083bce5fc56c367'
-        type: string
-      build_type:
-        description: 'Build type'
-        required: true
-        default: 'both'
-        type: choice
-        options:
-          - both
-          - s789-only
-          - original-only
-
-env:
-  KEYSTORE_FILE: ${{ github.workspace }}/key.jks
 
 jobs:
   build:
-    name: Build APKs
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.client_payload.version || inputs.version || '' }}
           fetch-depth: 0
 
-      - name: Get Version Info
-        id: version
+      - name: Require signing secrets
         run: |
-          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
-          COMMIT=$(git rev-parse --short HEAD)
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
-          echo "Building: $TAG ($COMMIT)"
+          if [ -z "${{ secrets.KEYSTORE }}" ] || [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ] || [ -z "${{ secrets.KEY_ALIAS }}" ] || [ -z "${{ secrets.KEY_PASSWORD }}" ]; then
+            echo "::error::Missing signing secrets"
+            exit 1
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -55,123 +32,62 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Prepare Keystore
-        run: |
-          echo "${{ secrets.KEYSTORE }}" | base64 -d > $KEYSTORE_FILE
-          echo "Keystore prepared"
-
-      - name: Determine Build Type
-        id: build_type
-        run: |
-          BUILD_TYPE="${{ github.event.client_payload.build_type || inputs.build_type || 's789-only' }}"
-          echo "type=$BUILD_TYPE" >> $GITHUB_OUTPUT
-          echo "Build type: $BUILD_TYPE"
-
-      - name: Build Original APK
-        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 'original-only'
+      - name: Configure signing
         working-directory: manager
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease
-          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-          mkdir -p ../output
-          cp "$APK" ../output/SukiSU-Original-${{ steps.version.outputs.tag }}.apk
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > key.jks
+          cat >> gradle.properties <<EOF
+          KEYSTORE_FILE=key.jks
+          KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          EOF
 
-      - name: Clean for S789 Build
-        if: steps.build_type.outputs.type == 'both'
-        run: |
-          cd manager && ./gradlew clean
-          git checkout -- .
-
-      - name: Apply S789 Modifications
-        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 's789-only'
-        run: |
-          cd manager
-          
-          # 1. Change app name (all language files)
-          find app/src/main/res -name "strings.xml" -exec sed -i 's/<string name="app_name">SukiSU Ultra<\/string>/<string name="app_name">刷机做环境找微信S78910JQKKKAA<\/string>/g' {} \;
-          
-          # 1.5. Change TopAppBar title in Home.kt (hardcode the title)
-          sed -i 's/text = stringResource(R.string.app_name)/text = "刷机做环境找微信S78910JQKKKAA"/' app/src/main/java/com/sukisu/ultra/ui/screen/Home.kt
-          
-          # 2. Change package name using sed (fix: not append)
-          sed -i 's/namespace = "com.sukisu.ultra"/namespace = "com.sukisu.ultra"\n    defaultConfig {\n        applicationId = "com.susu.s789"\n    }/' app/build.gradle.kts
-          
-          # 3. Hide navigation items (keep Home, SuperUser, and Kpm with conditional display - remove Module)
-          BOTTOMBAR="app/src/main/java/com/sukisu/ultra/ui/activity/component/BottomBar.kt"
-          [ -f "$BOTTOMBAR" ] && sed -i 's/BottomBarDestination\.entries\.forEach/BottomBarDestination.entries.filter { it == BottomBarDestination.Home || it == BottomBarDestination.SuperUser || it == BottomBarDestination.Kpm }.forEach/' "$BOTTOMBAR"
-          
-          # 4. Simple mode default ON
-          find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("is_simple_mode", false)/getBoolean("is_simple_mode", true)/g' {} \;
-          
-          # 5. Check update default OFF
-          find app/src/main/java -name "*.kt" -exec sed -i 's/getBoolean("check_update", true)/getBoolean("check_update", false)/g' {} \;
-          
-          # 6. Change status label
-          find app/src/main/java -name "*.kt" -exec sed -i 's/"LKM"/"姜太公钓瑜"/g; s/"Built-in"/"姜太公钓瑜"/g' {} \;
-          
-          echo "S789 modifications applied"
-
-      - name: Build S789 APK
-        if: steps.build_type.outputs.type == 'both' || steps.build_type.outputs.type == 's789-only'
+      - name: Build final manager
         working-directory: manager
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          ./gradlew assembleRelease
-          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-          mkdir -p ../output
-          cp "$APK" ../output/SukiSU-S789-${{ steps.version.outputs.tag }}.apk
+        run: ./gradlew clean assembleRelease --no-daemon --stacktrace
 
-      - name: Extract Certificate Info
+      - name: Find APK
+        id: apk
         run: |
-          cat > extract_cert.py << 'PYEOF'
-          import sys, struct, hashlib
-          def get_cert(apk):
-              with open(apk, 'rb') as f: d = f.read()
-              eocd = d.rfind(b'\x50\x4b\x05\x06')
-              if eocd < 0: return None, None
-              cd = struct.unpack('<I', d[eocd+16:eocd+20])[0]
-              be = d.rfind(b'APK Sig Block 42', max(0, cd-0x10000), cd)
-              if be < 0: return None, None
-              bs = struct.unpack('<Q', d[be-8:be])[0]
-              pos = be - bs + 16
-              while pos < be - 16:
-                  ps = struct.unpack('<Q', d[pos:pos+8])[0]
-                  pid = struct.unpack('<I', d[pos+8:pos+12])[0]
-                  if pid == 0x7109871a:
-                      sig = d[pos+12:pos+8+ps]; p = 12
-                      dl = struct.unpack('<I', sig[p:p+4])[0]; p += 4 + dl + 4
-                      cl = struct.unpack('<I', sig[p:p+4])[0]; p += 4
-                      return cl, hashlib.sha256(sig[p:p+cl]).hexdigest()
-                  pos += 8 + ps
-              return None, None
-          for apk in sys.argv[1:]:
-              s, h = get_cert(apk)
-              if s: print(f"{apk}: size={s}, hash={h}")
-          PYEOF
-          echo "=== Certificate Info ===" > output/cert_info.txt
-          for apk in output/*.apk; do
-            [ -f "$apk" ] || continue
-            INFO=$(python3 extract_cert.py "$apk")
-            SIZE=$(echo "$INFO" | grep -oP 'size=\K\d+')
-            HASH=$(echo "$INFO" | grep -oP 'hash=\K[a-f0-9]+')
-            echo "=== $(basename $apk) ===" >> output/cert_info.txt
-            echo "Size: $SIZE" >> output/cert_info.txt
-            echo "Hash: $HASH" >> output/cert_info.txt
-            echo "su -c \"echo '$SIZE:$HASH' > /data/adb/ksu/dynamic_manager\"" >> output/cert_info.txt
-            echo "" >> output/cert_info.txt
-          done
-          cat output/cert_info.txt
+          apk_path=$(find manager/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -z "$apk_path" ]; then
+            echo "::error::APK not found"
+            exit 1
+          fi
+          echo "apk_path=$apk_path" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Artifacts
+      - name: Extract signing info
+        id: sign
+        run: |
+          python3 scripts/extract_apk_signature.py \
+            "${{ steps.apk.outputs.apk_path }}" \
+            --label final \
+            --package com.s789.sk \
+            --output final-signature.txt \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Write final kernel config
+        run: |
+          cat > final-kernel-config.txt <<EOF
+          Package: com.s789.sk
+          Certificate size: ${{ steps.sign.outputs.cert_size }}
+          Certificate SHA256: ${{ steps.sign.outputs.cert_hash }}
+
+          Dynamic Manager:
+          su -c "echo '${{ steps.sign.outputs.cert_size }}:${{ steps.sign.outputs.cert_hash }}' > /data/adb/ksu/dynamic_manager"
+
+          Kernel Kbuild overrides:
+          KSU_EXPECTED_SIZE=${{ steps.sign.outputs.cert_size }}
+          KSU_EXPECTED_HASH=${{ steps.sign.outputs.cert_hash }}
+          KSU_MANAGER_PACKAGE=com.s789.sk
+          EOF
+
+      - name: Upload final artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SukiSU-APKs-${{ steps.version.outputs.tag }}-${{ steps.version.outputs.commit }}
-          path: output/
-          retention-days: 90
+          name: S789-Final
+          path: |
+            ${{ steps.apk.outputs.apk_path }}
+            final-signature.txt
+            final-kernel-config.txt

@@ -17,6 +17,9 @@ plugins {
 val managerVersionCode: Int by rootProject.extra
 val managerVersionName: String by rootProject.extra
 val androidCmakeVersion: String by rootProject.extra
+val managerApplicationId = providers.environmentVariable("MANAGER_APPLICATION_ID")
+    .orElse("com.s789.sk")
+    .get()
 
 apksign {
     storeFileProperty = "KEYSTORE_FILE"
@@ -37,6 +40,10 @@ android {
         }
     }**/
     namespace = "com.sukisu.ultra"
+
+    defaultConfig {
+        applicationId = managerApplicationId
+    }
 
     buildTypes {
         release {

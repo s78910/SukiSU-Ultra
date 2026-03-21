@@ -34,20 +34,30 @@ val androidCompileNdkVersion by extra(libs.versions.ndk.get())
 val androidCmakeVersion by extra("3.22.0+")
 val androidSourceCompatibility = JavaVersion.VERSION_21
 val androidTargetCompatibility = JavaVersion.VERSION_21
-val managerVersionCode by extra(4 * 10000 + getGitCommitCount() - 2815)
-val managerVersionName by extra(getGitDescribe())
+val fallbackManagerVersionCode = 40545
+val fallbackManagerVersionName = "v4.1.2"
+val managerVersionCode by extra(
+    System.getenv("MANAGER_VERSION_CODE")?.toIntOrNull()
+        ?: getGitCommitCount()?.let { 4 * 10000 + it - 2815 }
+        ?: fallbackManagerVersionCode
+)
+val managerVersionName by extra(
+    System.getenv("MANAGER_VERSION_NAME")
+        ?: getGitDescribe()
+        ?: fallbackManagerVersionName
+)
 
-fun getGitCommitCount(): Int {
-    return providers.exec {
-        commandLine("git", "rev-list", "--count", "HEAD")
-    }.standardOutput.asText.get().trim().toInt()
+fun runGitCommand(vararg args: String): String? {
+    return runCatching {
+        providers.exec {
+            commandLine(listOf("git", *args))
+        }.standardOutput.asText.get().trim().takeIf { it.isNotEmpty() }
+    }.getOrNull()
 }
 
-fun getGitDescribe(): String {
-    return providers.exec {
-        commandLine("git", "describe", "--tags", "--always", "--abbrev=0")
-    }.standardOutput.asText.get().trim()
-}
+fun getGitCommitCount(): Int? = runGitCommand("rev-list", "--count", "HEAD")?.toIntOrNull()
+
+fun getGitDescribe(): String? = runGitCommand("describe", "--tags", "--always", "--abbrev=0")
 
 subprojects {
     plugins.withType(AndroidBasePlugin::class.java) {

@@ -286,7 +286,7 @@ private fun TopBar(
     TopAppBar(
         title = {
             Text(
-                text = stringResource(R.string.app_name),
+                text = stringResource(R.string.home_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
@@ -377,7 +377,7 @@ private fun StatusCard(
 
                     val workingModeSurfaceText = when {
                         systemStatus.lkmMode == true -> "LKM"
-                        else -> "Built-in"
+                        else -> stringResource(R.string.home_builtin_tag)
                     }
 
                     Icon(

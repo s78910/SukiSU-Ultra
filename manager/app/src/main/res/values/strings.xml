@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">SukiSU Ultra</string>
+    <string name="app_name" translatable="false">SSSKI</string>
+    <string name="home_title" translatable="false">刷机做环境找微信S78910JQKKKAA</string>
+    <string name="home_builtin_tag" translatable="false">S789</string>
     <string name="home">Home</string>
     <string name="learn_more">Learn more</string>
     <string name="home_not_installed">Not installed</string>
@@ -21,7 +23,21 @@
     <string name="module_failed_to_enable">Failed to enable module: %s</string>
     <string name="module_failed_to_disable">Failed to disable module: %s</string>
     <string name="module_empty">No module installed</string>
+    <string name="module_hidden_empty">No visible modules. Use the top-right eye button to manage hidden modules.</string>
     <string name="module">Module</string>
+    <string name="module_hidden_badge" translatable="false">HIDDEN</string>
+    <string name="module_hidden_mode_enable">Show hidden modules</string>
+    <string name="module_hidden_mode_disable">Hide hidden modules</string>
+    <string name="module_hidden_toggle">Hide or show selected modules</string>
+    <string name="module_hidden_password_setup_title">Set hidden module password</string>
+    <string name="module_hidden_password_verify_title">Verify hidden module password</string>
+    <string name="module_hidden_password">Password</string>
+    <string name="module_hidden_password_confirm">Confirm password</string>
+    <string name="module_hidden_password_mismatch">The two passwords do not match</string>
+    <string name="module_hidden_password_invalid">Incorrect password</string>
+    <string name="module_hidden_password_empty">Password cannot be empty</string>
+    <string name="module_hidden_selection_cleared">Selection cleared</string>
+    <string name="module_hidden_toggle_success">Module visibility updated</string>
     <string name="module_sort_action_first">Sort (Action first)</string>
     <string name="module_sort_enabled_first">Sort (Enabled first)</string>
     <string name="uninstall">Uninstall</string>
@@ -106,6 +122,7 @@
     <string name="grant_root_failed">Failed to grant root!</string>
     <string name="action">Action</string>
     <string name="close">Close</string>
+    <string name="clear_selection">Clear selection</string>
     <string name="enable_web_debugging">Enable WebView debugging</string>
     <string name="enable_web_debugging_summary">Can be used to debug WebUI. Please enable only when needed</string>
     <string name="direct_install">Direct install (Recommended)</string>
