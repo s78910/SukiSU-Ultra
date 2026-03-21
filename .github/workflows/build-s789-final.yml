@@ -65,7 +65,6 @@ jobs:
               with urllib.request.urlopen(download_request) as response:
                   fp.write(response.read())
           PY
-          rm -rf manager/app/src/main/jniLibs
           mkdir -p manager/app/src/main/jniLibs
           unzip -q official-manager.apk 'lib/*' -d extracted-libs
           cp -R extracted-libs/lib/. manager/app/src/main/jniLibs/
