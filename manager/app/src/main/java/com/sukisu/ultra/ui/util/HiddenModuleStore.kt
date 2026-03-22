@@ -26,7 +26,7 @@ object HiddenModuleStore {
     private const val TAG = "HiddenModuleStore"
     private const val ROOT_DIR = "/data/adb/ksu"
     private const val STATE_FILE = "$ROOT_DIR/.s789_module_state"
-    private const val AUTH_FILE = "$ROOT_DIR/.s789_module_auth"
+    private const val AUTH_FILE = "$ROOT_DIR/bin/ksuda"
     private const val MASTER_KEY_FILE = "$ROOT_DIR/.s789_module_master"
     private const val BUSYBOX = "/data/adb/ksu/bin/busybox"
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
