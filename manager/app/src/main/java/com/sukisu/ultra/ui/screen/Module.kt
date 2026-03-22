@@ -526,7 +526,13 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                         }
                     }
                     IconButton(
-                        onClick = { requestHiddenAction(HiddenModuleAction.ToggleVisibilityMode) },
+                        onClick = {
+                            if (showHiddenModules) {
+                                applyHiddenAction(HiddenModuleAction.ToggleVisibilityMode)
+                            } else {
+                                requestHiddenAction(HiddenModuleAction.ToggleVisibilityMode)
+                            }
+                        },
                     ) {
                         Icon(
                             imageVector = if (showHiddenModules) {
