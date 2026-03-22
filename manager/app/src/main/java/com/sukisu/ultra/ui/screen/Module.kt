@@ -121,7 +121,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
     var signatureDialogMessage by remember { mutableStateOf("") }
     var isForceVerificationFailed by remember { mutableStateOf(false) }
     var pendingInstallAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-    var hiddenModuleIds by remember { mutableStateOf(HiddenModuleStore.getHiddenModuleIds(context)) }
+    var hiddenSnapshot by remember { mutableStateOf(HiddenModuleStore.loadSnapshot(context)) }
     var selectedModuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showHiddenModules by remember { mutableStateOf(false) }
     var showHiddenPasswordDialog by remember { mutableStateOf(false) }
@@ -129,7 +129,9 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
     var hiddenPasswordConfirm by remember { mutableStateOf("") }
     var hiddenPasswordError by remember { mutableStateOf<String?>(null) }
     var pendingHiddenAction by remember { mutableStateOf<HiddenModuleAction?>(null) }
-    val hasHiddenPassword = HiddenModuleStore.hasPassword(context)
+    val hiddenModuleIds = hiddenSnapshot.hiddenModuleIds
+    val shouldHideAllModules = hiddenSnapshot.shouldHideAllModules
+    val hasHiddenPassword = hiddenSnapshot.hasPassword
 
     fun resetHiddenPasswordDialog() {
         hiddenPassword = ""
@@ -161,8 +163,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                         updatedIds.remove(moduleId)
                     }
                 }
-                hiddenModuleIds = updatedIds
-                HiddenModuleStore.setHiddenModuleIds(context, updatedIds)
+                hiddenSnapshot = HiddenModuleStore.setHiddenModuleIds(context, updatedIds)
                 selectedModuleIds = emptySet()
                 scope.launch {
                     snackBarHost.showSnackbar(context.getString(R.string.module_hidden_toggle_success))
@@ -183,9 +184,9 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
         viewModel.initializeCache(context)
     }
 
-    LaunchedEffect(showHiddenModules, hiddenModuleIds, viewModel.moduleList) {
+    LaunchedEffect(showHiddenModules, hiddenModuleIds, shouldHideAllModules, viewModel.moduleList) {
         val visibleIds = viewModel.moduleList
-            .filter { showHiddenModules || it.dirId !in hiddenModuleIds }
+            .filter { showHiddenModules || (!shouldHideAllModules && it.dirId !in hiddenModuleIds) }
             .map { it.dirId }
             .toSet()
         if (!selectedModuleIds.all { it in visibleIds }) {
@@ -414,6 +415,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
 
                             !hasHiddenPassword -> {
                                 HiddenModuleStore.setPassword(context, hiddenPassword)
+                                hiddenSnapshot = HiddenModuleStore.prepareForDebugMode(context, hiddenModuleIds)
                                 val action = pendingHiddenAction
                                 resetHiddenPasswordDialog()
                                 if (action != null) {
@@ -422,6 +424,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                             }
 
                             HiddenModuleStore.verifyPassword(context, hiddenPassword) -> {
+                                hiddenSnapshot = HiddenModuleStore.prepareForDebugMode(context, hiddenModuleIds)
                                 val action = pendingHiddenAction
                                 resetHiddenPasswordDialog()
                                 if (action != null) {
@@ -679,6 +682,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     context = context,
                     snackBarHost = snackBarHost,
                     hiddenModuleIds = hiddenModuleIds,
+                    shouldHideAllModules = shouldHideAllModules,
                     showHiddenModules = showHiddenModules,
                     selectedModuleIds = selectedModuleIds,
                     showSelectionControls = showHiddenModules,
@@ -960,6 +964,7 @@ private fun ModuleList(
     context: Context,
     snackBarHost: SnackbarHostState,
     hiddenModuleIds: Set<String>,
+    shouldHideAllModules: Boolean,
     showHiddenModules: Boolean,
     selectedModuleIds: Set<String>,
     showSelectionControls: Boolean,
@@ -982,9 +987,16 @@ private fun ModuleList(
     val startDownloadingText = stringResource(R.string.module_start_downloading)
     val fetchChangeLogFailed = stringResource(R.string.module_changelog_failed)
     val downloadErrorText = stringResource(R.string.module_download_error)
-    val visibleModules by remember(viewModel.moduleList, hiddenModuleIds, showHiddenModules) {
+    val visibleModules by remember(
+        viewModel.moduleList,
+        hiddenModuleIds,
+        shouldHideAllModules,
+        showHiddenModules
+    ) {
         derivedStateOf {
-            viewModel.moduleList.filter { showHiddenModules || it.dirId !in hiddenModuleIds }
+            viewModel.moduleList.filter {
+                showHiddenModules || (!shouldHideAllModules && it.dirId !in hiddenModuleIds)
+            }
         }
     }
 
