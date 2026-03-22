@@ -499,16 +499,12 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                 onSearchTextChange = { viewModel.search = it },
                 onClearClick = { viewModel.search = "" },
                 dropdownContent = {
-                    if (selectedModuleIds.isNotEmpty()) {
+                    if (showHiddenModules && selectedModuleIds.isNotEmpty()) {
                         IconButton(
-                            onClick = { requestHiddenAction(HiddenModuleAction.ToggleSelectedVisibility) },
+                            onClick = { applyHiddenAction(HiddenModuleAction.ToggleSelectedVisibility) },
                         ) {
                             Icon(
-                                imageVector = if (selectedModuleIds.any { it !in hiddenModuleIds }) {
-                                    Icons.Outlined.VisibilityOff
-                                } else {
-                                    Icons.Outlined.Visibility
-                                },
+                                imageVector = Icons.Outlined.SwapHoriz,
                                 contentDescription = stringResource(R.string.module_hidden_toggle),
                             )
                         }
@@ -685,6 +681,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     hiddenModuleIds = hiddenModuleIds,
                     showHiddenModules = showHiddenModules,
                     selectedModuleIds = selectedModuleIds,
+                    showSelectionControls = showHiddenModules,
                     onSelectionChange = { moduleId, selected ->
                         selectedModuleIds = if (selected) {
                             selectedModuleIds + moduleId
@@ -965,6 +962,7 @@ private fun ModuleList(
     hiddenModuleIds: Set<String>,
     showHiddenModules: Boolean,
     selectedModuleIds: Set<String>,
+    showSelectionControls: Boolean,
     onSelectionChange: (moduleId: String, selected: Boolean) -> Unit
 ) {
     val failedEnable = stringResource(R.string.module_failed_to_enable)
@@ -1233,6 +1231,7 @@ private fun ModuleList(
                             onClick = {
                                 onClickModule(it.dirId, it.name, it.hasWebUi)
                             },
+                            showSelectionControl = showSelectionControls,
                             selected = module.dirId in selectedModuleIds,
                             isHidden = module.dirId in hiddenModuleIds,
                             onSelectionChanged = { selected ->
@@ -1259,6 +1258,7 @@ fun ModuleItem(
     onCheckChanged: (Boolean) -> Unit,
     onUpdate: (ModuleViewModel.ModuleInfo) -> Unit,
     onClick: (ModuleViewModel.ModuleInfo) -> Unit,
+    showSelectionControl: Boolean,
     selected: Boolean,
     isHidden: Boolean,
     onSelectionChanged: (Boolean) -> Unit
@@ -1427,14 +1427,15 @@ fun ModuleItem(
                 Spacer(modifier = Modifier.weight(1f))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Checkbox(
-                        checked = selected,
-                        onCheckedChange = onSelectionChanged
-                    )
+                    if (showSelectionControl) {
+                        Checkbox(
+                            checked = selected,
+                            onCheckedChange = onSelectionChanged
+                        )
+                    }
                     Switch(
                         enabled = !module.update,
                         checked = module.enabled,
@@ -1627,6 +1628,7 @@ fun ModuleItemPreview() {
         onCheckChanged = {},
         onUpdate = {},
         onClick = {},
+        showSelectionControl = true,
         selected = false,
         isHidden = false,
         onSelectionChanged = {}
