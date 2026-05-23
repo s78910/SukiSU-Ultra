@@ -184,7 +184,7 @@ private fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
     TopAppBar(
-        title = { Text(stringResource(R.string.app_name)) },
+        title = { Text(stringResource(R.string.home_title)) },
         actions = { RebootListPopup() },
         windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         scrollBehavior = scrollBehavior
@@ -224,7 +224,7 @@ private fun StatusCard(
                         val workingMode = when (lkmMode) {
                             null -> ""
                             true -> "LKM"
-                            else -> "GKI"
+                            else -> stringResource(R.string.home_builtin_tag)
                         }
 
                         val workingText = stringResource(id = R.string.home_working)

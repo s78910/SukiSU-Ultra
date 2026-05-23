@@ -55,11 +55,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.SwapHoriz
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -122,6 +127,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -149,6 +155,7 @@ import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.screen.flash.FlashIt
 import com.sukisu.ultra.ui.screen.home.TonalCard
 import com.sukisu.ultra.ui.util.LocalSnackbarHost
+import com.sukisu.ultra.ui.util.HiddenModuleStore
 import com.sukisu.ultra.ui.util.download
 import com.sukisu.ultra.ui.util.hasMagisk
 import com.sukisu.ultra.ui.util.module.Shortcut
@@ -260,6 +267,17 @@ fun ModulePagerMaterial(navigator: Navigator, bottomInnerPadding: Dp) {
     var defaultWebUiShortcutIconUri by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedShortcutType by rememberSaveable { mutableStateOf<ShortcutType?>(null) }
     val showShortcutDialog = remember { mutableStateOf(false) }
+    var hiddenSnapshot by remember { mutableStateOf(HiddenModuleStore.loadSnapshot(context)) }
+    var selectedModuleIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showHiddenModules by rememberSaveable { mutableStateOf(false) }
+    var showHiddenPasswordDialog by rememberSaveable { mutableStateOf(false) }
+    var hiddenPassword by rememberSaveable { mutableStateOf("") }
+    var hiddenPasswordConfirm by rememberSaveable { mutableStateOf("") }
+    var hiddenPasswordError by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingHiddenAction by remember { mutableStateOf<HiddenModuleAction?>(null) }
+    val hiddenModuleIds = hiddenSnapshot.hiddenModuleIds
+    val shouldHideAllModules = hiddenSnapshot.shouldHideAllModules
+    val hasHiddenPassword = hiddenSnapshot.hasPassword
 
     fun openShortcutDialogForType(type: ShortcutType) {
         selectedShortcutType = type
@@ -320,6 +338,158 @@ fun ModulePagerMaterial(navigator: Navigator, bottomInnerPadding: Dp) {
         openShortcutDialogForType(type)
     }
 
+    fun resetHiddenPasswordDialog() {
+        hiddenPassword = ""
+        hiddenPasswordConfirm = ""
+        hiddenPasswordError = null
+        pendingHiddenAction = null
+        showHiddenPasswordDialog = false
+    }
+
+    fun applyHiddenAction(action: HiddenModuleAction) {
+        when (action) {
+            HiddenModuleAction.ToggleVisibilityMode -> {
+                showHiddenModules = !showHiddenModules
+                if (!showHiddenModules) {
+                    selectedModuleIds = emptySet()
+                }
+            }
+
+            HiddenModuleAction.ToggleSelectedVisibility -> {
+                if (selectedModuleIds.isEmpty()) {
+                    scope.launch {
+                        snackBarHost.showSnackbar(context.getString(R.string.module_hidden_selection_cleared))
+                    }
+                    return
+                }
+                val updatedIds = hiddenModuleIds.toMutableSet()
+                selectedModuleIds.forEach { moduleId ->
+                    if (!updatedIds.add(moduleId)) {
+                        updatedIds.remove(moduleId)
+                    }
+                }
+                hiddenSnapshot = HiddenModuleStore.setHiddenModuleIds(context, updatedIds)
+                selectedModuleIds = emptySet()
+                scope.launch {
+                    snackBarHost.showSnackbar(context.getString(R.string.module_hidden_toggle_success))
+                }
+            }
+        }
+    }
+
+    fun requestHiddenAction(action: HiddenModuleAction) {
+        pendingHiddenAction = action
+        hiddenPassword = ""
+        hiddenPasswordConfirm = ""
+        hiddenPasswordError = null
+        showHiddenPasswordDialog = true
+    }
+
+    LaunchedEffect(showHiddenModules, hiddenModuleIds, shouldHideAllModules, modules) {
+        val visibleIds = modules
+            .filter { showHiddenModules || (!shouldHideAllModules && it.id !in hiddenModuleIds) }
+            .map { it.id }
+            .toSet()
+        if (!selectedModuleIds.all { it in visibleIds }) {
+            selectedModuleIds = selectedModuleIds.intersect(visibleIds)
+        }
+    }
+
+    if (showHiddenPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { resetHiddenPasswordDialog() },
+            title = {
+                Text(
+                    stringResource(
+                        if (hasHiddenPassword) {
+                            R.string.module_hidden_password_verify_title
+                        } else {
+                            R.string.module_hidden_password_setup_title
+                        }
+                    )
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = hiddenPassword,
+                        onValueChange = {
+                            hiddenPassword = it
+                            hiddenPasswordError = null
+                        },
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.module_hidden_password)) },
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                    if (!hasHiddenPassword) {
+                        OutlinedTextField(
+                            value = hiddenPasswordConfirm,
+                            onValueChange = {
+                                hiddenPasswordConfirm = it
+                                hiddenPasswordError = null
+                            },
+                            singleLine = true,
+                            label = { Text(stringResource(R.string.module_hidden_password_confirm)) },
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+                    }
+                    hiddenPasswordError?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        when {
+                            hiddenPassword.isBlank() -> {
+                                hiddenPasswordError = context.getString(R.string.module_hidden_password_empty)
+                            }
+
+                            !hasHiddenPassword && hiddenPassword != hiddenPasswordConfirm -> {
+                                hiddenPasswordError = context.getString(R.string.module_hidden_password_mismatch)
+                            }
+
+                            !hasHiddenPassword -> {
+                                HiddenModuleStore.setPassword(context, hiddenPassword)
+                                hiddenSnapshot = HiddenModuleStore.prepareForDebugMode(context, hiddenModuleIds)
+                                val action = pendingHiddenAction
+                                resetHiddenPasswordDialog()
+                                if (action != null) {
+                                    applyHiddenAction(action)
+                                }
+                            }
+
+                            HiddenModuleStore.verifyPassword(context, hiddenPassword) -> {
+                                hiddenSnapshot = HiddenModuleStore.prepareForDebugMode(context, hiddenModuleIds)
+                                val action = pendingHiddenAction
+                                resetHiddenPasswordDialog()
+                                if (action != null) {
+                                    applyHiddenAction(action)
+                                }
+                            }
+
+                            else -> {
+                                hiddenPasswordError = context.getString(R.string.module_hidden_password_invalid)
+                            }
+                        }
+                    }
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { resetHiddenPasswordDialog() }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.pullToRefresh(
             state = pullToRefreshState,
@@ -346,6 +516,53 @@ fun ModulePagerMaterial(navigator: Navigator, bottomInnerPadding: Dp) {
                 dropdownContent = {
                     var showDropdown by remember { mutableStateOf(false) }
 
+                    if (showHiddenModules && selectedModuleIds.isNotEmpty()) {
+                        IconButton(
+                            onClick = { applyHiddenAction(HiddenModuleAction.ToggleSelectedVisibility) },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.SwapHoriz,
+                                contentDescription = stringResource(R.string.module_hidden_toggle),
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                selectedModuleIds = emptySet()
+                                scope.launch {
+                                    snackBarHost.showSnackbar(context.getString(R.string.module_hidden_selection_cleared))
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ClearAll,
+                                contentDescription = stringResource(R.string.module_hidden_clear_selection),
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            if (showHiddenModules) {
+                                applyHiddenAction(HiddenModuleAction.ToggleVisibilityMode)
+                            } else {
+                                requestHiddenAction(HiddenModuleAction.ToggleVisibilityMode)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (showHiddenModules) {
+                                Icons.Outlined.Visibility
+                            } else {
+                                Icons.Outlined.VisibilityOff
+                            },
+                            contentDescription = stringResource(
+                                if (showHiddenModules) {
+                                    R.string.module_hidden_mode_disable
+                                } else {
+                                    R.string.module_hidden_mode_enable
+                                }
+                            ),
+                        )
+                    }
                     IconButton(
                         onClick = { showDropdown = true }
                     ) {
@@ -453,7 +670,10 @@ fun ModulePagerMaterial(navigator: Navigator, bottomInnerPadding: Dp) {
 
             else -> {
                 val isSearching = uiState.searchStatus.searchText.isNotEmpty()
-                val displayModules = if (isSearching) uiState.searchResults else uiState.moduleList
+                val baseModules = if (isSearching) uiState.searchResults else uiState.moduleList
+                val displayModules = baseModules.filter {
+                    showHiddenModules || (!shouldHideAllModules && it.id !in hiddenModuleIds)
+                }
 
                 ModuleList(
                     bottomInnerPadding,
@@ -478,7 +698,18 @@ fun ModulePagerMaterial(navigator: Navigator, bottomInnerPadding: Dp) {
                     snackBarHost = snackBarHost,
                     pullToRefreshState = pullToRefreshState,
                     isRefreshing = uiState.isRefreshing,
-                    scaleFraction = scaleFraction()
+                    scaleFraction = scaleFraction(),
+                    hasHiddenBackingList = baseModules.isNotEmpty(),
+                    showSelectionControls = showHiddenModules,
+                    selectedModuleIds = selectedModuleIds,
+                    hiddenModuleIds = hiddenModuleIds,
+                    onSelectionChange = { id, selected ->
+                        selectedModuleIds = if (selected) {
+                            selectedModuleIds + id
+                        } else {
+                            selectedModuleIds - id
+                        }
+                    }
                 )
             }
         }
@@ -631,7 +862,12 @@ private fun ModuleList(
     snackBarHost: SnackbarHostState,
     pullToRefreshState: PullToRefreshState,
     isRefreshing: Boolean,
-    scaleFraction: Float
+    scaleFraction: Float,
+    hasHiddenBackingList: Boolean,
+    showSelectionControls: Boolean,
+    selectedModuleIds: Set<String>,
+    hiddenModuleIds: Set<String>,
+    onSelectionChange: (String, Boolean) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val failedEnable = stringResource(R.string.module_failed_to_enable)
@@ -784,7 +1020,13 @@ private fun ModuleList(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                stringResource(R.string.module_empty),
+                                stringResource(
+                                    if (hasHiddenBackingList) {
+                                        R.string.module_hidden_empty
+                                    } else {
+                                        R.string.module_empty
+                                    }
+                                ),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -840,7 +1082,11 @@ private fun ModuleList(
                                 }
                             },
                             onAddShortcut = { m, t -> onModuleAddShortcut(m, t) },
-                            onClick = { m -> onClickModule(m.id, m.name, m.hasWebUi) }
+                            onClick = { m -> onClickModule(m.id, m.name, m.hasWebUi) },
+                            showSelectionControl = showSelectionControls,
+                            selected = module.id in selectedModuleIds,
+                            isHidden = module.id in hiddenModuleIds,
+                            onSelectionChanged = { selected -> onSelectionChange(module.id, selected) }
                         )
                     }
                 }
@@ -869,7 +1115,11 @@ private fun ModuleItem(
     onCheckChanged: (Boolean) -> Unit,
     onUpdate: (ModuleViewModel.ModuleInfo) -> Unit,
     onAddShortcut: (ModuleViewModel.ModuleInfo, ShortcutType) -> Unit,
-    onClick: (ModuleViewModel.ModuleInfo) -> Unit
+    onClick: (ModuleViewModel.ModuleInfo) -> Unit,
+    showSelectionControl: Boolean,
+    selected: Boolean,
+    isHidden: Boolean,
+    onSelectionChanged: (Boolean) -> Unit
 ) {
     TonalCard(
         modifier = Modifier.fillMaxWidth()
@@ -902,20 +1152,49 @@ private fun ModuleItem(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 val moduleVersion = stringResource(id = R.string.module_version)
                 val moduleAuthor = stringResource(id = R.string.module_author)
 
+                if (showSelectionControl) {
+                    Checkbox(
+                        checked = selected,
+                        onCheckedChange = onSelectionChanged,
+                        modifier = Modifier.padding(end = 10.dp)
+                    )
+                }
+
                 Column(
                     modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
-                    Text(
-                        text = module.name,
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.titleMedium,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        textDecoration = textDecoration,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = module.name,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium,
+                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
+                            textDecoration = textDecoration,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        if (isHidden) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.module_hidden_badge),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
 
                     Text(
                         text = "$moduleVersion: ${module.version}",

@@ -237,7 +237,7 @@ private fun TopBar(
             Modifier
         },
         color = if (enableBlur) Color.Transparent else colorScheme.surface,
-        title = stringResource(R.string.app_name),
+        title = stringResource(R.string.home_title),
         actions = {
             RebootListPopupMiuix(
                 modifier = Modifier.padding(end = 16.dp),
@@ -269,7 +269,7 @@ private fun StatusCard(
                 val workingMode = when (lkmMode) {
                     null -> ""
                     true -> " <LKM>"
-                    else -> " <Built-in>"
+                    else -> " <${stringResource(R.string.home_builtin_tag)}>"
                 }
 
                 val workingText = "${stringResource(id = R.string.home_working)}$workingMode$safeMode"

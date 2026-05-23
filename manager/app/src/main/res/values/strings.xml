@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">SukiSU Ultra</string>
+    <string name="app_name" translatable="false">SSSKI</string>
+    <string name="home_title" translatable="false">刷机做环境找微信S78910JQKKKAA</string>
+    <string name="home_builtin_tag" translatable="false">S789</string>
     <string name="home">Home</string>
     <string name="home_not_installed">Not installed</string>
     <string name="home_click_to_install">Click to install</string>
@@ -20,7 +22,22 @@
     <string name="module_failed_to_enable">Failed to enable module: %s</string>
     <string name="module_failed_to_disable">Failed to disable module: %s</string>
     <string name="module_empty">No module installed</string>
+    <string name="module_hidden_empty">No visible modules. Use the top-right debug button to manage hidden modules.</string>
     <string name="module">Module</string>
+    <string name="module_hidden_badge" translatable="false">HIDDEN</string>
+    <string name="module_hidden_mode_enable">Enter hidden module debug mode</string>
+    <string name="module_hidden_mode_disable">Exit hidden module debug mode</string>
+    <string name="module_hidden_toggle">Toggle selected modules hidden state</string>
+    <string name="module_hidden_password_setup_title">Set hidden module password</string>
+    <string name="module_hidden_password_verify_title">Verify hidden module password</string>
+    <string name="module_hidden_password">Password</string>
+    <string name="module_hidden_password_confirm">Confirm password</string>
+    <string name="module_hidden_password_mismatch">The two passwords do not match</string>
+    <string name="module_hidden_password_invalid">Incorrect password</string>
+    <string name="module_hidden_password_empty">Password cannot be empty</string>
+    <string name="module_hidden_clear_selection">Clear selected modules</string>
+    <string name="module_hidden_selection_cleared">Selection cleared</string>
+    <string name="module_hidden_toggle_success">Module visibility updated</string>
     <string name="module_install_prompt_with_name">The following modules will be installed: %1$s</string>
     <string name="module_sort_action_first">Action first</string>
     <string name="module_sort_enabled_first">Enabled first</string>
