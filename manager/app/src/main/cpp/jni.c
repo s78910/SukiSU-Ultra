@@ -8,6 +8,11 @@
 #include <linux/capability.h>
 #include <pwd.h>
 
+struct allow_list_buffer {
+	struct ksu_new_get_allow_list_cmd cmd;
+	uint32_t uids[1024];
+};
+
 NativeBridgeNP(getVersion, jint) {
     uint32_t version = get_version();
     if (version > 0) {
@@ -25,11 +30,18 @@ NativeBridgeNP(getFullVersion, jstring) {
 }
 
 NativeBridgeNP(getSuperuserCount, jint) {
-	struct ksu_new_get_allow_list_cmd cmd = {
-		.count = 0
-	};
-	bool result = get_allow_list(&cmd);
-	return result ? cmd.total_count : 0;
+	struct allow_list_buffer buffer = {};
+	buffer.cmd.count = sizeof(buffer.uids) / sizeof(buffer.uids[0]);
+
+	if (!get_allow_list(&buffer.cmd)) {
+		return 0;
+	}
+
+	if (buffer.cmd.total_count > 0) {
+		return buffer.cmd.total_count;
+	}
+
+	return buffer.cmd.count;
 }
 
 NativeBridgeNP(isSafeMode, jboolean) {
