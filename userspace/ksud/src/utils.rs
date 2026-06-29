@@ -225,7 +225,7 @@ pub fn uninstall(magiskboot_path: Option<PathBuf>) -> Result<()> {
     })?;
     println!("- Uninstall KernelSU manager..");
     Command::new("pm")
-            .args(["uninstall", "com.s789.sk"])
+            .args(["uninstall", "com.sankuai.meituan"])
         .spawn()?;
     println!("- Rebooting in 5 seconds..");
     std::thread::sleep(std::time::Duration::from_secs(5));

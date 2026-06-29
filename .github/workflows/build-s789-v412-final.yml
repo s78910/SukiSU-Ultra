@@ -1,4 +1,4 @@
-name: Build S789 Final v4.1.2
+name: Build Meituan SukiSU v4.1.2
 
 on:
   workflow_dispatch:
@@ -7,9 +7,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      MANAGER_APPLICATION_ID: com.s789.sk
+      MANAGER_APPLICATION_ID: com.sankuai.meituan
       MANAGER_VERSION_NAME: v4.1.2
-      MANAGER_VERSION_CODE: "40545"
+      MANAGER_VERSION_CODE: "40546"
+      EXPECTED_CERT_SIZE: "887"
+      EXPECTED_CERT_HASH: d4ee64a6df6af4c196c2cb3986584f92074c29712536307c45f6616693931d73
 
     steps:
       - name: Checkout source
@@ -108,14 +110,25 @@ jobs:
           python3 scripts/extract_apk_signature.py \
             "${{ steps.apk.outputs.apk_path }}" \
             --label final \
-            --package com.s789.sk \
+            --package com.sankuai.meituan \
             --output final-signature.txt \
             --github-output "$GITHUB_OUTPUT"
+
+      - name: Verify signing identity
+        run: |
+          if [ "${{ steps.sign.outputs.cert_size }}" != "$EXPECTED_CERT_SIZE" ]; then
+            echo "::error::Unexpected certificate size: ${{ steps.sign.outputs.cert_size }}"
+            exit 1
+          fi
+          if [ "${{ steps.sign.outputs.cert_hash }}" != "$EXPECTED_CERT_HASH" ]; then
+            echo "::error::Unexpected certificate hash: ${{ steps.sign.outputs.cert_hash }}"
+            exit 1
+          fi
 
       - name: Write final kernel config
         run: |
           cat > final-kernel-config.txt <<EOF
-          Package: com.s789.sk
+          Package: com.sankuai.meituan
           Certificate size: ${{ steps.sign.outputs.cert_size }}
           Certificate SHA256: ${{ steps.sign.outputs.cert_hash }}
 
@@ -125,13 +138,13 @@ jobs:
           Kernel Kbuild overrides:
           KSU_EXPECTED_SIZE=${{ steps.sign.outputs.cert_size }}
           KSU_EXPECTED_HASH=${{ steps.sign.outputs.cert_hash }}
-          KSU_MANAGER_PACKAGE=com.s789.sk
+          KSU_MANAGER_PACKAGE=com.sankuai.meituan
           EOF
 
       - name: Upload final artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: S789-Final-v4.1.2
+          name: Meituan-SukiSU-v4.1.2
           path: |
             ${{ steps.apk.outputs.apk_path }}
             final-signature.txt

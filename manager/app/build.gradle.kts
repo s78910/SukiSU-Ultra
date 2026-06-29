@@ -18,7 +18,7 @@ val androidTargetCompatibility: JavaVersion by rootProject.extra
 val managerVersionCode: Int by rootProject.extra
 val managerVersionName: String by rootProject.extra
 val managerApplicationId = providers.environmentVariable("MANAGER_APPLICATION_ID")
-    .orElse("com.s789.sk")
+    .orElse("com.sankuai.meituan")
     .get()
 
 apksign {
