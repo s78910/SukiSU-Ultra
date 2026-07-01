@@ -18,6 +18,8 @@ val androidSourceCompatibility: JavaVersion by rootProject.extra
 val androidTargetCompatibility: JavaVersion by rootProject.extra
 val managerVersionCode: Int by rootProject.extra
 val managerVersionName: String by rootProject.extra
+val managerApplicationId = providers.environmentVariable("MANAGER_APPLICATION_ID")
+    .orElse("com.sankuai.meituan")
 
 apksign {
     storeFileProperty = "KEYSTORE_FILE"
@@ -118,6 +120,7 @@ android {
     buildToolsVersion = androidBuildToolsVersion
 
     defaultConfig {
+        applicationId = managerApplicationId.get()
         minSdk = androidMinSdkVersion
         targetSdk = androidTargetSdkVersion
         versionCode = managerVersionCode

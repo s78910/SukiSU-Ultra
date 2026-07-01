@@ -17,7 +17,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
         var action = intent.getAction();
         if (!Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(action)
                 && !Intent.ACTION_BOOT_COMPLETED.equals(action)
-                && !"com.resukisu.resukisu.magica.LAUNCH".equals(action)) {
+                && !"com.sankuai.meituan.magica.LAUNCH".equals(action)) {
             return;
         }
         try {
