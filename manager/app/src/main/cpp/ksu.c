@@ -87,11 +87,18 @@ bool get_allow_list(struct ksu_new_get_allow_list_cmd *cmd) {
     }
 
     // fallback to legacy
+    uint16_t capacity = cmd->count;
     int size = 0;
     int uids[1024];
     if (legacy_get_allow_list(uids, &size)) {
-        cmd->count = size;
-        memcpy(cmd->uids, uids, sizeof(int) * size);
+        if (size < 0) {
+            size = 0;
+        }
+        cmd->total_count = (uint16_t) size;
+        cmd->count = capacity < size ? capacity : (uint16_t) size;
+        if (cmd->count > 0) {
+            memcpy(cmd->uids, uids, sizeof(int) * cmd->count);
+        }
         return true;
     }
 
