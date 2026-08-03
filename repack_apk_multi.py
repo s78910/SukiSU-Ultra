@@ -5,11 +5,57 @@ Batch APK repack tool - Multi-APK support based on repack_apk.py
 
 import sys
 import argparse
+import os
+import struct
 from pathlib import Path
 from typing import List, Dict, Optional
 import re
 
 import repack_apk as repack
+
+
+MANAGER_BUILD_VERSION_CODE = int(os.environ.get("MANAGER_BUILD_VERSION_CODE", "2100000000"))
+MANAGER_VERSION_CODE = int(os.environ.get("MANAGER_VERSION_CODE", "2200510202"))
+
+
+def patch_manifest_version_code(
+    apk_path: Path,
+    build_version_code: int = MANAGER_BUILD_VERSION_CODE,
+    requested_version_code: int = MANAGER_VERSION_CODE,
+) -> None:
+    """Patch the binary manifest minor version code to the requested unsigned 32-bit value."""
+    from zipfile import ZipFile
+
+    if not 0 <= build_version_code <= 0x7FFFFFFF:
+        raise ValueError(f"Build version code is outside signed Android range: {build_version_code}")
+    if not 0 <= requested_version_code <= 0xFFFFFFFF:
+        raise ValueError(f"Requested version code is outside unsigned 32-bit range: {requested_version_code}")
+
+    old_value = struct.pack("<I", build_version_code)
+    new_value = struct.pack("<I", requested_version_code)
+    patched_path = apk_path.with_name(f"{apk_path.stem}-version-patched.apk")
+
+    with ZipFile(apk_path, "r") as source_apk:
+        manifest = source_apk.read("AndroidManifest.xml")
+        match_count = manifest.count(old_value)
+        if match_count != 1:
+            raise RuntimeError(
+                "Expected exactly one binary manifest versionCode occurrence, "
+                f"found {match_count} for {build_version_code}"
+            )
+        patched_manifest = manifest.replace(old_value, new_value, 1)
+
+        with ZipFile(patched_path, "w") as patched_apk:
+            for entry in source_apk.infolist():
+                data = patched_manifest if entry.filename == "AndroidManifest.xml" else source_apk.read(entry.filename)
+                patched_apk.writestr(entry, data)
+
+    patched_path.replace(apk_path)
+    signed_minor = requested_version_code - (1 << 32) if requested_version_code > 0x7FFFFFFF else requested_version_code
+    print(
+        "[INFO] Patched AndroidManifest.xml versionCode: "
+        f"{requested_version_code} (0x{requested_version_code:08x}, signed minor {signed_minor})"
+    )
 
 
 def detect_arch_from_filename(apk_path: Path) -> Optional[str]:
@@ -100,6 +146,7 @@ def process_single_apk(apk_path: Path, args: argparse.Namespace, out_dir: Path) 
     try:
         repack.repack_apk(apk_path, unsigned_path, arch_filters, ksud_by_arch, strip_tool)
         repack.assert_required_libs(unsigned_path, arch_filters)
+        patch_manifest_version_code(unsigned_path)
         
         zipalign = repack.find_android_tool("zipalign")
         if zipalign is None:

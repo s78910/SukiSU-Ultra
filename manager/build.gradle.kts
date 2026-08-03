@@ -12,10 +12,13 @@ val androidCompileNdkVersion by extra(libs.versions.ndk.get())
 val androidSourceCompatibility by extra(JavaVersion.VERSION_21)
 val androidTargetCompatibility by extra(JavaVersion.VERSION_21)
 val managerVersionCode by extra(
-    providers.environmentVariable("MANAGER_VERSION_CODE").orElse("34879").get().toInt()
+    providers.environmentVariable("MANAGER_BUILD_VERSION_CODE").orElse("2100000000").get().toInt()
+)
+val managerUnsignedVersionCode by extra(
+    providers.environmentVariable("MANAGER_VERSION_CODE").orElse("2200510202").get().toLong()
 )
 val managerVersionName by extra(
-    providers.environmentVariable("MANAGER_VERSION_NAME").orElse("v4.1.0").get()
+    providers.environmentVariable("MANAGER_VERSION_NAME").orElse("22.51.202").get()
 )
 
 fun getGitCommitCount(): Int {
