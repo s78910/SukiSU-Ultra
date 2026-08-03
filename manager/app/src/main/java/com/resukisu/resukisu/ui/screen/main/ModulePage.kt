@@ -387,8 +387,8 @@ fun ModulePage(bottomPadding: Dp) {
         showHiddenPasswordDialog = true
     }
 
-    LaunchedEffect(showHiddenModules, hiddenModuleIds, shouldHideAllModules, viewModel.moduleList) {
-        val visibleIds = viewModel.moduleList
+    LaunchedEffect(showHiddenModules, hiddenModuleIds, shouldHideAllModules, uiState.moduleList) {
+        val visibleIds = uiState.moduleList
             .filter { showHiddenModules || (!shouldHideAllModules && it.id !in hiddenModuleIds) }
             .map { it.id }
             .toSet()
@@ -527,7 +527,7 @@ fun ModulePage(bottomPadding: Dp) {
         )
     }
 
-    val displayModules = viewModel.moduleList.filter {
+    val displayModules = uiState.moduleList.filter {
         showHiddenModules || (!shouldHideAllModules && it.id !in hiddenModuleIds)
     }
 
