@@ -272,7 +272,7 @@ private fun StatusCard() {
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                        text = "${BuildConfig.VERSION_NAME} (${BuildConfig.UNSIGNED_VERSION_CODE})",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }

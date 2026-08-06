@@ -87,7 +87,7 @@ class HomeViewModel : ViewModel() {
         val kernelRelease: String = "",
         val androidVersion: String = "",
         val deviceModel: String = "",
-        val managerVersion: Triple<String, Int, Int> = Triple("", 0, 0),
+        val managerVersion: Triple<String, Long, Int> = Triple("", 0L, 0),
         val selinuxStatus: String = "",
         val susfsEnabled: Boolean = false,
         val susfsVersionSupported: Boolean = false,
@@ -413,14 +413,14 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    private suspend fun loadBasicSystemInfo(): Tuple6<String, String, String, Triple<String, Int, Int>, String, Int> {
+    private suspend fun loadBasicSystemInfo(): Tuple6<String, String, String, Triple<String, Long, Int>, String, Int> {
         return withContext(Dispatchers.IO) {
             val uname = runCatching { Os.uname() }.getOrNull()
             Tuple6(
                 uname?.release ?: "Unknown",
                 Build.VERSION.RELEASE ?: "Unknown",
                 runCatching { getDeviceModel() }.getOrDefault("Unknown"),
-                runCatching { getManagerVersion() }.getOrDefault(Triple("Unknown", 0, 0)),
+                runCatching { getManagerVersion() }.getOrDefault(Triple("Unknown", 0L, 0)),
                 runCatching { getSELinuxStatus(ksuApp.applicationContext) }.getOrDefault("Unknown"),
                 runCatching { Os.prctl(21, 0, 0, 0, 0) }.getOrDefault(-1),
             )
@@ -562,10 +562,10 @@ class HomeViewModel : ViewModel() {
         }.getOrDefault("Unknown Device")
     }
 
-    private fun getManagerVersion(): Triple<String, Int, Int> {
+    private fun getManagerVersion(): Triple<String, Long, Int> {
         return runCatching {
-            Triple(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE, Natives.managerUAPIVersion)
-        }.getOrDefault(Triple("Unknown", 0, 0))
+            Triple(BuildConfig.VERSION_NAME, BuildConfig.UNSIGNED_VERSION_CODE, Natives.managerUAPIVersion)
+        }.getOrDefault(Triple("Unknown", 0L, 0))
     }
 
     data class Tuple6<T1, T2, T3, T4, T5, T6>(

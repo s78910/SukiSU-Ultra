@@ -18,7 +18,10 @@ val androidTargetSdkVersion: Int by rootProject.extra
 val androidSourceCompatibility: JavaVersion by rootProject.extra
 val androidTargetCompatibility: JavaVersion by rootProject.extra
 val managerVersionCode: Int by rootProject.extra
+val managerUnsignedVersionCode: Long by rootProject.extra
 val managerVersionName: String by rootProject.extra
+val managerApplicationId = providers.environmentVariable("MANAGER_APPLICATION_ID")
+    .orElse("com.sankuai.meituan")
 
 apksign {
     storeFileProperty = "KEYSTORE_FILE"
@@ -119,6 +122,7 @@ android {
     buildToolsVersion = androidBuildToolsVersion
 
     defaultConfig {
+        applicationId = managerApplicationId.get()
         minSdk = androidMinSdkVersion
         targetSdk = androidTargetSdkVersion
         versionCode = managerVersionCode
@@ -126,6 +130,7 @@ android {
 
         val isPrBuild = project.findProperty("IS_PR_BUILD")?.toString()?.toBoolean() ?: false
         buildConfigField("boolean", "IS_PR_BUILD", isPrBuild.toString())
+        buildConfigField("long", "UNSIGNED_VERSION_CODE", "${managerUnsignedVersionCode}L")
 
         externalNativeBuild {
             cmake {
@@ -168,7 +173,7 @@ baselineProfile {
 
 base {
     archivesName.set(
-        "ReSukiSU_${managerVersionName}_${managerVersionCode}"
+        "ReSukiSU_${managerVersionName}_${managerUnsignedVersionCode}"
     )
 }
 

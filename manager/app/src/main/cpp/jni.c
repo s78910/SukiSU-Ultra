@@ -12,6 +12,11 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+struct allow_list_buffer {
+    struct ksu_new_get_allow_list_cmd cmd;
+    uint32_t uids[1024];
+};
+
 #define ALLOWLIST_FILE_MAGIC 0x7f4b5355
 #define ALLOWLIST_FILE_HEADER_SIZE 8
 #define ALLOWLIST_MIN_VERSION 2
@@ -219,12 +224,18 @@ NativeBridgeNP(getFullVersion, jstring) {
 }
 
 NativeBridgeNP(getSuperuserCount, jint) {
-    struct ksu_new_get_allow_list_cmd cmd = {
-        .count = 0
-    };
-    bool result = get_allow_list(&cmd);
+    struct allow_list_buffer buffer = {};
+    buffer.cmd.count = sizeof(buffer.uids) / sizeof(buffer.uids[0]);
 
-	return result ? cmd.total_count : 0;
+    if (!get_allow_list(&buffer.cmd)) {
+        return 0;
+    }
+
+    if (buffer.cmd.total_count > 0) {
+        return buffer.cmd.total_count;
+    }
+
+    return buffer.cmd.count;
 }
 
 NativeBridgeNP(isSafeMode, jboolean) {
