@@ -1673,48 +1673,41 @@ fun ModuleItem(
                     }
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Switch(
-                        enabled = !module.update && !isChangingEnabled,
-                        checked = isEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                isChangingEnabled = true
-                                try {
-                                    if (onCheckChanged(enabled)) {
-                                        isEnabled = enabled
-                                    }
-                                } finally {
-                                    isChangingEnabled = false
+                Switch(
+                    enabled = !module.update && !isChangingEnabled,
+                    checked = isEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch {
+                            isChangingEnabled = true
+                            try {
+                                if (onCheckChanged(enabled)) {
+                                    isEnabled = enabled
                                 }
-                            }
-                        },
-                        interactionSource = if (!module.hasWebUi) interactionSource else null,
-                        thumbContent = {
-                            if (isEnabled) {
-                                Icon(
-                                    imageVector = Icons.TwoTone.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            } else
-                            {
-                                Icon(
-                                    imageVector = Icons.TwoTone.Close,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.surfaceBright,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
+                            } finally {
+                                isChangingEnabled = false
                             }
                         }
-                    )
-                }
+                    },
+                    interactionSource = if (!module.hasWebUi) interactionSource else null,
+                    thumbContent = {
+                        if (isEnabled) {
+                            Icon(
+                                imageVector = Icons.TwoTone.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(SwitchDefaults.IconSize),
+                            )
+                        } else
+                        {
+                            Icon(
+                                imageVector = Icons.TwoTone.Close,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.surfaceBright,
+                                modifier = Modifier.size(SwitchDefaults.IconSize),
+                            )
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
