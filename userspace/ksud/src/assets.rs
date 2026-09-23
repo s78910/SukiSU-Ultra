@@ -50,6 +50,11 @@ struct Asset;
 #[folder = "bin/x86_64"]
 struct Asset;
 
+#[cfg(all(target_arch = "riscv64", target_os = "android"))]
+#[derive(RustEmbed)]
+#[folder = "bin/riscv64"]
+struct Asset;
+
 // If not Android, ie. macos, linux, windows, include both
 #[cfg(not(target_os = "android"))]
 #[derive(RustEmbed)]
