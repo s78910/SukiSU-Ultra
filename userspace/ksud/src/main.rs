@@ -8,6 +8,7 @@
     clippy::doc_markdown,
     clippy::too_many_lines,
     clippy::cast_possible_wrap,
+    clippy::redundant_field_names,
     clippy::large_enum_variant
 )]
 
