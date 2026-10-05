@@ -500,6 +500,7 @@ jobs:
           mkdir -p target/aarch64-linux-android/release
           mkdir -p target/armv7-linux-androideabi/release
           mkdir -p target/x86_64-linux-android/release
+          mkdir -p target/riscv64-linux-android/release
 
           ARM64_KSUD=$(find artifacts/ksud-aarch64-linux-android \
             -type f -name ksud | head -n 1)
