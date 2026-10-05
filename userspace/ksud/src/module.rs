@@ -31,7 +31,6 @@ use std::{
     fs::{copy, rename},
     io::Write,
 };
-use wait_timeout::ChildExt;
 use zip_extensions::inflate::zip_extract::zip_extract_file_to_memory;
 
 use crate::defs::{MODULE_DIR, MODULE_UPDATE_DIR, UPDATE_FILE_NAME};
@@ -233,9 +232,10 @@ impl SigchldBlock {
             if remaining.is_zero() {
                 return Ok(false);
             }
+            #[allow(clippy::unnecessary_fallible_conversions)]
             let timeout = libc::timespec {
                 tv_sec: remaining.as_secs() as libc::time_t,
-                tv_nsec: remaining.subsec_nanos().into(),
+                tv_nsec: libc::c_long::try_from(remaining.subsec_nanos()).unwrap(),
             };
             // SIGCHLD stays blocked between waitpid and sigtimedwait to avoid lost wakeups.
             if unsafe {

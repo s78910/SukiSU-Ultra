@@ -167,7 +167,9 @@ pub fn run_stage(stage: &str, wait: ScriptWait) {
 
     // run lua stage script
     #[cfg(all(target_os = "android", target_arch = "aarch64"))]
-    if let Err(e) = crate::module::exec_stage_lua(stage, block, "kernelsu") {
+    if let Err(e) =
+        crate::module::exec_stage_lua(stage, !matches!(wait, ScriptWait::NoWait), "kernelsu")
+    {
         warn!("Failed to exec {stage} lua: {e}");
     }
 }

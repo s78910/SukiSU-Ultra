@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use log::{info, warn};
 use std::fmt::Write as FmtWrite;
-use rustix::cstr;
 use std::{process::Command, time::Instant};
 
 use crate::module::{ScriptWait, handle_updated_modules, prune_modules};

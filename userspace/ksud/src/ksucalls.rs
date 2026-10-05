@@ -46,6 +46,7 @@ extern "C" fn sigsys_handler(
         }
 
         #[cfg(not(target_arch = "riscv64"))]
+        #[allow(unused_variables)]
         let ucontext = ctx.cast::<libc::ucontext_t>();
         #[cfg(target_arch = "aarch64")]
         {
