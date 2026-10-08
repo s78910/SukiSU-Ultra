@@ -21,7 +21,7 @@ val managerVersionCode: Int by rootProject.extra
 val managerUnsignedVersionCode: Long by rootProject.extra
 val managerVersionName: String by rootProject.extra
 val managerApplicationId = providers.environmentVariable("MANAGER_APPLICATION_ID")
-    .orElse("com.sankuai.meituan")
+    .orElse("com.resukisu.resukisu")
 
 apksign {
     storeFileProperty = "KEYSTORE_FILE"
