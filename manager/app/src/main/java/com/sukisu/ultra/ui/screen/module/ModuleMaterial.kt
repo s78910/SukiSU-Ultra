@@ -703,6 +703,7 @@ private fun ModuleItem(
     val hasDescription = module.description.isNotBlank()
     val maxLinesLimit = LocalModuleDescriptionMaxLines.current
     var expanded by rememberSaveable(module.id) { mutableStateOf(false) }
+    var descriptionCanExpand by rememberSaveable(module.id) { mutableStateOf(true) }
     val canOpenWebUi = module.hasWebUi && !module.remove && module.enabled
     val cardInteractionSource = remember { MutableInteractionSource() }
     val descriptionInteractionSource = remember { MutableInteractionSource() }
@@ -710,14 +711,14 @@ private fun ModuleItem(
     TonalCard(
         modifier = Modifier.fillMaxWidth(),
         interactionSource = cardInteractionSource,
-        onClick = if (canOpenWebUi) {
-            {
+        onClick = {
+            if (canOpenWebUi) {
                 onOpenWebUi()
                 closeSearch()
+            } else if (hasDescription) {
+                expanded = !expanded
             }
-        } else if (hasDescription) {
-            { expanded = !expanded }
-        } else null
+        }
     ) {
         val haptic = LocalHapticFeedback.current
         val textDecoration = if (!module.remove) null else TextDecoration.LineThrough
@@ -789,14 +790,22 @@ private fun ModuleItem(
                                 Modifier.clickable(
                                     interactionSource = descriptionInteractionSource,
                                     indication = null
-                                ) { expanded = !expanded }
+                                ) {
+                                    if (descriptionCanExpand) {
+                                        expanded = !expanded
+                                    } else {
+                                        onOpenWebUi()
+                                        closeSearch()
+                                    }
+                                }
                             } else {
                                 Modifier
                             }
                         ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
-                    textDecoration = textDecoration
+                    textDecoration = textDecoration,
+                    onCanExpandChange = { descriptionCanExpand = it }
                 )
             }
 
