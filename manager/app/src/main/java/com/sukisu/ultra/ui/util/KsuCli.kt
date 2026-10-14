@@ -357,9 +357,9 @@ fun installBoot(
     allowShell: Boolean,
     enableAdb: Boolean,
     forceBackup: Boolean,
+    blockModules: String,
     spoofRelease: String,
     spoofVersion: String,
-    blockModules: String,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
@@ -436,9 +436,9 @@ fun downloadBoot(
     allowShell: Boolean,
     enableAdb: Boolean,
     forceBackup: Boolean,
+    blockModules: String,
     spoofRelease: String,
     spoofVersion: String,
-    blockModules: String,
     onStdout: (String) -> Unit,
     onStderr: (String) -> Unit,
 ): FlashResult {
@@ -968,11 +968,26 @@ suspend fun getBootConfig(): BootConfig = withContext(Dispatchers.IO) {
 
 private fun parseQuotedValue(value: String): String {
     val trimmed = value.trim()
-    return if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
-        trimmed.substring(1, trimmed.length - 1)
-    } else if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
-        trimmed.substring(1, trimmed.length - 1)
-    } else {
-        trimmed
+    val inner = when {
+        trimmed.length >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"") ->
+            trimmed.substring(1, trimmed.length - 1)
+        trimmed.length >= 2 && trimmed.startsWith("'") && trimmed.endsWith("'") ->
+            trimmed.substring(1, trimmed.length - 1)
+        else -> trimmed
     }
+    // ksud boot-patch escapes '"' and '\' inside quoted values; undo it here
+    if ('\\' !in inner) return inner
+    val sb = StringBuilder(inner.length)
+    var i = 0
+    while (i < inner.length) {
+        val c = inner[i]
+        if (c == '\\' && i + 1 < inner.length && (inner[i + 1] == '"' || inner[i + 1] == '\\')) {
+            sb.append(inner[i + 1])
+            i += 2
+        } else {
+            sb.append(c)
+            i += 1
+        }
+    }
+    return sb.toString()
 }
