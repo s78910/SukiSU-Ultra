@@ -999,7 +999,7 @@ pub fn run() -> Result<()> {
 
         Commands::Manager { command } => match command {
             Manager::List => {
-                let state = ksucalls::manager_get()?;
+                let state = crate::dynamic_manager::manager_get()?;
                 println!("enabled: {}", state.enabled != 0);
                 for entry in state.entries.iter().take(state.count as usize) {
                     let package = String::from_utf8_lossy(unsafe {
@@ -1026,17 +1026,17 @@ pub fn run() -> Result<()> {
                 package,
                 cert_size,
                 hash,
-            } => ksucalls::manager_add(&package, cert_size, &hash),
-            Manager::Remove { package } => ksucalls::manager_remove(&package),
+            } => crate::dynamic_manager::manager_add(&package, cert_size, &hash),
+            Manager::Remove { package } => crate::dynamic_manager::manager_remove(&package),
             Manager::SetEnabled { enabled } => {
                 let enabled = match enabled.as_str() {
                     "1" | "true" => true,
                     "0" | "false" => false,
                     _ => anyhow::bail!("enabled must be true, false, 1, or 0"),
                 };
-                ksucalls::manager_set_enabled(enabled)
+                crate::dynamic_manager::manager_set_enabled(enabled)
             }
-            Manager::Clear => ksucalls::manager_clear(),
+            Manager::Clear => crate::dynamic_manager::manager_clear(),
         },
         Commands::Feature { command } => match command {
             Feature::Get { id, config } => {

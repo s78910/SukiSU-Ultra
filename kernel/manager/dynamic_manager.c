@@ -51,55 +51,6 @@ static bool hash_valid(const char *hash)
     return true;
 }
 
-static int lookup_package_uid(const char *package, uid_t *uid)
-{
-    struct file *fp;
-    char line[KSU_MAX_PACKAGE_NAME + 32];
-    size_t length = 0;
-    loff_t pos = 0;
-    char ch;
-    ssize_t read;
-    int ret = -ENOENT;
-    const struct cred *saved;
-
-    if (!package || !uid)
-        return -EINVAL;
-
-    saved = override_creds(ksu_cred);
-    fp = filp_open("/data/system/packages.list", O_RDONLY, 0);
-    if (IS_ERR(fp)) {
-        ret = PTR_ERR(fp);
-        goto restore;
-    }
-    for (;;) {
-        read = kernel_read(fp, &ch, sizeof(ch), &pos);
-        if (read != sizeof(ch))
-            break;
-        if (ch != '\n') {
-            if (length + 1 < sizeof(line))
-                line[length++] = ch;
-            continue;
-        }
-        if (length > 0) {
-            char *cursor = line;
-            char *name = strsep(&cursor, " ");
-            char *uid_string = strsep(&cursor, " ");
-            u32 parsed_uid;
-            line[length] = '\0';
-            if (name && uid_string && !strcmp(name, package) && !kstrtou32(uid_string, 10, &parsed_uid)) {
-                *uid = parsed_uid % KSU_PER_USER_RANGE;
-                ret = 0;
-                break;
-            }
-        }
-        length = 0;
-    }
-    filp_close(fp, NULL);
-restore:
-    revert_creds(saved);
-    return ret;
-}
-
 static bool package_valid(const char *package)
 {
     size_t len = strnlen(package, KSU_MANAGER_PACKAGE_LENGTH);
@@ -163,111 +114,55 @@ bool ksu_manager_uid_authorized(uid_t uid)
     return ksu_manager_enabled() && ksu_dynamic_manager_uid_registered(uid);
 }
 
-static int save_state(void)
-{
-    struct dynamic_manager_state *state;
-    struct file *fp;
-    loff_t pos = 0;
-    ssize_t written;
-    int ret = 0;
-    const struct cred *saved;
-
-    state = kzalloc(sizeof(*state), GFP_KERNEL);
-    if (!state)
-        return -ENOMEM;
-    read_lock(&dynamic_manager_lock);
-    state->magic = DYNAMIC_MANAGER_MAGIC;
-    state->version = DYNAMIC_MANAGER_VERSION;
-    state->enabled = READ_ONCE(dynamic_manager_enabled);
-    state->count = dynamic_manager_count;
-    memcpy(state->entries, dynamic_managers, sizeof(dynamic_managers));
-    read_unlock(&dynamic_manager_lock);
-
-    saved = override_creds(ksu_cred);
-    fp = filp_open(DYNAMIC_MANAGER_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-    if (IS_ERR(fp)) {
-        ret = PTR_ERR(fp);
-        goto restore;
-    }
-    written = kernel_write(fp, state, sizeof(*state), &pos);
-    if (written != sizeof(*state))
-        ret = written < 0 ? written : -EIO;
-    filp_close(fp, NULL);
-restore:
-    revert_creds(saved);
-    kfree(state);
-    return ret;
-}
-
 void ksu_dynamic_manager_load(void)
 {
     struct dynamic_manager_state *state;
-    struct ksu_manager_entry *kept_entries;
     struct file *fp;
     loff_t pos = 0;
     ssize_t read;
-    unsigned int i, kept = 0;
-    bool enabled = false;
+    unsigned int i;
 
     state = kzalloc(sizeof(*state), GFP_KERNEL);
     if (!state)
         return;
-    kept_entries = kzalloc(sizeof(*kept_entries) * KSU_MAX_DYNAMIC_MANAGERS, GFP_KERNEL);
-    if (!kept_entries) {
-        kfree(state);
-        return;
-    }
     fp = filp_open(DYNAMIC_MANAGER_FILE, O_RDONLY, 0);
     if (IS_ERR(fp))
         goto out;
     read = kernel_read(fp, state, sizeof(*state), &pos);
     filp_close(fp, NULL);
-    if (read == sizeof(*state) && state->magic == DYNAMIC_MANAGER_MAGIC &&
-        state->version == DYNAMIC_MANAGER_VERSION && state->count <= KSU_MAX_DYNAMIC_MANAGERS &&
-        state->enabled <= 1) {
-        enabled = !!state->enabled;
-        for (i = 0; i < state->count; ++i) {
-            uid_t current_uid;
-            const struct ksu_manager_entry *entry = &state->entries[i];
+    if (read != sizeof(*state) || state->magic != DYNAMIC_MANAGER_MAGIC ||
+        state->version != DYNAMIC_MANAGER_VERSION ||
+        state->count > KSU_MAX_DYNAMIC_MANAGERS || state->enabled > 1)
+        goto out;
 
-            if (!entry->cert_size || entry->cert_size > DYNAMIC_MANAGER_MAX_CERT_SIZE ||
-                !package_valid(entry->package) || !hash_valid(entry->hash))
-                continue;
-            /*
-             * Persisted entries are only a hint: require the current
-             * package installation to agree on the package name and UID
-             * before we re-accept the entry. The runtime scan will still
-             * re-verify the signing certificate.
-             */
-            if (lookup_package_uid(entry->package, &current_uid))
-                continue;
-            if (current_uid != entry->uid % KSU_PER_USER_RANGE)
-                continue;
-            if (kept < KSU_MAX_DYNAMIC_MANAGERS)
-                kept_entries[kept++] = *entry;
-        }
+    for (i = 0; i < state->count; ++i) {
+        const struct ksu_manager_entry *entry = &state->entries[i];
+
+        if (!entry->cert_size || entry->cert_size > DYNAMIC_MANAGER_MAX_CERT_SIZE ||
+            !package_valid(entry->package) || !hash_valid(entry->hash))
+            goto out;
     }
-out:
     write_lock(&dynamic_manager_lock);
-    WRITE_ONCE(dynamic_manager_enabled, kept ? enabled : false);
-    dynamic_manager_count = kept;
-    if (kept)
-        memcpy(dynamic_managers, kept_entries, sizeof(*kept_entries) * kept);
-    else
-        memset(dynamic_managers, 0, sizeof(dynamic_managers));
+    WRITE_ONCE(dynamic_manager_enabled, !!state->enabled);
+    dynamic_manager_count = state->count;
+    memcpy(dynamic_managers, state->entries, sizeof(dynamic_managers));
     memset(dynamic_manager_verified, 0, sizeof(dynamic_manager_verified));
     write_unlock(&dynamic_manager_lock);
-    kfree(kept_entries);
+    goto free_state;
+out:
+    write_lock(&dynamic_manager_lock);
+    WRITE_ONCE(dynamic_manager_enabled, false);
+    dynamic_manager_count = 0;
+    memset(dynamic_managers, 0, sizeof(dynamic_managers));
+    memset(dynamic_manager_verified, 0, sizeof(dynamic_manager_verified));
+    write_unlock(&dynamic_manager_lock);
+free_state:
     kfree(state);
 }
 
 int ksu_dynamic_manager_set(struct ksu_manager_cmd *cmd)
 {
     struct ksu_manager_entry entry = {};
-    struct ksu_manager_entry *previous_managers;
-    bool *previous_verified;
-    __u32 previous_count;
-    bool previous_enabled;
     unsigned int i;
     uid_t package_uid = KSU_INVALID_APPID;
     bool updated = false;
@@ -281,24 +176,13 @@ int ksu_dynamic_manager_set(struct ksu_manager_cmd *cmd)
             strnlen(cmd->package, sizeof(cmd->package)) >= sizeof(cmd->package) ||
             strnlen(cmd->hash, sizeof(cmd->hash)) >= sizeof(cmd->hash) ||
             !package_valid(cmd->package) || !hash_valid(cmd->hash) ||
-            lookup_package_uid(cmd->package, &package_uid))
+            cmd->uid == KSU_INVALID_APPID)
             return -EINVAL;
-    }
-
-    previous_managers = kzalloc(sizeof(dynamic_managers), GFP_KERNEL);
-    previous_verified = kzalloc(sizeof(dynamic_manager_verified), GFP_KERNEL);
-    if (!previous_managers || !previous_verified) {
-        kfree(previous_managers);
-        kfree(previous_verified);
-        return -ENOMEM;
+        package_uid = cmd->uid % KSU_PER_USER_RANGE;
     }
 
     mutex_lock(&dynamic_manager_update_lock);
     write_lock(&dynamic_manager_lock);
-    previous_enabled = READ_ONCE(dynamic_manager_enabled);
-    previous_count = dynamic_manager_count;
-    memcpy(previous_managers, dynamic_managers, sizeof(dynamic_managers));
-    memcpy(previous_verified, dynamic_manager_verified, sizeof(dynamic_manager_verified));
     switch (cmd->operation) {
     case KSU_MANAGER_SET_ENABLED:
         WRITE_ONCE(dynamic_manager_enabled, !!cmd->enabled);
@@ -357,23 +241,10 @@ int ksu_dynamic_manager_set(struct ksu_manager_cmd *cmd)
     if (ret) {
         write_unlock(&dynamic_manager_lock);
         mutex_unlock(&dynamic_manager_update_lock);
-        kfree(previous_managers);
-        kfree(previous_verified);
         return ret;
     }
     write_unlock(&dynamic_manager_lock);
-    ret = save_state();
-    if (ret) {
-        write_lock(&dynamic_manager_lock);
-        WRITE_ONCE(dynamic_manager_enabled, previous_enabled);
-        dynamic_manager_count = previous_count;
-        memcpy(dynamic_managers, previous_managers, sizeof(dynamic_managers));
-        memcpy(dynamic_manager_verified, previous_verified, sizeof(dynamic_manager_verified));
-        write_unlock(&dynamic_manager_lock);
-    }
     mutex_unlock(&dynamic_manager_update_lock);
-    kfree(previous_managers);
-    kfree(previous_verified);
     if (!ret)
         track_throne(false);
     return ret;

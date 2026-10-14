@@ -34,17 +34,6 @@ struct uid_data {
     char package[KSU_MAX_PACKAGE_NAME];
 };
 
-/*
- * Crown-state carried across every call to crown_manager() within
- * a single search_manager() scan. "seen" means: the built-in slot
- * (KSU_PACKAGE_NAME in uid_data) was touched at least once, either
- * successfully crowned or observed-but-rejected. "crowned" means:
- * a built-in was actually crowned at some earlier point in this
- * scan. The two are independent so that a tampered built-in install
- * observed early in the scan can still block a later dynamic
- * attempt without us losing the chance to find a valid built-in
- * install in some other /data/app sub-directory.
- */
 struct crown_state {
     bool builtin_seen;
     bool builtin_crowned;
@@ -73,13 +62,6 @@ static int crown_manager(const char *apk, struct list_head *uid_data, struct cro
         if (strncmp(np->package, KSU_PACKAGE_NAME, KSU_MAX_PACKAGE_NAME) == 0) {
             builtin_present_this_call = true;
             state->builtin_seen = true;
-            /*
-             * Built-in manager: highest-priority candidate, never
-             * gated by dynamic_manager_enabled. is_manager_apk()
-             * compares against EXPECTED_HASH/EXPECTED_SIZE compiled
-             * in via Kbuild — that is the sole source of truth for
-             * "is this APK the stock manager".
-             */
             if (is_manager_apk((char *)apk)) {
                 pr_info("Crowning manager: uid=%d\n", np->uid);
                 ksu_set_manager_appid(np->uid);
@@ -92,46 +74,19 @@ static int crown_manager(const char *apk, struct list_head *uid_data, struct cro
         }
     }
 
-    /*
-     * Built-in is on the throne (crowned earlier in this scan, or
-     * just crowned above). Stop the scan and refuse to consider
-     * any dynamic candidate — they could only demote the built-in.
-     */
     if (state->builtin_crowned)
         return 1;
 
-    /*
-     * The built-in slot was present in uid_data but this APK did
-     * not pass signature verification. A tampered / repackaged
-     * built-in install is more privileged than a user-added
-     * dynamic entry: refuse to crown anything from this call so
-     * the dynamic manager cannot silently fill the gap.
-     */
     if (builtin_present_this_call)
         return -1;
 
-    /*
-     * Dynamic managers are opt-in: the user explicitly added them
-     * AND toggled the manager feature on (which, on this fork,
-     * doubles as the dynamic-manager gate — ksu_manager_enabled()
-     * returns the value of the static dynamic_manager_enabled in
-     * dynamic_manager.c). When the feature is off, the in-memory
-     * entry stays (so SET_ENABLED can re-enable without re-adding),
-     * but it does not get crowned.
-     */
     if (!ksu_manager_enabled())
         return 0;
 
     list_for_each_entry (np, list, list) {
         if (strncmp(np->package, KSU_PACKAGE_NAME, KSU_MAX_PACKAGE_NAME) == 0)
             continue;
-        /*
-         * For dynamic managers the (package, uid) pair must match a
-         * persisted entry AND the just-completed signature verification
-         * before we crown it. The runtime scan already mutated
-         * dynamic_manager_verified for this iteration; refuse to crown
-         * anything that the scan did not just validate.
-         */
+
         if (ksu_dynamic_manager_verify_apk((char *)apk, np->package, np->uid)) {
             pr_info("Crowning dynamic manager: package=%s, uid=%d\n", np->package, np->uid);
             ksu_set_manager_appid(np->uid);
@@ -174,15 +129,6 @@ static bool maybe_manager_apk_dir(const char *path)
         return false;
     }
 
-    /*
-     * The pre-dynamic-manager version of this helper returned true
-     * only for the built-in KSU_PACKAGE_NAME. We now also accept
-     * user-added dynamic managers so their base.apk is picked up
-     * by the scan. The crown step later in search_manager()
-     * distinguishes the two via the (package, uid) match and the
-     * built-in priority invariant — this filter is just "is the
-     * package one we might care about?".
-     */
     return strncmp(pkg, KSU_PACKAGE_NAME, sizeof(KSU_PACKAGE_NAME)) == 0 ||
            ksu_dynamic_manager_package_registered(pkg);
 }
@@ -229,12 +175,7 @@ static FILLDIR_RETURN_TYPE my_actor(struct dir_context *ctx, const char *name, i
     if (d_type == DT_REG && namelen == 8 && !memcmp(name, "base.apk", 8)) {
         if (maybe_manager_apk_dir(my_ctx->parent_dir)) {
             snprintf(candidate_path, DATA_PATH_LEN, "%s/%.*s", my_ctx->parent_dir, namelen, name);
-            /*
-             * Only cache the built-in's APK path. Dynamic packages
-             * do not get a fast-skip path: when dynamic_manager_enabled
-             * is on we always re-scan so we can re-verify their
-             * signature on every boot.
-             */
+
             char package[KSU_MAX_PACKAGE_NAME];
             if (get_pkg_from_apk_dir_path(package, my_ctx->parent_dir) == 0 &&
                 !strcmp(package, KSU_PACKAGE_NAME))
@@ -500,17 +441,9 @@ void track_throne(bool prune_only)
             ksu_invalidate_manager_uid();
             need_rescan = true;
         } else {
-            // uid unchanged, skip search!
+            // uid unchanged, skip
             pr_info("manager uid unchanged, skip search!\n");
         }
-        /*
-         * Whenever the user has dynamic managers enabled, we must
-         * re-scan on every track_throne() call. Otherwise we would
-         * only verify the built-in (which is gated by the cached
-         * apk path fast-skip) and never check whether a user-added
-         * dynamic entry has been added, removed, or replaced since
-         * the last scan.
-         */
         if (ksu_manager_enabled())
             need_rescan = true;
     }
