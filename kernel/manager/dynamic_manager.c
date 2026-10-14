@@ -65,24 +65,36 @@ static bool package_valid(const char *package)
     return true;
 }
 
-bool ksu_manager_package_authorized(const char *package, uid_t uid)
+static int find_manager_locked(const char *package)
 {
     unsigned int i;
+
+    for (i = 0; i < dynamic_manager_count; ++i) {
+        if (!strcmp(dynamic_managers[i].package, package))
+            return i;
+    }
+    return -ENOENT;
+}
+
+static void clear_managers_locked(void)
+{
+    memset(dynamic_managers, 0, sizeof(dynamic_managers));
+    memset(dynamic_manager_verified, 0, sizeof(dynamic_manager_verified));
+    dynamic_manager_count = 0;
+}
+
+bool ksu_manager_package_authorized(const char *package, uid_t uid)
+{
+    int index;
     bool found = false;
 
     if (ksu_manager_appid != KSU_INVALID_APPID && ksu_manager_appid == uid % KSU_PER_USER_RANGE)
         return true;
     read_lock(&dynamic_manager_lock);
-    if (!READ_ONCE(dynamic_manager_enabled)) {
-        read_unlock(&dynamic_manager_lock);
-        return false;
-    }
-    for (i = 0; i < dynamic_manager_count; ++i) {
-        if (dynamic_manager_verified[i] && dynamic_managers[i].uid == uid % KSU_PER_USER_RANGE &&
-            !strcmp(dynamic_managers[i].package, package)) {
-            found = true;
-            break;
-        }
+    if (READ_ONCE(dynamic_manager_enabled)) {
+        index = find_manager_locked(package);
+        found = index >= 0 && dynamic_manager_verified[index] &&
+            dynamic_managers[index].uid == uid % KSU_PER_USER_RANGE;
     }
     read_unlock(&dynamic_manager_lock);
     return found;
@@ -153,8 +165,7 @@ out:
     write_lock(&dynamic_manager_lock);
     WRITE_ONCE(dynamic_manager_enabled, false);
     dynamic_manager_count = 0;
-    memset(dynamic_managers, 0, sizeof(dynamic_managers));
-    memset(dynamic_manager_verified, 0, sizeof(dynamic_manager_verified));
+    clear_managers_locked();
     write_unlock(&dynamic_manager_lock);
 free_state:
     kfree(state);
@@ -163,9 +174,8 @@ free_state:
 int ksu_dynamic_manager_set(struct ksu_manager_cmd *cmd)
 {
     struct ksu_manager_entry entry = {};
-    unsigned int i;
+    int i;
     uid_t package_uid = KSU_INVALID_APPID;
-    bool updated = false;
     int ret = 0;
 
     if (!cmd || cmd->count > KSU_MAX_DYNAMIC_MANAGERS || cmd->enabled > 1)
@@ -192,16 +202,12 @@ int ksu_dynamic_manager_set(struct ksu_manager_cmd *cmd)
         entry.uid = package_uid;
         strscpy(entry.package, cmd->package, sizeof(entry.package));
         strscpy(entry.hash, cmd->hash, sizeof(entry.hash));
-        for (i = 0; i < dynamic_manager_count; ++i) {
-            if (!strcmp(dynamic_managers[i].package, entry.package)) {
-                dynamic_managers[i] = entry;
-                dynamic_manager_verified[i] = false;
-                updated = true;
-                break;
-            }
-        }
-        if (updated)
+        i = find_manager_locked(entry.package);
+        if (i >= 0) {
+            dynamic_managers[i] = entry;
+            dynamic_manager_verified[i] = false;
             break;
+        }
         if (dynamic_manager_count == KSU_MAX_DYNAMIC_MANAGERS) {
             ret = -ENOSPC;
             break;
@@ -218,30 +224,21 @@ int ksu_dynamic_manager_set(struct ksu_manager_cmd *cmd)
             ret = -EINVAL;
             break;
         }
-        for (i = 0; i < dynamic_manager_count; ++i) {
-            if (!strcmp(dynamic_managers[i].package, cmd->package)) {
-                --dynamic_manager_count;
-                dynamic_managers[i] = dynamic_managers[dynamic_manager_count];
-                dynamic_manager_verified[i] = dynamic_manager_verified[dynamic_manager_count];
-                memset(&dynamic_managers[dynamic_manager_count], 0, sizeof(dynamic_managers[0]));
-                dynamic_manager_verified[dynamic_manager_count] = false;
-                break;
-            }
+        i = find_manager_locked(cmd->package);
+        if (i >= 0) {
+            --dynamic_manager_count;
+            dynamic_managers[i] = dynamic_managers[dynamic_manager_count];
+            dynamic_manager_verified[i] = dynamic_manager_verified[dynamic_manager_count];
+            memset(&dynamic_managers[dynamic_manager_count], 0, sizeof(dynamic_managers[0]));
+            dynamic_manager_verified[dynamic_manager_count] = false;
         }
         break;
     case KSU_MANAGER_CLEAR:
-        memset(dynamic_managers, 0, sizeof(dynamic_managers));
-        memset(dynamic_manager_verified, 0, sizeof(dynamic_manager_verified));
-        dynamic_manager_count = 0;
+        clear_managers_locked();
         break;
     default:
         ret = -EINVAL;
         break;
-    }
-    if (ret) {
-        write_unlock(&dynamic_manager_lock);
-        mutex_unlock(&dynamic_manager_update_lock);
-        return ret;
     }
     write_unlock(&dynamic_manager_lock);
     mutex_unlock(&dynamic_manager_update_lock);
@@ -291,38 +288,29 @@ void ksu_dynamic_manager_reset_verification(void)
 
 int ksu_dynamic_manager_uid_for_package(const char *package, uid_t *uid)
 {
-    unsigned int i;
-    int ret = -ENOENT;
+    int index;
 
     if (!package || !uid)
         return -EINVAL;
 
     read_lock(&dynamic_manager_lock);
-    for (i = 0; i < dynamic_manager_count; ++i) {
-        if (!strcmp(dynamic_managers[i].package, package)) {
-            *uid = dynamic_managers[i].uid;
-            ret = 0;
-            break;
-        }
-    }
+    index = find_manager_locked(package);
+    if (index >= 0)
+        *uid = dynamic_managers[index].uid;
     read_unlock(&dynamic_manager_lock);
-    return ret;
+    return index < 0 ? -ENOENT : 0;
 }
 
 bool ksu_dynamic_manager_package_registered(const char *package)
 {
-    unsigned int i;
-    bool found = false;
+    int index;
 
+    if (!package)
+        return false;
     read_lock(&dynamic_manager_lock);
-    for (i = 0; i < dynamic_manager_count; ++i) {
-        if (!strcmp(dynamic_managers[i].package, package)) {
-            found = true;
-            break;
-        }
-    }
+    index = find_manager_locked(package);
     read_unlock(&dynamic_manager_lock);
-    return found;
+    return index >= 0;
 }
 
 bool ksu_dynamic_manager_verify_apk(char *path, const char *package, uid_t uid)
