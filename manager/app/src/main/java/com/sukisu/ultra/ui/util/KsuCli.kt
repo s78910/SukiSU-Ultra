@@ -386,13 +386,8 @@ fun installBoot(
     }
     cmd += bootPatchFlags(allowShell, enableAdb, forceBackup, blockModules)
 
-    if (spoofRelease.isNotBlank()) {
-        cmd += " --spoof-release ${spoofRelease.shellArg()}"
-    }
-
-    if (spoofVersion.isNotBlank()) {
-        cmd += " --spoof-version ${spoofVersion.shellArg()}"
-    }
+    cmd += " --spoof-release ${spoofRelease.trim().shellArg()}"
+    cmd += " --spoof-version ${spoofVersion.trim().shellArg()}"
 
     if (ota) {
         cmd += " -u"
@@ -497,13 +492,8 @@ fun downloadBoot(
     var cmd = "${getKsuDaemonPath()} boot-patch -b ${bootFile.absolutePath}"
     cmd += bootPatchFlags(allowShell, enableAdb, forceBackup, blockModules)
 
-    if (spoofRelease.isNotBlank()) {
-        cmd += " --spoof-release ${spoofRelease.shellArg()}"
-    }
-
-    if (spoofVersion.isNotBlank()) {
-        cmd += " --spoof-version ${spoofVersion.shellArg()}"
-    }
+    cmd += " --spoof-release ${spoofRelease.trim().shellArg()}"
+    cmd += " --spoof-version ${spoofVersion.trim().shellArg()}"
 
     val lkmFile = writeLkmFile(lkm)
     if (lkmFile != null) {
