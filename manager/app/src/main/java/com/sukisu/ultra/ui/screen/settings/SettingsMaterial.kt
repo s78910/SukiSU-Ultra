@@ -261,25 +261,23 @@ fun SettingPagerMaterial(
 
             val susfsTitle = stringResource(id = R.string.susfs_config_title)
             if (isSusfsSupported) {
-                if (isKpmAvailable) {
-                    SegmentedColumn(
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
-                        content = listOf {
-                            SegmentedListItem(
-                                onClick = actions.onOpenSusfsConfig,
-                                headlineContent = { Text(susfsTitle) },
-                                supportingContent = { Text(stringResource(id = R.string.settings_kpm_summary)) },
-                                leadingContent = { IconTile(Icons.Filled.Fence, susfsTitle) },
-                                trailingContent = {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        null
-                                    )
-                                }
-                            )
-                        }
-                    )
-                }
+                SegmentedColumn(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+                    content = listOf {
+                        SegmentedListItem(
+                            onClick = actions.onOpenSusfsConfig,
+                            headlineContent = { Text(susfsTitle) },
+                            supportingContent = { Text(stringResource(id = R.string.susfs_config_summary)) },
+                            leadingContent = { IconTile(Icons.Filled.Fence, susfsTitle) },
+                            trailingContent = {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    null
+                                )
+                            }
+                        )
+                    }
+                )
             }
 
             KsuIsValid {
