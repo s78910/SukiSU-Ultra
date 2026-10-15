@@ -208,8 +208,13 @@ fun SettingPagerMaterial(
                             onClick = actions.onOpenDynamicManagers,
                             headlineContent = { Text(title) },
                             supportingContent = { Text(stringResource(R.string.dynamic_manager_summary)) },
-                            leadingContent = { Icon(Icons.Filled.AdminPanelSettings, title) },
-                            trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }
+                            leadingContent = { IconTile(Icons.Filled.AdminPanelSettings, title) },
+                            trailingContent = {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    null
+                                )
+                            }
                         )
                     }
                 )
