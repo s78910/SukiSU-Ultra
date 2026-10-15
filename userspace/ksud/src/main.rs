@@ -28,6 +28,8 @@ mod dynamic_manager;
 mod feature;
 mod feature_id;
 #[cfg(target_os = "android")]
+mod hot_install;
+#[cfg(target_os = "android")]
 mod init_event;
 #[cfg(target_arch = "aarch64")]
 mod kpm;
