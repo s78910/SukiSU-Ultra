@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import com.sukisu.ultra.R
+import com.sukisu.ultra.data.script.ScriptRepository
 import com.sukisu.ultra.ui.LocalUiMode
 import com.sukisu.ultra.ui.UiMode
 import com.sukisu.ultra.ui.component.SearchStatus
@@ -31,6 +32,7 @@ import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.screen.flash.FlashIt
 import com.sukisu.ultra.ui.screen.modulerepo.downloadFailureMessage
+import com.sukisu.ultra.ui.screen.scriptrun.ScriptRunArg
 import com.sukisu.ultra.ui.util.download
 import com.sukisu.ultra.ui.util.module.Shortcut
 import com.sukisu.ultra.ui.viewmodel.ModuleViewModel
@@ -172,7 +174,20 @@ fun ModulePager(
             viewModel.undoUninstallModule(module)
         },
         onOpenFlash = { uris ->
-            if (uris.isNotEmpty()) {
+            if (uris.size == 1) {
+                // A one-shot script ZIP is offered to be run instead (or installed anyway).
+                scope.launch {
+                    val script = ScriptRepository.peekOneshot(uris.first())
+                    if (script != null) {
+                        navigator.push(
+                            Route.ScriptRun(ScriptRunArg(uris.first(), offerInstall = true, displayName = script.name))
+                        )
+                    } else {
+                        navigator.push(Route.Flash(FlashIt.FlashModules(uris)))
+                    }
+                    viewModel.markNeedRefresh()
+                }
+            } else if (uris.isNotEmpty()) {
                 navigator.push(Route.Flash(FlashIt.FlashModules(uris)))
                 viewModel.markNeedRefresh()
             }

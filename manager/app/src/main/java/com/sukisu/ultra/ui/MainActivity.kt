@@ -73,6 +73,7 @@ import com.sukisu.ultra.ui.navigation3.rememberNavigator
 import com.sukisu.ultra.ui.screen.about.AboutScreen
 import com.sukisu.ultra.ui.screen.appprofile.AppProfileScreen
 import com.sukisu.ultra.ui.screen.colorpalette.ColorPaletteScreen
+import com.sukisu.ultra.ui.screen.dynamicmanagers.DynamicManagersScreen
 import com.sukisu.ultra.ui.screen.executemoduleaction.ExecuteModuleActionScreen
 import com.sukisu.ultra.ui.screen.flash.FlashScreen
 import com.sukisu.ultra.ui.screen.home.HomePager
@@ -81,8 +82,8 @@ import com.sukisu.ultra.ui.screen.kpm.KpmScreen
 import com.sukisu.ultra.ui.screen.module.ModulePager
 import com.sukisu.ultra.ui.screen.modulerepo.ModuleRepoDetailScreen
 import com.sukisu.ultra.ui.screen.modulerepo.ModuleRepoScreen
+import com.sukisu.ultra.ui.screen.scriptrun.ScriptRunScreen
 import com.sukisu.ultra.ui.screen.settings.SettingPager
-import com.sukisu.ultra.ui.screen.dynamicmanagers.DynamicManagersScreen
 import com.sukisu.ultra.ui.screen.settings.tools.ToolsScreen
 import com.sukisu.ultra.ui.screen.sulog.SulogScreen
 import com.sukisu.ultra.ui.screen.superuser.SuperUserPager
@@ -198,6 +199,11 @@ class MainActivity : ComponentActivity() {
                     }
                     val flashRoute = navigator.current() as? Route.Flash
                     var flashBackEnabled by remember(flashRoute) { mutableStateOf(false) }
+                    val scriptRunRoute = navigator.current() as? Route.ScriptRun
+                    var scriptRunBackEnabled by remember(scriptRunRoute) { mutableStateOf(true) }
+                    // Read here, not inside the NavDisplay builder: NavDisplay only rebuilds its entries
+                    // (and their swipeDismiss) when the builder lambda changes, so it must capture the value.
+                    val scriptRunSwipeDismiss = if (scriptRunBackEnabled) swipeDismiss else NavSwipeDirection.None
                     val mainScreenEntry = @Composable {
                         MainScreen(
                             initialPage = selectedMainPage,
@@ -245,6 +251,14 @@ class MainActivity : ComponentActivity() {
                                 ExecuteModuleActionScreen(
                                     key.moduleId,
                                     key.fromShortcut
+                                )
+                            }
+                            entry<Route.ScriptRun>(swipeDismiss = scriptRunSwipeDismiss) { key ->
+                                ScriptRunScreen(
+                                    key.arg,
+                                    onBackEnabledChange = { enabled ->
+                                        if (navigator.current() == key) scriptRunBackEnabled = enabled
+                                    },
                                 )
                             }
                             entry<Route.Home>(swipeDismiss = swipeDismiss) { mainScreenEntry() }

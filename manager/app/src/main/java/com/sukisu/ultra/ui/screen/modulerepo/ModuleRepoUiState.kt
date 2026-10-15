@@ -5,6 +5,7 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.data.model.RepoModule
 import com.sukisu.ultra.data.model.RepoModuleDetail
 import com.sukisu.ultra.data.registry.UnsupportedSchemaException
+import com.sukisu.ultra.data.script.ScriptRunRecord
 import com.sukisu.ultra.ui.component.SearchStatus
 import java.text.Collator
 import java.util.Locale
@@ -98,6 +99,10 @@ fun starsUrl(starsRepository: String?): String? =
 /** Installed state of a registry module; updates are detected by versionCode only. */
 enum class RepoInstallState { NONE, INSTALLED, UPDATABLE }
 
+/** Scripts are never installed, so they have no installed / update state. */
+fun repoInstallStateOf(module: RepoModule, installedVersions: Map<String, Long>): RepoInstallState =
+    if (module.isScript) RepoInstallState.NONE else repoInstallState(installedVersions[module.moduleId], module.latestVersionCode)
+
 fun repoInstallState(installedVersionCode: Long?, latestVersionCode: Int): RepoInstallState = when {
     installedVersionCode == null -> RepoInstallState.NONE
     latestVersionCode > installedVersionCode -> RepoInstallState.UPDATABLE
@@ -124,8 +129,13 @@ data class ModuleRepoDetailUiState(
     val notInIndex: Boolean,
     val loadFailed: Boolean,
     val installedVersionCode: Long?,
+    /** Last local run, for scripts. */
+    val lastRun: ScriptRunRecord? = null,
 ) {
     val webUrl: String get() = detail?.webUrl.orEmpty()
+
+    /** One-shot script: releases are run, not installed. */
+    val isScript: Boolean get() = detail?.module?.isScript ?: module.script
     val canInstall: Boolean get() = detail != null && !notInIndex
 }
 
@@ -134,6 +144,7 @@ data class ModuleRepoDetailActions(
     val onBack: () -> Unit,
     val onOpenWebUrl: () -> Unit,
     val onOpenUrl: (String) -> Unit,
+    /** Installs a downloaded module ZIP, or opens the run page for a script. */
     val onInstallModule: (android.net.Uri) -> Unit,
     val onRetry: () -> Unit,
 )
