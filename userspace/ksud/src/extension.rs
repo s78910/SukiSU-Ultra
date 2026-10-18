@@ -53,6 +53,30 @@ pub fn probe(id: ExtensionId) -> Result<Option<crate::ksucalls::ExtensionState>>
     Ok(state.supported.then_some(state))
 }
 
+/// Whether the KPM subsystem is actually usable on this device.
+///
+/// The KSU_EXTENSION_GET handler only reflects `CONFIG_KPM`; on a
+/// kernel that was built with KPM but where the control surface is
+/// not reachable (e.g. a stub `do_kpm` that returns -EOPNOTSUPP), the
+/// handler still reports "supported". A live `kpm version` ioctl
+/// distinguishes the two. Used by both `check_extension` and
+/// `list_extensions` so the answer is computed once per ksud
+/// invocation. Always returns `false` on non-aarch64 builds: KPM is
+/// aarch64-only and the `kpm` module is not compiled in for other
+/// arches.
+#[cfg(target_os = "android")]
+#[allow(clippy::missing_const_for_fn)] // aarch64 branch calls check_version() which is non-const
+pub fn kpm_actually_working() -> bool {
+    #[cfg(target_arch = "aarch64")]
+    {
+        crate::kpm::check_version().is_ok_and(|v| !v.is_empty())
+    }
+    #[cfg(not(target_arch = "aarch64"))]
+    {
+        false
+    }
+}
+
 pub fn load_binary_config() -> Result<HashMap<u32, u64>> {
     let path = Path::new(EXTENSION_CONFIG_PATH);
     if !path.exists() {
@@ -239,6 +263,19 @@ pub fn set_extension_cli(id: &str, value: u64) -> Result<()> {
         );
     }
 
+    // Only DynamicManager currently exposes a sticky bit, and its
+    // semantic is "0 = off, 1 = on". Any other value would be silently
+    // coerced by the kernel's `value != 0` check, which is a footgun
+    // for boot-config generators and human-typed values alike. Reject
+    // explicitly here so the caller sees the right error rather than
+    // a "set to 42 (enabled)" success line.
+    if !matches!(value, 0 | 1) {
+        bail!(
+            "Extension '{}' only accepts 0 or 1 (got {value}).",
+            extension_id.name()
+        );
+    }
+
     if let Ok(state) = crate::ksucalls::get_extension(extension_id as u32)
         && state.forced
     {
@@ -296,6 +333,25 @@ pub fn list_extensions() {
 
     let managed_extensions_map = crate::module::get_managed_extensions().unwrap_or_default();
 
+    // First pass: collect each id's kernel-side state. We need this
+    // up-front to decide whether KPM is even worth live-probing — if
+    // the kernel reports `supported = false` for KPM (no CONFIG_KPM
+    // or no handler), there is no point burning an extra ioctl on
+    // the `kpm version` probe.
+    let mut states: HashMap<ExtensionId, crate::ksucalls::ExtensionState> =
+        HashMap::with_capacity(ExtensionId::ALL.len());
+    for extension_id in ExtensionId::ALL {
+        let id = extension_id as u32;
+        let state = crate::ksucalls::get_extension(id).unwrap_or_default();
+        states.insert(extension_id, state);
+    }
+
+    // Lazy KPM probe: only run the live `kpm version` ioctl if the
+    // kernel already advertised CONFIG_KPM support. On non-KPM
+    // builds this saves a syscall on every `extension list`.
+    let kpm_advertised = states.get(&ExtensionId::Kpm).is_some_and(|s| s.supported);
+    let kpm_working = kpm_advertised && kpm_actually_working();
+
     let mut extension_to_modules: HashMap<String, Vec<String>> = HashMap::new();
     for (module_id, ext_list) in &managed_extensions_map {
         for ext_name in ext_list {
@@ -308,9 +364,14 @@ pub fn list_extensions() {
 
     for extension_id in &ExtensionId::ALL {
         let id = *extension_id as u32;
-        let state = crate::ksucalls::get_extension(id).unwrap_or_default();
+        let state = states.get(extension_id).copied().unwrap_or_default();
 
-        let status = if !state.supported {
+        // For KPM, "supported" requires the live ioctl probe to succeed.
+        // For the other three, the kernel-side supported flag is enough.
+        let really_supported =
+            state.supported && (extension_id != &ExtensionId::Kpm || kpm_working);
+
+        let label = if !really_supported {
             "NOT_SUPPORTED".to_string()
         } else if !extension_id.has_sticky_bit() {
             "AVAILABLE".to_string()
@@ -331,7 +392,7 @@ pub fn list_extensions() {
 
         println!(
             "[{}] {} (ID={}){}",
-            status,
+            label,
             extension_id.name(),
             id,
             managed_mark
@@ -347,6 +408,42 @@ pub fn list_extensions() {
 
         println!();
     }
+
+    // Machine-readable block for `extension list --json`-style
+    // consumers (the manager UI pulls the four states in one shell
+    // call to avoid paying 4× the libksud.so startup cost). Lines
+    // starting with "EXTENSION_LIST_V1" are guaranteed stable: the
+    // manager-side parser keys on this exact prefix.
+    //
+    // Format (one line per extension):
+    //   EXTENSION_LIST_V1 name=<wire-name> id=<u32> supported=<0|1> \
+    //                       forced=<0|1> value=<u64> managed=<0|1> \
+    //                       sticky=<0|1>
+    //   EXTENSION_LIST_END
+    //
+    // `sticky` mirrors ExtensionId::has_sticky_bit() — a static
+    // property of the id, included for callers that don't have a
+    // mirror of the canonical extension_id list.
+    for extension_id in &ExtensionId::ALL {
+        let id = *extension_id as u32;
+        let state = states.get(extension_id).copied().unwrap_or_default();
+        let really_supported =
+            state.supported && (extension_id != &ExtensionId::Kpm || kpm_working);
+        let managed = extension_to_modules
+            .get(extension_id.name())
+            .is_some_and(|v| !v.is_empty());
+        println!(
+            "EXTENSION_LIST_V1 name={} id={} supported={} forced={} value={} managed={} sticky={}",
+            extension_id.name(),
+            id,
+            u32::from(really_supported),
+            u32::from(state.forced),
+            state.value,
+            u32::from(managed),
+            u32::from(extension_id.has_sticky_bit()),
+        );
+    }
+    println!("EXTENSION_LIST_END");
 }
 
 #[cfg(target_os = "android")]
@@ -396,7 +493,10 @@ pub fn save_config() -> Result<()> {
 pub fn check_extension(id: &str) -> Result<()> {
     let extension_id = parse_extension_id(id)?;
 
-    if crate::ksucalls::get_extension(extension_id as u32).is_ok_and(|state| state.forced) {
+    let state = crate::ksucalls::get_extension(extension_id as u32)
+        .with_context(|| format!("Failed to get extension {id}"))?;
+
+    if state.forced {
         println!("forced");
         return Ok(());
     }
@@ -411,35 +511,16 @@ pub fn check_extension(id: &str) -> Result<()> {
         return Ok(());
     }
 
-    let state = crate::ksucalls::get_extension(extension_id as u32)
-        .with_context(|| format!("Failed to get extension {id}"))?;
-
     if !state.supported {
         println!("unsupported");
         return Ok(());
     }
 
-    if extension_id == ExtensionId::Kpm {
-        #[cfg(target_arch = "aarch64")]
-        {
-            use crate::kpm;
-
-            match kpm::check_version() {
-                Ok(ver) if !ver.is_empty() => {
-                    log::debug!("KPM version check ok: {ver}");
-                }
-                _ => {
-                    println!("unsupported");
-                    return Ok(());
-                }
-            }
-        }
-
-        #[cfg(not(target_arch = "aarch64"))]
-        {
-            println!("unsupported");
-            return Ok(());
-        }
+    // KPM reports supported whenever CONFIG_KPM=y, but the live
+    // control surface may still be unreachable. Probe it once.
+    if extension_id == ExtensionId::Kpm && !kpm_actually_working() {
+        println!("unsupported");
+        return Ok(());
     }
 
     println!("supported");

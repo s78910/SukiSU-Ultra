@@ -8,6 +8,15 @@
  * The sticky state bit indicates whether umount-on-uid is currently armed.
  * Each io op carries the same struct as the legacy ioctl, so we just
  * copy_from_user and dispatch.
+ *
+ * IMPORTANT: do_add_try_umount_local() and do_list_try_umount_local()
+ * take a *kernel* pointer to the already-copied cmd, not a __user
+ * pointer. The ksu_extension_umount_paths_io() entry point performs
+ * the single copy_from_user; helpers must NOT re-parse user memory
+ * from the cmd struct because that would mean user-pointer reads on
+ * a kernel stack address (and copy_from_user would fail with -EFAULT
+ * even when the inner .arg was a real user address that was already
+ * frozen into the cmd struct).
  */
 #include <linux/errno.h>
 #include <linux/kernel.h>
@@ -46,22 +55,27 @@ static void do_wipe_umount_local(void)
     up_write(&mount_list_lock);
 }
 
-static int do_add_try_umount_local(void __user *arg)
+/*
+ * Add / del / wipe a mount entry. `cmd` points to a ksu_add_try_umount_cmd
+ * that has already been copied from userspace into kernel memory; only
+ * the inner `cmd->arg` (a user pointer for ADD/DEL) is re-parsed through
+ * the user-accessor helpers.
+ */
+static int do_add_try_umount_local(const struct ksu_add_try_umount_cmd *cmd)
 {
-    struct ksu_add_try_umount_cmd cmd;
     struct mount_entry *new_entry, *entry, *tmp;
     char buf[256] = { 0 };
 
-    if (copy_from_user(&cmd, arg, sizeof(cmd)))
-        return -EFAULT;
+    if (!cmd)
+        return -EINVAL;
 
-    switch (cmd.mode) {
+    switch (cmd->mode) {
     case KSU_UMOUNT_WIPE:
         do_wipe_umount_local();
         return 0;
 
     case KSU_UMOUNT_ADD: {
-        long len = strncpy_from_user(buf, (const char __user *)cmd.arg, 256);
+        long len = strncpy_from_user(buf, (const char __user *)cmd->arg, 256);
         if (len <= 0)
             return -EFAULT;
         buf[sizeof(buf) - 1] = '\0';
@@ -85,14 +99,14 @@ static int do_add_try_umount_local(void __user *arg)
                 return -EEXIST;
             }
         }
-        new_entry->flags = cmd.flags;
+        new_entry->flags = cmd->flags;
         list_add(&new_entry->list, &mount_list);
         up_write(&mount_list_lock);
         return 0;
     }
 
     case KSU_UMOUNT_DEL: {
-        long len = strncpy_from_user(buf, (const char __user *)cmd.arg, sizeof(buf) - 1);
+        long len = strncpy_from_user(buf, (const char __user *)cmd->arg, sizeof(buf) - 1);
         if (len <= 0)
             return -EFAULT;
         buf[sizeof(buf) - 1] = '\0';
@@ -114,9 +128,14 @@ static int do_add_try_umount_local(void __user *arg)
     }
 }
 
-static int do_list_try_umount_local(void __user *arg)
+/*
+ * List the current umount entries. `cmd` points to a
+ * ksu_list_try_umount_cmd that has already been copied from userspace;
+ * only the inner `cmd->arg` (a user buffer pointer) is re-parsed through
+ * copy_to_user at the end.
+ */
+static int do_list_try_umount_local(const struct ksu_list_try_umount_cmd *cmd)
 {
-    struct ksu_list_try_umount_cmd cmd;
     struct mount_entry *entry;
     char *output_buf;
     size_t output_size, offset = 0;
@@ -127,13 +146,13 @@ static int do_list_try_umount_local(void __user *arg)
 #define EXT_UMOUNT_MAX_SIZE (2 * 1024 * 1024)
 #define EXT_UMOUNT_DEFAULT_SIZE (64 * 1024)
 
-    if (copy_from_user(&cmd, arg, sizeof(cmd)))
-        return -EFAULT;
-    if (cmd.buf_size > 1024 * 1024)
+    if (!cmd)
+        return -EINVAL;
+    if (cmd->buf_size > 1024 * 1024)
         return -EINVAL;
 
-    output_size = cmd.buf_size ? cmd.buf_size : 4096;
-    if (!cmd.arg || output_size == 0)
+    output_size = cmd->buf_size ? cmd->buf_size : 4096;
+    if (!cmd->arg || output_size == 0)
         return -EINVAL;
 
     down_read(&mount_list_lock);
@@ -177,7 +196,7 @@ static int do_list_try_umount_local(void __user *arg)
     up_read(&mount_list_lock);
 
     if (ret == 0) {
-        if (copy_to_user((void __user *)cmd.arg, output_buf, offset))
+        if (copy_to_user((void __user *)cmd->arg, output_buf, offset))
             ret = -EFAULT;
     }
 
@@ -197,16 +216,24 @@ int ksu_extension_umount_paths_io(u32 id, void __user *raw)
     if (!raw)
         return -EFAULT;
 
+    /*
+     * Single copy_from_user at the ioctl boundary. After this point,
+     * `hdr` lives in kernel memory and helpers receive a kernel pointer.
+     * They MUST NOT re-do copy_from_user on `&hdr.payload.*` (that would
+     * be a user-pointer-impersonation footgun on the kernel stack) and
+     * they access user memory only through the inner cmd->arg pointers,
+     * which the user-accessor helpers (strncpy_from_user / copy_to_user)
+     * handle correctly.
+     */
     if (copy_from_user(&hdr, raw, sizeof(hdr)))
         return -EFAULT;
 
     switch (hdr.op) {
     case KSU_UMOUNT_IO_OP_ADD:
     case KSU_UMOUNT_IO_OP_DEL:
-        /* Legacy layout: the second union member is ksu_add_try_umount_cmd. */
-        return do_add_try_umount_local((void __user *)&hdr.payload.add);
+        return do_add_try_umount_local(&hdr.payload.add);
     case KSU_UMOUNT_IO_OP_LIST:
-        return do_list_try_umount_local((void __user *)&hdr.payload.list);
+        return do_list_try_umount_local(&hdr.payload.list);
     default:
         return -EINVAL;
     }

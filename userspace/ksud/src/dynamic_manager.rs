@@ -11,7 +11,7 @@ use std::path::Path;
 
 use crate::extension_id::ExtensionId;
 use crate::ksu_uapi;
-use crate::ksucalls::{extension_io, get_extension};
+use crate::ksucalls::{dynamic_manager_io, get_extension};
 
 const DYNAMIC_MANAGER_FILE: &str = "/data/adb/ksu/.dynamic_managers";
 const DYNAMIC_MANAGER_MAGIC: u32 = 0x4d53_4b44;
@@ -78,7 +78,7 @@ pub fn manager_get() -> Result<ksu_uapi::ksu_manager_cmd> {
     let mut cmd: ksu_uapi::ksu_manager_cmd = unsafe { std::mem::zeroed() };
     cmd.operation = ksu_uapi::KSU_MANAGER_GET;
     unsafe {
-        extension_io(ExtensionId::DynamicManager as u32, &raw mut cmd)?;
+        dynamic_manager_io(&raw mut cmd)?;
     }
     Ok(cmd)
 }
@@ -91,7 +91,7 @@ pub fn manager_add(package: &str, cert_size: u32, hash: &str) -> Result<()> {
     copy_manager_string(&mut cmd.package, package)?;
     copy_manager_string(&mut cmd.hash, hash)?;
     unsafe {
-        extension_io(ExtensionId::DynamicManager as u32, &raw mut cmd)?;
+        dynamic_manager_io(&raw mut cmd)?;
     }
     persist()
 }
@@ -101,7 +101,7 @@ pub fn manager_remove(package: &str) -> Result<()> {
     cmd.operation = ksu_uapi::KSU_MANAGER_REMOVE;
     copy_manager_string(&mut cmd.package, package)?;
     unsafe {
-        extension_io(ExtensionId::DynamicManager as u32, &raw mut cmd)?;
+        dynamic_manager_io(&raw mut cmd)?;
     }
     persist()
 }
@@ -111,7 +111,7 @@ pub fn manager_set_enabled(enabled: bool) -> Result<()> {
     cmd.operation = ksu_uapi::KSU_MANAGER_SET_ENABLED;
     cmd.enabled = u32::from(enabled);
     unsafe {
-        extension_io(ExtensionId::DynamicManager as u32, &raw mut cmd)?;
+        dynamic_manager_io(&raw mut cmd)?;
     }
     persist()
 }
@@ -120,7 +120,7 @@ pub fn manager_clear() -> Result<()> {
     let mut cmd: ksu_uapi::ksu_manager_cmd = unsafe { std::mem::zeroed() };
     cmd.operation = ksu_uapi::KSU_MANAGER_CLEAR;
     unsafe {
-        extension_io(ExtensionId::DynamicManager as u32, &raw mut cmd)?;
+        dynamic_manager_io(&raw mut cmd)?;
     }
     persist()
 }

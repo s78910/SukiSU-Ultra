@@ -39,14 +39,17 @@ class ExtensionsViewModel(
         refresh()
     }
 
+    /**
+     * Pull the state of every extension in a single `ksud extension
+     * list` shell call (see [ExtensionRepository.probeAll]). The wall
+     * time is bounded by the slowest single probe — typically KPM's
+     * live `kpm version` ioctl, which the kernel-side ksud CLI only
+     * runs when the kernel advertised CONFIG_KPM support.
+     */
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(loading = true) }
-            val newStates = mutableMapOf<ExtensionId, ExtensionState>()
-            for (ext in ExtensionId.ALL) {
-                val state = withContext(Dispatchers.IO) { repo.probe(ext) }
-                newStates[ext] = state
-            }
+            val newStates = withContext(Dispatchers.IO) { repo.probeAll() }
             _uiState.update { it.copy(loading = false, states = newStates) }
         }
     }

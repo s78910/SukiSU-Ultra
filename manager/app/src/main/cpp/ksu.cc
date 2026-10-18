@@ -264,32 +264,10 @@ bool is_mount_hide_enabled() {
 DEFINE_CACHED_GETTER(full_version, KSU_IOCTL_GET_FULL_VERSION, ksu_get_full_version_cmd, version_full, 255)
 DEFINE_CACHED_GETTER(hook_type, KSU_IOCTL_HOOK_TYPE, ksu_hook_type_cmd, hook_type, 32)
 
-// -----------------------------------------------------------
-// Extension subsystem wrappers.
-// All call KSU_IOCTL_EXTENSION with a struct ksu_extension_cmd.
-// -----------------------------------------------------------
-
-// Generic extension ioctl call. Returns 0 on success, -1 (and sets
-// errno) on failure.
 static int ksu_extension_call(struct ksu_extension_cmd *cmd) {
     return ksuctl(KSU_IOCTL_EXTENSION, cmd);
 }
 
-// Helper: extension sticky-bit getter.
-static bool extension_get_sticky(uint32_t id, uint64_t *out_value, bool *out_supported) {
-    struct ksu_extension_cmd cmd = {};
-    cmd.id = id;
-    cmd.op = KSU_EXTENSION_GET;
-    if (ksu_extension_call(&cmd) != 0) {
-        return false;
-    }
-    if (out_value) *out_value = cmd.value;
-    if (out_supported) *out_supported = cmd.supported & KSU_FEATURE_FLAG_SUPPORTED;
-    return true;
-}
-
-// CPU spoof SET-MIDR (ksu_set_spoof_cpu_cmd is the user pointer).
-// Forwards the original struct via KSU_EXTENSION_IO op.
 int ksu_set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd) {
     if (!cmd) return -EINVAL;
     struct ksu_extension_cmd ec = {};
@@ -299,9 +277,7 @@ int ksu_set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd) {
     return ksu_extension_call(&ec);
 }
 
-// ----- Umount paths -----
-// On the wire, the user_ptr points to a ksu_extension_umount_cmd
-// (see uapi/extension.h). The kernel decodes .op and dispatches.
+
 int umount_paths_wipe() {
     struct ksu_extension_cmd cmd = {};
     cmd.id = KSU_EXTENSION_UMOUNT_PATHS;

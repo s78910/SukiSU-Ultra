@@ -1,6 +1,7 @@
 package com.sukisu.ultra.ui.screen.extensions
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -20,6 +22,7 @@ import com.sukisu.ultra.ui.viewmodel.ExtensionsUiState
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 
 @Composable
@@ -52,6 +55,27 @@ fun ExtensionsScreenMiuix(
             )
         },
     ) { padding ->
+        if (state.states.isEmpty() && !state.loading) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+            ) {
+                Text(
+                    text = stringResource(R.string.extension_empty_title),
+                    style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.title3,
+                )
+                Text(
+                    text = stringResource(R.string.extension_empty_subtitle),
+                    style = top.yukonga.miuix.kmp.theme.MiuixTheme.textStyles.body2,
+                    color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onBackground.copy(alpha = 0.75f),
+                )
+            }
+            return@Scaffold
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

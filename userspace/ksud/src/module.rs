@@ -1411,62 +1411,19 @@ pub fn list_modules() -> Result<()> {
     Ok(())
 }
 
-/// Get all managed features from active modules
-/// Modules declare managed features via config system (manage.<feature>=true)
-/// Returns: HashMap<ModuleId, Vec<ManagedFeature>>
-pub fn get_managed_features() -> Result<HashMap<String, Vec<String>>> {
-    let mut managed_features_map: HashMap<String, Vec<String>> = HashMap::new();
-
-    foreach_active_module(|module_path| {
-        // Get module ID
-        let Some(module_id) = module_path.file_name().and_then(|n| n.to_str()) else {
-            warn!(
-                "Failed to get module id from path: {}",
-                module_path.display()
-            );
-            return Ok(());
-        };
-
-        // Read module config
-        let config = match crate::module_config::merge_configs(module_id) {
-            Ok(c) => c,
-            Err(e) => {
-                warn!("Failed to merge configs for module '{module_id}': {e}");
-                return Ok(()); // Skip this module
-            }
-        };
-
-        // Extract manage.* config entries
-        let mut feature_list = Vec::new();
-        for (key, value) in &config {
-            if key.starts_with("manage.") {
-                // Parse feature name
-                if let Some(feature_name) = key.strip_prefix("manage.")
-                    && crate::module_config::parse_bool_config(value)
-                {
-                    feature_list.push(feature_name.to_string());
-                }
-            }
-        }
-
-        if !feature_list.is_empty() {
-            managed_features_map.insert(module_id.to_string(), feature_list);
-        }
-
-        Ok(())
-    })?;
-
-    Ok(managed_features_map)
-}
-
-/// Get all managed extensions from active modules.
+/// Internal helper: walk every active module and collect entries
+/// under the `manage.<name>=true` config key, applying an optional
+/// name filter.
 ///
-/// Reuses the same `manage.<name>=true` config key as
-/// [`get_managed_features`]; the name is matched against
-/// [`crate::extension_id::ExtensionId::name`] to filter out unrelated
-/// module options.
-pub fn get_managed_extensions() -> Result<HashMap<String, Vec<String>>> {
-    let mut managed_extensions_map: HashMap<String, Vec<String>> = HashMap::new();
+/// Returns `HashMap<ModuleId, Vec<ManagedName>>` with only modules
+/// that own at least one matching entry. `is_managed` decides
+/// whether a given name is interesting for the caller; passing
+/// `|_| true` is equivalent to the unfiltered "features" view.
+fn collect_managed_entries<F>(is_managed: F) -> Result<HashMap<String, Vec<String>>>
+where
+    F: Fn(&str) -> bool,
+{
+    let mut out: HashMap<String, Vec<String>> = HashMap::new();
 
     foreach_active_module(|module_path| {
         let Some(module_id) = module_path.file_name().and_then(|n| n.to_str()) else {
@@ -1485,22 +1442,43 @@ pub fn get_managed_extensions() -> Result<HashMap<String, Vec<String>>> {
             }
         };
 
-        let mut extension_list = Vec::new();
+        let mut names = Vec::new();
         for (key, value) in &config {
-            if let Some(ext_name) = key.strip_prefix("manage.")
+            if let Some(name) = key.strip_prefix("manage.")
                 && crate::module_config::parse_bool_config(value)
-                && crate::extension_id::parse_extension_id(ext_name).is_ok()
+                && is_managed(name)
             {
-                extension_list.push(ext_name.to_string());
+                names.push(name.to_string());
             }
         }
 
-        if !extension_list.is_empty() {
-            managed_extensions_map.insert(module_id.to_string(), extension_list);
+        if !names.is_empty() {
+            out.insert(module_id.to_string(), names);
         }
 
         Ok(())
     })?;
 
-    Ok(managed_extensions_map)
+    Ok(out)
+}
+
+/// Get all managed features from active modules
+/// Modules declare managed features via config system (manage.<feature>=true)
+/// Returns: HashMap<ModuleId, Vec<ManagedFeature>>
+pub fn get_managed_features() -> Result<HashMap<String, Vec<String>>> {
+    // No filter: any `manage.<name>=true` counts as a managed
+    // feature, including names that are not in the feature_id enum
+    // (forward compatibility for future features).
+    collect_managed_entries(|_| true)
+}
+
+/// Get all managed extensions from active modules.
+///
+/// Reuses the same `manage.<name>=true` config key as
+/// [`get_managed_features`]; the name is matched against
+/// [`crate::extension_id::ExtensionId`] via
+/// `parse_extension_id` to filter out unrelated module options
+/// (e.g. a module that also manages a non-extension knob).
+pub fn get_managed_extensions() -> Result<HashMap<String, Vec<String>>> {
+    collect_managed_entries(|name| crate::extension_id::parse_extension_id(name).is_ok())
 }

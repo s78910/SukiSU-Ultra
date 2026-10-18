@@ -755,7 +755,7 @@
     <string name="extension_kpm_title">KPM (Kernel Patch Module)</string>
     <string name="extension_kpm_summary">Load third-party .kpm modules at runtime. Requires a KPM-capable kernel build.</string>
     <string name="extension_cpu_spoof_title">CPU identity spoofing</string>
-    <string name="extension_cpu_spoof_summary">Override reported MIDR, BogoMIPS and ELF hwcap for newly spawned processes.</string>
+    <string name="extension_cpu_spoof_summary">Override reported MIDR, BogoMIPS, ELF hwcap and vDSO clock mode on the calling CPU. Subsequent reads of /proc/cpuinfo and uname() reflect the spoofed identity until the next spoof or reboot.</string>
     <string name="extension_umount_paths_title">Umount path manager</string>
     <string name="extension_umount_paths_summary">Manage the list of mount points the kernel will umount when an app starts.</string>
     <string name="extension_dynamic_manager_title">Dynamic manager</string>
@@ -765,4 +765,9 @@
     <string name="extension_open_dynamic_manager">Open dynamic manager list</string>
     <string name="extension_open_umount_paths">Open umount path list</string>
     <string name="extension_open_cpu_spoof">Open CPU spoofing form</string>
+
+    <!-- Empty state shown when no extension state has been observed
+         and the screen is not in the middle of a refresh. -->
+    <string name="extension_empty_title">No extension data</string>
+    <string name="extension_empty_subtitle">Pull to refresh, or check that the running kernel includes the extension hub.</string>
 </resources>

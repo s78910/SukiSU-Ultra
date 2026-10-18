@@ -5,7 +5,8 @@
  * Owns the handler table indexed by ksu_extension_id. Provides:
  *   - value-flavored get/set through ksu_extension_get/set()
  *   - io-flavoured passthrough via ksu_extension_ioctl()
- *   - force_feature integration (parallel to kernel/policy/feature.c)
+ *   - boot-config forced-value integration (force_extension=<id>:<value>,
+ *     parallel to kernel/policy/feature.c which handles force_feature=).
  *
  * See kernel/extension/extension.h for the broader design.
  */
@@ -15,6 +16,7 @@
 #include <linux/moduleparam.h>
 #include <linux/mutex.h>
 #include <linux/string.h>
+#include <linux/types.h>
 
 #include "extension.h"
 #include "kpm.h"
@@ -35,13 +37,28 @@ static const char *const extension_names[KSU_EXTENSION_MAX] = {
 };
 
 /*
- * Force-feature bitmap (parallel to policy/feature.c).
- * Each set bit means "userspace cannot change this extension anymore,
- * init must call io_handler / set with the saved value".
+ * Force-extension bitmap (parallel to policy/feature.c).
+ * Each set bit in forced_mask means "userspace cannot change this
+ * extension anymore"; the saved value lives in forced_values[id] and
+ * is replayed on every boot through either ops->set (value-flavored)
+ * or handler->apply_forced (io-flavored). forced_pending is the
+ * replay backlog: bits stay set until ksu_extension_apply_forced()
+ * successfully replays them.
  */
 static u64 forced_values[KSU_EXTENSION_MAX];
 static DECLARE_BITMAP(forced_mask, KSU_EXTENSION_MAX);
 static DECLARE_BITMAP(forced_pending, KSU_EXTENSION_MAX);
+
+/*
+ * Set to true at the end of ksu_extension_register_all() so that
+ * ksu_extension_apply_forced() can detect a future refactor that
+ * reorders init / register_all / apply_forced. While false, the
+ * handler table is empty (or partially populated) and any apply
+ * call would either no-op or, worse, drop a forced entry on the
+ * floor. A release-store in register_all pairs with an acquire-load
+ * in apply_forced.
+ */
+static bool extensions_registered __read_mostly;
 
 static int parse_extension_id(const char *name, u32 *id)
 {
@@ -217,7 +234,7 @@ int ksu_extension_set(u32 extension_id, u64 value)
 
     /* Forced extensions are locked for the lifetime of the boot.
      * Replay is done in ksu_extension_apply_forced(); userspace
-     * SETs are refused until reboot clears forced_mask. */
+     * SETs are refused until reboot clears forced_pending. */
     if (test_bit(extension_id, forced_mask)) {
         pr_warn("extension: extension %u is forced by boot config\n",
                 extension_id);
@@ -272,6 +289,16 @@ int ksu_extension_wipe(u32 extension_id)
     if (extension_id >= KSU_EXTENSION_MAX)
         return -EINVAL;
 
+    /* Wipe is a state-mutating op: respect force_extension=<id> in
+     * the same way ksu_extension_set() does. Allowing wipe while
+     * userspace SET is locked would let a manager action undo the
+     * kernel-side forced state until the next boot. */
+    if (test_bit(extension_id, forced_mask)) {
+        pr_warn("extension: extension %u is forced by boot config, refusing wipe\n",
+                extension_id);
+        return -EPERM;
+    }
+
     mutex_lock(&extension_mutex);
     handler = extension_handlers[extension_id];
     if (!handler || !handler->wipe) {
@@ -290,12 +317,41 @@ void ksu_extension_apply_forced(void)
     unsigned int id;
     int ret;
 
+    /*
+     * apply_forced must run after register_all. If the flag is not
+     * set yet, the handler table is empty (or partially populated)
+     * and any apply would either no-op or, worse, drop a forced
+     * entry on the floor. Loud-fail rather than silently dropping
+     * the forced entry. We do not consume the pending bits in this
+     * case: the assumption is that the caller will call us again
+     * after register_all. If they do not, the bits stay set and a
+     * future ksu_extension_exit() (or a manual clear) must clear
+     * them.
+     */
+    if (WARN_ON_ONCE(!READ_ONCE(extensions_registered))) {
+        pr_err("extension: ksu_extension_apply_forced() called before ksu_extension_register_all() — force_extension= will be dropped this boot\n");
+        return;
+    }
+
     mutex_lock(&extension_mutex);
 
     for_each_set_bit (id, forced_pending, KSU_EXTENSION_MAX) {
         handler = extension_handlers[id];
-        if (!handler)
+        if (!handler) {
+            /*
+             * Handler not registered yet. This is normal during the
+             * first call: ksu_extension_apply_forced() runs from
+             * kernelsu_init() right after ksu_extension_register_all(),
+             * but a future refactor could move apply_forced earlier
+             * (e.g. before module init). Clear the pending bit so we
+             * do not loop on it forever; if the handler is registered
+             * later it must be replayed explicitly.
+             */
+            pr_warn("extension: force_extension=%s=%llu pending: handler not registered\n",
+                    extension_names[id], forced_values[id]);
+            clear_bit(id, forced_pending);
             continue;
+        }
 
         /* Dispatch order is fixed:
          *   1. ops->set      — value-flavoured handlers, replay the
@@ -340,6 +396,8 @@ void __init ksu_extension_init(void)
     for (i = 0; i < KSU_EXTENSION_MAX; i++)
         extension_handlers[i] = NULL;
 
+    /* The apply_forced → register_all ordering is enforced at the
+     * apply_forced call site; see extensions_registered. */
     pr_info("extension: subsystem initialized\n");
 }
 
@@ -391,6 +449,14 @@ void __init ksu_extension_register_all(void)
         pr_err("extension: failed to register umount_paths\n");
     if (ksu_register_extension_handler(&dynamic_manager_handler))
         pr_err("extension: failed to register dynamic_manager\n");
+
+    /* Publish: any future ksu_extension_apply_forced() is now safe.
+     * The release-store pairs with the acquire-load in
+     * ksu_extension_apply_forced() so that, on the calling CPU,
+     * the four ksu_register_extension_handler() writes above are
+     * visible before the flag is observed as set. */
+    smp_wmb();
+    WRITE_ONCE(extensions_registered, true);
 }
 
 void __exit ksu_extension_exit(void)

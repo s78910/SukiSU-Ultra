@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2025 Liankong (xhsw.new@outlook.com). All Rights Reserved.
  * 本代码由 GPL-2 授权

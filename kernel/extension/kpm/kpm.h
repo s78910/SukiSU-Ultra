@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __KSU_H_EXTENSION_KPM
 #define __KSU_H_EXTENSION_KPM
 

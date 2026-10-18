@@ -94,42 +94,107 @@ fun ExtensionCard(
 
 @Composable
 private fun StatusLine(state: ExtensionState?) {
+    // Compute the (label, color) pair once. Centralising the decision
+    // here keeps the precedence readable: missing-state > unsupported >
+    // forced > managed > enabled/disabled > sticky-bit support hint.
+    //
     // Extensions without a runtime sticky bit (KPM, CPU spoof, umount
-    // paths) report value=0 even when their subsystem is healthy.
-    // Forcing a neutral "Supported" label here avoids showing a
-    // misleading "Disabled" pill in the overview, since the only
-    // place to actually operate them is their sub-screen.
-    if (state != null && !state.id.hasStickyBit && state.supported) {
+    // paths) report value=0 even when their subsystem is healthy. The
+    // helper `statusFor` collapses that to a neutral "Supported" label
+    // so the overview doesn't show a misleading "Disabled" pill for
+    // an extension that is just unsupported in the toggle sense.
+    val resolved = state?.let { statusFor(it) }
+    if (resolved != null) {
+        val (label, color) = resolved
         Text(
-            text = stringResource(R.string.extension_status_supported),
+            text = stringResource(label),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = color,
         )
-        return
     }
-    val (label, color) = when {
-        state == null -> return
-        !state.supported ->
-            stringResource(R.string.extension_status_unsupported) to
-                MaterialTheme.colorScheme.error
-        state.forced ->
-            stringResource(R.string.extension_status_forced) to
-                MaterialTheme.colorScheme.tertiary
-        state.managed ->
-            stringResource(R.string.extension_status_managed) to
-                MaterialTheme.colorScheme.tertiary
-        state.value != 0L ->
-            stringResource(R.string.extension_status_enabled) to
-                MaterialTheme.colorScheme.primary
-        else ->
-            stringResource(R.string.extension_status_disabled) to
-                MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelSmall,
-        color = color,
+}
+
+/**
+ * Precedence for the status pill on the extension card.
+ *
+ * `unsupported` wins over `forced` because the UI must show a
+ * "Not supported" hint when the kernel never registered a handler,
+ * even if the id appears in `force_extension=`. (In practice that
+ * combination is rejected by `ksu_extension_apply_forced` with a
+ * warning, so the pill matches what the kernel actually did.)
+ */
+internal enum class ExtensionPill {
+    Unsupported,
+    Forced,
+    Managed,
+    Enabled,
+    Disabled,
+    Supported,
+}
+
+internal data class ExtensionPillSpec(
+    val pill: ExtensionPill,
+    @androidx.annotation.StringRes val labelRes: Int,
+    val isOnTertiary: Boolean = false,
+    val isOnPrimary: Boolean = false,
+    val isOnError: Boolean = false,
+    val isOnSurfaceVariant: Boolean = false,
+)
+
+/**
+ * Pure mapping from an `ExtensionState` to a `ExtensionPill`. Has no
+ * Composable dependencies so it can be unit-tested directly.
+ *
+ * Sticky-bit semantics: the "enabled/disabled" pair only applies to
+ * extensions that actually expose a runtime toggle. For the others
+ * (KPM, CPU spoof, umount paths) we fall through to a neutral
+ * "Supported" hint so the overview never advertises a toggle that
+ * doesn't exist.
+ */
+internal fun pillFor(state: ExtensionState): ExtensionPillSpec = when {
+    !state.supported -> ExtensionPillSpec(
+        pill = ExtensionPill.Unsupported,
+        labelRes = R.string.extension_status_unsupported,
+        isOnError = true,
     )
+    state.forced -> ExtensionPillSpec(
+        pill = ExtensionPill.Forced,
+        labelRes = R.string.extension_status_forced,
+        isOnTertiary = true,
+    )
+    state.managed -> ExtensionPillSpec(
+        pill = ExtensionPill.Managed,
+        labelRes = R.string.extension_status_managed,
+        isOnTertiary = true,
+    )
+    !state.id.hasStickyBit -> ExtensionPillSpec(
+        pill = ExtensionPill.Supported,
+        labelRes = R.string.extension_status_supported,
+        isOnPrimary = true,
+    )
+    state.value != 0L -> ExtensionPillSpec(
+        pill = ExtensionPill.Enabled,
+        labelRes = R.string.extension_status_enabled,
+        isOnPrimary = true,
+    )
+    else -> ExtensionPillSpec(
+        pill = ExtensionPill.Disabled,
+        labelRes = R.string.extension_status_disabled,
+        isOnSurfaceVariant = true,
+    )
+}
+
+@Composable
+private fun statusFor(state: ExtensionState): Pair<Int, androidx.compose.ui.graphics.Color> {
+    val spec = pillFor(state)
+    val color = when {
+        spec.isOnError -> MaterialTheme.colorScheme.error
+        spec.isOnTertiary -> MaterialTheme.colorScheme.tertiary
+        spec.isOnPrimary -> MaterialTheme.colorScheme.primary
+        spec.isOnSurfaceVariant -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    return spec.labelRes to color
 }
 
 @Composable

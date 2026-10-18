@@ -678,7 +678,7 @@
     <string name="extension_kpm_title">KPM (核心補丁模組)</string>
     <string name="extension_kpm_summary">執行階段載入第三方 .kpm 模組。需要核心支援 KPM。</string>
     <string name="extension_cpu_spoof_title">CPU 身分偽裝</string>
-    <string name="extension_cpu_spoof_summary">對新啟動的進程覆寫回報的 MIDR、BogoMIPS 與 ELF hwcap。</string>
+    <string name="extension_cpu_spoof_summary">覆寫當前 CPU 上報的 MIDR、BogoMIPS、ELF hwcap 與 vDSO 時鐘模式。後續讀取 /proc/cpuinfo 與 uname() 將反映偽裝結果，直至下次覆寫或重新開機。</string>
     <string name="extension_umount_paths_title">Umount 路徑管理</string>
     <string name="extension_umount_paths_summary">管理應用啟動時核心將卸載的掛載點清單。</string>
     <string name="extension_dynamic_manager_title">動態管理器</string>
@@ -688,4 +688,8 @@
     <string name="extension_open_dynamic_manager">開啟動態管理器列表</string>
     <string name="extension_open_umount_paths">開啟 Umount 路徑列表</string>
     <string name="extension_open_cpu_spoof">開啟 CPU 偽裝表單</string>
+
+    <!-- 空狀態:尚未抓到任何擴充狀態,且螢幕也不在重新整理中。 -->
+    <string name="extension_empty_title">暫無擴充資料</string>
+    <string name="extension_empty_subtitle">下拉重新整理,或檢查目前核心是否包含擴充中心。</string>
 </resources>

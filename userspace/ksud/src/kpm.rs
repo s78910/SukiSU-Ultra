@@ -14,9 +14,8 @@ use std::{
 
 use anyhow::{Result, bail};
 
-use crate::extension_id::ExtensionId;
 use crate::ksu_uapi;
-use crate::ksucalls::extension_io;
+use crate::ksucalls::kpm_io as kpm_ioctl;
 
 const KPM_DIR: &str = "/data/adb/kpm";
 
@@ -28,7 +27,7 @@ fn kpm_io(control_code: u32, arg1: u64, arg2: u64) -> Result<i32> {
         arg2,
         result_code: &raw mut ret as u64,
     };
-    let result = unsafe { extension_io(ExtensionId::Kpm as u32, &raw mut cmd)? };
+    let result = unsafe { kpm_ioctl(&raw mut cmd)? };
     if result < 0 {
         return Err(anyhow::anyhow!(io::Error::from_raw_os_error(-result)));
     }
@@ -167,18 +166,14 @@ pub fn check_version() -> Result<String> {
         buf.len() as u64,
     )?;
     if ret < 0 {
-        println!(
-            "Failed to get kpm version: {}",
-            io::Error::from_raw_os_error(ret)
-        );
-        return Ok(String::new());
+        bail!("kpm version ioctl returned {ret}");
     }
 
     let binding = buf2str(&buf);
     let ver = binding.trim();
 
     if ver.is_empty() {
-        bail!("KPM: invalid version response: {ver}");
+        bail!("KPM version response is empty");
     }
     log::info!("KPM: version check ok: {ver}");
     Ok(ver.to_string())

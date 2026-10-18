@@ -749,7 +749,7 @@
     <string name="extension_kpm_title">KPM (内核补丁模块)</string>
     <string name="extension_kpm_summary">运行时加载第三方 .kpm 模块。需要内核支持 KPM。</string>
     <string name="extension_cpu_spoof_title">CPU 身份伪装</string>
-    <string name="extension_cpu_spoof_summary">对新启动的进程覆写上报的 MIDR、BogoMIPS 与 ELF hwcap。</string>
+    <string name="extension_cpu_spoof_summary">覆写当前 CPU 上报的 MIDR、BogoMIPS、ELF hwcap 与 vDSO 时钟模式。后续读取 /proc/cpuinfo 与 uname() 将反映伪装结果，直至下次覆写或重启。</string>
     <string name="extension_umount_paths_title">Umount 路径管理</string>
     <string name="extension_umount_paths_summary">管理应用启动时内核将卸载的挂载点列表。</string>
     <string name="extension_dynamic_manager_title">动态管理器</string>
@@ -759,4 +759,8 @@
     <string name="extension_open_dynamic_manager">打开动态管理器列表</string>
     <string name="extension_open_umount_paths">打开 Umount 路径列表</string>
     <string name="extension_open_cpu_spoof">打开 CPU 伪装表单</string>
+
+    <!-- 空状态:尚未拉到任何扩展状态,屏幕也不在刷新中。 -->
+    <string name="extension_empty_title">暂无扩展数据</string>
+    <string name="extension_empty_subtitle">下拉刷新,或检查当前内核是否包含扩展中心。</string>
 </resources>

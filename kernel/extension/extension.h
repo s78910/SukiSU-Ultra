@@ -13,21 +13,29 @@
  * registers a handler; the kernel keeps a table indexed by extension_id,
  * dispatched through KSU_IOCTL_EXTENSION.
  *
- * Two flavours:
- *   - value: sticky enable bit via get/set ops. KPM, DYNAMIC_MANAGER.
- *   - io   : raw user pointer forwarded to io_handler. CPU_SPOOF,
- *            UMOUNT_PATHS.
+ * Flavours:
+ *   - value      : sticky enable bit via get/set ops. DYNAMIC_MANAGER.
+ *                  KSU_EXTENSION_SET calls ops->set; KSU_EXTENSION_GET
+ *                  calls ops->get.
+ *   - io + get   : exposes a runtime GET (e.g. CONFIG_KPM presence) but
+ *                  has no runtime SET. KSU_EXTENSION_SET returns
+ *                  -EOPNOTSUPP. KPM.
+ *   - io only    : no sticky bit at all; io_handler forwards raw user
+ *                  payloads. CPU_SPOOF, UMOUNT_PATHS.
  *
  * Forced-by-config (force_extension=<id>:<value>) is replayed on every
  * boot: value-flavoured handlers go through ops->set; io-flavoured
- * handlers go through apply_forced. A handler with neither refuses to
- * be forced (warning + clear pending) — this is a deliberate refusal,
- * not a bug. The old io_handler(id, NULL) fallback was unsafe
- * (subsystem-dependent NULL semantics) and is no longer used.
+ * handlers (including io + get) go through apply_forced. A handler with
+ * neither refuses to be forced (warning + clear pending) — this is a
+ * deliberate refusal, not a bug. The old io_handler(id, NULL) fallback
+ * was unsafe (subsystem-dependent NULL semantics) and is no longer
+ * used.
  *
  * Wipe (KSU_EXTENSION_WIPE) goes through handler->wipe, a
  * kernel-side callback. A handler with no wipe returns -EOPNOTSUPP.
- * Wipe is independent of apply_forced.
+ * Wipe is independent of apply_forced. Wipe is also refused while a
+ * force_extension=<id> is in effect, to keep the locked state
+ * consistent with userspace SET.
  */
 
 struct ksu_extension_handler;
@@ -106,5 +114,64 @@ void ksu_extension_apply_forced(void);
 void ksu_extension_init(void);
 void ksu_extension_exit(void);
 void ksu_extension_register_all(void);
+
+/*
+ * Force-value encoding for io-flavoured handlers.
+ *
+ * This is the kernel-internal ABI between `force_extension_param_set()`
+ * and the per-handler `apply_forced` callback. It is NOT a UAPI: the
+ * u64 never crosses the user/kernel boundary on this code path.
+ *
+ * # Encoding
+ *
+ *   force_extension=<id>:<value>
+ *
+ * <id>   = enum ksu_extension_id (decimal or hex)
+ * <value>= u64, parsed by the kernel's kstrtou64() (decimal, 0x hex,
+ *           0 octal). The value's meaning is per-extension:
+ *     - value-flavoured handlers (DYNAMIC_MANAGER) treat <value> as
+ *       the sticky bit (0 or 1) and replay it through ops->set().
+ *     - io-flavoured handlers (KPM) may pack a (sub-op, arg) tuple
+ *       into the u64 using the KSU_EXTENSION_FORCE_* macros below.
+ *
+ * # Replay order
+ *
+ *   1. ops->set      — value-flavoured handlers, replay the raw u64
+ *                       forced_values[id].
+ *   2. apply_forced  — io-flavoured handlers, kernel-side callback
+ *                       that receives the raw u64. No user pointer
+ *                       is fabricated.
+ *   3. neither       — log and clear forced_pending. This is a
+ *                       deliberate refusal, not a bug. The old
+ *                       io_handler(id, NULL) fallback was unsafe
+ *                       (NULL is WIPE for umount_paths, EFAULT for
+ *                       others) and is no longer used.
+ *
+ * # Single source of truth
+ *
+ * Boot config producers (bootloaders, ksud) only need to know the
+ * encoding if they intentionally compose a 32-bit sub-op with a 32-bit
+ * arg, which is rare. Single-sub-op forces like
+ * `force_extension=kpm:7` are the common case and are unaffected.
+ *
+ * To keep producers and consumers in lockstep, this header is the
+ * single source of truth. New sub-op authors MUST use these macros
+ * instead of hand-rolling the bit shifts:
+ *
+ *   u64 v = KSU_EXTENSION_FORCE_PACK(7, 0x42);
+ *   if (KSU_EXTENSION_FORCE_OP(v) != SUKISU_KPM_VERSION) ...;
+ *   do_thing_with(KSU_EXTENSION_FORCE_ARG(v));
+ *
+ * # Stability
+ *
+ * The (op, arg) split direction is part of the ABI: op occupies the
+ * low 32 bits, arg the high 32 bits. Changing either direction
+ * silently corrupts every force entry; bump the encoding version
+ * (or just don't change it) if you ever need to.
+ */
+#define KSU_EXTENSION_FORCE_OP(value) ((u32)((value) & 0xffffffffu))
+#define KSU_EXTENSION_FORCE_ARG(value) ((u32)((value) >> 32))
+#define KSU_EXTENSION_FORCE_PACK(op, arg) \
+    (((u64)(u32)(op)) | (((u64)(u32)(arg)) << 32))
 
 #endif /* __KSU_H_EXTENSION */

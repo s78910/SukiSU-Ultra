@@ -48,11 +48,17 @@ impl ExtensionId {
     ///
     /// `true` means the kernel can be told "enable / disable" via
     /// `ksu_extension_set`, and the current value is meaningful when
-    /// probed via `ksu_extension_get`. `false` means the extension is
-    /// either purely io-driven (CPU spoof, umount paths) or whose
-    /// availability is fixed at kernel build time (KPM): the sticky
-    /// value is always 0 and should be displayed as "Available"
-    /// rather than "Disabled".
+    /// probed via `ksu_extension_get`. `false` means the extension
+    /// has no persistent user-controlled state:
+    ///   - KPM advertises `CONFIG_KPM` via GET, but the bit is
+    ///     compile-time — `ksu_extension_set` returns -EOPNOTSUPP.
+    ///   - CPU_SPOOF and UMOUNT_PATHS are io-only: state lives in the
+    ///     payload of each ioctl, never in a sticky u64.
+    ///
+    /// UI uses this to decide whether to show a toggle: extensions
+    /// without a sticky bit should display "Available" / "Supported"
+    /// rather than "Disabled" (which would imply an action the user
+    /// cannot perform here).
     pub const fn has_sticky_bit(self) -> bool {
         matches!(self, Self::DynamicManager)
     }
@@ -86,7 +92,7 @@ impl ExtensionId {
                 "KPM lets the manager load third-party kernel patch modules (.kpm) at runtime. Requires a KPM-capable kernel build."
             }
             Self::CpuSpoof => {
-                "Override the reported MIDR, BogoMIPS, ELF hwcap and vDSO clock mode for processes spawned after the call. Hides the real SoC from apps that fingerprint the CPU."
+                "Override the reported MIDR, BogoMIPS, ELF hwcap and vDSO clock mode on the calling CPU. Subsequent reads of /proc/cpuinfo and uname() reflect the spoofed identity until the next spoof or reboot."
             }
             Self::UmountPaths => {
                 "Manage the list of mount points that kernel will umount on app start (e.g. /system, /vendor, /product overlays). Paths are matched as exact strings."
@@ -136,5 +142,40 @@ mod tests {
     #[test]
     fn parse_unknown_name_errors() {
         assert!(parse_extension_id("nope").is_err());
+    }
+
+    /// Pin the sticky-bit set: dynamic_manager is the only extension
+    /// with a runtime toggle today. Regressions here are user-visible
+    /// (the UI hides the switch for everything else).
+    #[test]
+    fn sticky_bit_only_dynamic_manager() {
+        assert!(ExtensionId::DynamicManager.has_sticky_bit());
+        assert!(!ExtensionId::Kpm.has_sticky_bit());
+        assert!(!ExtensionId::CpuSpoof.has_sticky_bit());
+        assert!(!ExtensionId::UmountPaths.has_sticky_bit());
+    }
+
+    /// Every extension must have non-empty name/description, since
+    /// those are rendered to the user. Empty strings would crash the
+    /// UI layout silently.
+    #[test]
+    fn human_strings_non_empty() {
+        for ext in ExtensionId::ALL {
+            assert!(!ext.name().is_empty(), "{ext:?} name empty");
+            assert!(!ext.display_name().is_empty(), "{ext:?} display_name empty");
+            assert!(!ext.description().is_empty(), "{ext:?} description empty");
+        }
+    }
+
+    /// Wire-name and numeric encoding must stay in lockstep with
+    /// `enum ksu_extension_id` in `uapi/extension.h`. If a future
+    /// change renumbers an entry, this test forces the developer to
+    /// also update the UAPI mirror (and the Kotlin `ExtensionId`).
+    #[test]
+    fn numeric_encoding_matches_uapi() {
+        assert_eq!(ExtensionId::Kpm as u32, 0);
+        assert_eq!(ExtensionId::CpuSpoof as u32, 1);
+        assert_eq!(ExtensionId::UmountPaths as u32, 2);
+        assert_eq!(ExtensionId::DynamicManager as u32, 3);
     }
 }

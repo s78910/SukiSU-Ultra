@@ -76,6 +76,8 @@
 
 static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
 {
+    int missing = 0;
+
     if (!cmd)
         return -EINVAL;
 
@@ -92,10 +94,16 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
             struct cpuinfo_arm64 *info =
                 per_cpu_ptr((struct cpuinfo_arm64 *)cpu_data_base,
                             cmd->cpu_index);
-            if (info)
+            if (info) {
                 info->reg_midr = cmd->midr;
+            } else {
+                pr_warn("ksu: set_spoof_cpu per_cpu_ptr failed for cpu_index %u\n",
+                        cmd->cpu_index);
+                ++missing;
+            }
         } else {
             pr_warn("ksu: set_spoof_cpu failed to resolve 'cpu_data'\n");
+            ++missing;
         }
     }
 
@@ -106,6 +114,7 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
             *lpj = ((unsigned long)cmd->bogomips * 500000) / (100 * HZ);
         } else {
             pr_warn("ksu: set_spoof_cpu failed to resolve 'loops_per_jiffy'\n");
+            ++missing;
         }
 
         unsigned long *elf_hwcap_bitmap =
@@ -115,6 +124,7 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
             elf_hwcap_bitmap[1] = cmd->hwcap2;
         } else {
             pr_warn("ksu: set_spoof_cpu failed to resolve 'elf_hwcap'\n");
+            ++missing;
         }
 
         {
@@ -140,6 +150,9 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
                         VDSO_CLOCKMODE_ARCHTIMER;
                     vdso->clock_data[CS_RAW].clock_mode =
                         VDSO_CLOCKMODE_ARCHTIMER;
+                } else {
+                    pr_warn("ksu: set_spoof_cpu failed to resolve vDSO time data\n");
+                    ++missing;
                 }
 #else
                 struct vdso_data **vdso_data_ptr =
@@ -149,6 +162,9 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
                     vdso[CS_HRES_COARSE].clock_mode =
                         VDSO_CLOCKMODE_ARCHTIMER;
                     vdso[CS_RAW].clock_mode = VDSO_CLOCKMODE_ARCHTIMER;
+                } else {
+                    pr_warn("ksu: set_spoof_cpu failed to resolve 'vdso_data'\n");
+                    ++missing;
                 }
 #endif
 
@@ -156,17 +172,25 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
                     struct clocksource **curr_cs_ptr =
                         (struct clocksource **)find_kernel_symbol_exact(
                             "curr_clocksource");
-                    if (curr_cs_ptr && *curr_cs_ptr)
+                    if (curr_cs_ptr && *curr_cs_ptr) {
                         (*curr_cs_ptr)->vdso_clock_mode =
                             VDSO_CLOCKMODE_ARCHTIMER;
+                    } else {
+                        pr_warn("ksu: set_spoof_cpu failed to resolve 'curr_clocksource'\n");
+                        ++missing;
+                    }
                 }
 
                 {
                     enum vdso_clock_mode *vd_default =
                         (enum vdso_clock_mode *)find_kernel_symbol_exact(
                             "vdso_default");
-                    if (vd_default)
+                    if (vd_default) {
                         *vd_default = VDSO_CLOCKMODE_ARCHTIMER;
+                    } else {
+                        pr_warn("ksu: set_spoof_cpu failed to resolve 'vdso_default'\n");
+                        ++missing;
+                    }
                 }
 
                 {
@@ -175,13 +199,31 @@ static int set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
                     if (!caps)
                         caps = (unsigned long *)find_kernel_symbol_exact(
                             "system_cpucaps");
-                    if (caps)
+                    if (caps) {
                         clear_bit(ARM64_WORKAROUND_1418040, caps);
+                    } else {
+                        pr_warn("ksu: set_spoof_cpu failed to resolve 'cpu_hwcaps' / 'system_cpucaps'\n");
+                        ++missing;
+                    }
                 }
             }
         }
     }
 #endif
+
+    /*
+     * If any of the kallsyms lookups failed, refuse to claim success.
+     * Previously the function silently returned 0 even when none of
+     * the writes had taken effect, which made callers (and users)
+     * think CPU spoof was active when only partial — or no —
+     * rewrites had happened. -ENXIO distinguishes "subsystem
+     * missing on this build" from a generic -EINVAL.
+     */
+    if (missing) {
+        pr_warn("ksu: set_spoof_cpu for cpu %u incomplete (%d symbol(s) unresolved)\n",
+                cmd->cpu_index, missing);
+        return -ENXIO;
+    }
 
     pr_info("KernelSU Stealth: CPU %u identity spoofed (MIDR: 0x%08x)\n",
             cmd->cpu_index, cmd->midr);

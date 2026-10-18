@@ -24,18 +24,33 @@
  * opaque to the ioctl dispatcher and decoded by the registered
  * extension handler.
  *
- * There are two flavours of extension:
+ * There are three flavours of extension:
  *
  *   - "value-flavored": get/set a single u64 via ksu_extension_cmd.value.
- *     Suitable for sticky enable bits (KPM, DYNAMIC_MANAGER, ...).
+ *     Suitable for sticky enable bits (DYNAMIC_MANAGER).
  *
  *   - "io-flavored"   : the handler receives the raw user pointer
  *     (cmd.user_ptr) and payload, e.g. CPU spoof keeps its existing
- *     ksu_set_spoof_cpu_cmd shape and is just forwarded.
+ *     ksu_set_spoof_cpu_cmd shape and is just forwarded; KPM
+ *     forwards ksu_kpm_cmd; umount paths forward ksu_extension_umount_cmd.
+ *
+ *   - "io-only + get" : like KPM, supports a value GET to advertise
+ *     compile-time availability (e.g. CONFIG_KPM) but has no
+ *     runtime sticky SET. KSU_EXTENSION_SET returns -EOPNOTSUPP.
  *
  * Each handler advertises its flavour through the ksu_extension_handler
  * registration so userspace can probe it via KSU_EXTENSION_GET and read
  * cmd.supported.
+ *
+ * cmd.supported is a flag field; the only bits that are part of the
+ * UAPI are:
+ *   - bit 0: KSU_FEATURE_FLAG_SUPPORTED (defined in uapi/supercall.h)
+ *   - bit 7: KSU_EXTENSION_FLAG_FORCED
+ * All other bits are reserved and must be ignored by userspace. There
+ * is currently no per-extension "STICKY" bit: whether a given
+ * extension has a runtime sticky bit is determined by its flavour
+ * (see userspace/ksud/src/extension_id.rs::has_sticky_bit, which is
+ * the canonical Rust mirror of the kernel's handler table).
  */
 
 enum ksu_extension_id {
@@ -61,7 +76,7 @@ enum ksu_extension_id {
 struct ksu_extension_cmd {
     __u32 id;                  /* ksu_extension_id, in */
     __u32 op;                  /* KSU_EXTENSION_* in */
-    __u32 supported;           /* KSU_FEATURE_FLAG_SUPPORTED out */
+    __u32 supported;           /* bitfield, see flag defs above, out */
     __u32 reserved;
     __u64 value;               /* sticky state bit, in/out */
     __u64 user_ptr;            /* opaque user pointer, in (for KSU_EXTENSION_IO) */
@@ -91,14 +106,11 @@ static const __u32 KSU_IOCTL_EXTENSION =
     _IOC(_IOC_READ | _IOC_WRITE, 'K', 300, sizeof(struct ksu_extension_cmd));
 
 /*
- * force_extension=<id>:<value> boot-config encoding.
- *
- * <id>   = enum ksu_extension_id
- * <value>= decimal/hex u64 parsed by the bootloader
- *
- * Replayed on boot: value-flavoured handlers go through ops->set;
- * io-flavoured handlers go through handler->apply_forced. Both
- * entry points are kernel-side; no userspace pointer is fabricated.
+ * NOTE: the `force_extension=<id>:<value>` boot-config encoding is
+ * kernel-internal ABI between `force_extension_param_set()` and the
+ * per-handler `apply_forced` callback. It does NOT cross the
+ * user/kernel boundary on this code path. Its macros and full
+ * documentation live in kernel/extension/extension.h, not here.
  */
 
 #endif /* __KSU_UAPI_EXTENSION_H */

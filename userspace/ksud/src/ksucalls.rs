@@ -331,6 +331,11 @@ pub fn set_extension(extension_id: u32, value: u64) -> Result<()> {
         value,
         user_ptr: 0,
     };
+    // ksuctl already converts negative errno into a `bail!`, so any
+    // non-zero value here would be a positive "soft error" from the
+    // kernel's do_extension() return path. We treat those as failure
+    // to keep the API strict: callers can rely on Ok(()) == real
+    // success rather than "no -EINVAL returned".
     let ret = ksuctl(ksu_uapi::KSU_IOCTL_EXTENSION, &raw mut cmd)?;
     if ret != 0 {
         bail!("set_extension(id={extension_id}, value={value}) failed: {ret}");
@@ -348,6 +353,7 @@ pub fn wipe_extension(extension_id: u32) -> Result<()> {
         value: 0,
         user_ptr: 0,
     };
+    // See set_extension() for the rationale behind the non-zero check.
     let ret = ksuctl(ksu_uapi::KSU_IOCTL_EXTENSION, &raw mut cmd)?;
     if ret != 0 {
         bail!("wipe_extension(id={extension_id}) failed: {ret}");
@@ -355,10 +361,11 @@ pub fn wipe_extension(extension_id: u32) -> Result<()> {
     Ok(())
 }
 
-/// Forward a raw user payload to the extension's io op. The extension
-/// (chosen by `extension_id`) is responsible for decoding the buffer
-/// (e.g. `ksu_set_spoof_cpu_cmd`, `ksu_kpm_cmd`,
-/// `ksu_extension_umount_cmd`, `ksu_manager_cmd`).
+/// Forward a typed payload to the extension's io op. The payload type
+/// must match the layout the targeted extension expects; the four
+/// strongly-typed wrappers below (`kpm_io`, `umount_paths_io`,
+/// `spoof_cpu_io`, `dynamic_manager_io`) encode this constraint at the
+/// type level so the compiler catches mismatches.
 ///
 /// # Safety
 ///
@@ -375,6 +382,23 @@ pub unsafe fn extension_io<T>(extension_id: u32, payload: *mut T) -> Result<i32>
         user_ptr: payload as u64,
     };
     ksuctl(ksu_uapi::KSU_IOCTL_EXTENSION, &raw mut cmd)
+}
+
+#[allow(dead_code)]
+pub unsafe fn kpm_io(cmd: *mut ksu_uapi::ksu_kpm_cmd) -> Result<i32> {
+    unsafe { extension_io(ExtensionId::Kpm as u32, cmd) }
+}
+
+pub unsafe fn umount_paths_io(cmd: *mut ksu_uapi::ksu_extension_umount_cmd) -> Result<i32> {
+    unsafe { extension_io(ExtensionId::UmountPaths as u32, cmd) }
+}
+
+pub unsafe fn spoof_cpu_io(cmd: *mut ksu_uapi::ksu_set_spoof_cpu_cmd) -> Result<i32> {
+    unsafe { extension_io(ExtensionId::CpuSpoof as u32, cmd) }
+}
+
+pub unsafe fn dynamic_manager_io(cmd: *mut ksu_uapi::ksu_manager_cmd) -> Result<i32> {
+    unsafe { extension_io(ExtensionId::DynamicManager as u32, cmd) }
 }
 
 pub fn get_wrapped_fd(fd: RawFd) -> Result<RawFd> {
@@ -469,7 +493,7 @@ pub fn umount_list_add(path: &str, flags: u32) -> anyhow::Result<()> {
     hdr.payload.add.flags = flags;
     hdr.payload.add.mode = ksu_uapi::KSU_UMOUNT_ADD;
     unsafe {
-        extension_io(ExtensionId::UmountPaths as u32, &raw mut hdr)?;
+        umount_paths_io(&raw mut hdr)?;
     }
     Ok(())
 }
@@ -483,7 +507,7 @@ pub fn umount_list_del(path: &str) -> anyhow::Result<()> {
     hdr.payload.add.flags = 0;
     hdr.payload.add.mode = ksu_uapi::KSU_UMOUNT_DEL;
     unsafe {
-        extension_io(ExtensionId::UmountPaths as u32, &raw mut hdr)?;
+        umount_paths_io(&raw mut hdr)?;
     }
     Ok(())
 }
@@ -542,7 +566,7 @@ pub fn umount_list_list() -> anyhow::Result<String> {
     hdr.payload.list.arg = buffer.as_mut_ptr() as u64;
     hdr.payload.list.buf_size = BUF_SIZE as u32;
     unsafe {
-        extension_io(ExtensionId::UmountPaths as u32, &raw mut hdr)?;
+        umount_paths_io(&raw mut hdr)?;
     }
     let len = buffer.iter().position(|&b| b == 0).unwrap_or(BUF_SIZE);
     Ok(String::from_utf8_lossy(&buffer[..len]).to_string())
@@ -581,7 +605,7 @@ pub fn set_spoof_cpu(
         hwcap2,
     };
     unsafe {
-        extension_io(ExtensionId::CpuSpoof as u32, &raw mut cmd)?;
+        spoof_cpu_io(&raw mut cmd)?;
     }
     Ok(())
 }

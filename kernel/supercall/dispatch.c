@@ -763,7 +763,10 @@ static int do_get_hook_type(void __user *arg)
  *   SET  -> value-flavoured: forwards to ops->set.
  *           io-flavoured:    -EOPNOTSUPP (no sticky bit).
  *           While a force_extension=<id> is in effect, all SETs
- *           return -EPERM until reboot.
+ *           return -EPERM until reboot. On success, the post-set
+ *           state (supported / forced flag / current value) is
+ *           written back to *arg so userspace can confirm the write
+ *           without an extra GET round-trip.
  *   IO   -> forwards cmd.user_ptr to the registered io_handler.
  *   WIPE -> handler->wipe (kernel-side). Today only umount_paths
  *           registers one; other handlers return -EOPNOTSUPP. Wipe
@@ -795,6 +798,26 @@ static int do_extension(void __user *arg)
         ret = ksu_extension_set(extension_id, cmd.value);
         if (ret)
             return ret;
+        /*
+         * Round-trip the post-set state to userspace. The cmd.supported
+         * field is documented as out, and a manager that just wrote
+         * `value=1` wants to see "supported, FORCED if applicable"
+         * come back rather than zeroed bytes. Failure to copy_to_user
+         * is non-fatal here (the write itself succeeded) but reported
+         * as -EFAULT so the caller can retry.
+         */
+        {
+            u64 value = 0;
+            bool supported = false;
+
+            (void)ksu_extension_get(extension_id, &value, &supported);
+            cmd.supported = supported ? KSU_FEATURE_FLAG_SUPPORTED : 0;
+            if (ksu_extension_is_forced(extension_id))
+                cmd.supported |= KSU_EXTENSION_FLAG_FORCED;
+            cmd.value = value;
+            if (copy_to_user(arg, &cmd, sizeof(cmd)))
+                return -EFAULT;
+        }
         return 0;
     }
 
@@ -803,6 +826,8 @@ static int do_extension(void __user *arg)
         bool supported = false;
 
         ret = ksu_extension_get(extension_id, &value, &supported);
+        if (ret)
+            return ret;
         if (!supported)
             return -EOPNOTSUPP;
         cmd.value = value;
@@ -811,7 +836,7 @@ static int do_extension(void __user *arg)
             cmd.supported |= KSU_EXTENSION_FLAG_FORCED;
         if (copy_to_user(arg, &cmd, sizeof(cmd)))
             return -EFAULT;
-        return ret;
+        return 0;
     }
 }
 
