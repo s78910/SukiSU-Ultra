@@ -5,25 +5,29 @@
 #include <linux/types.h>
 #include <linux/mutex.h>
 #include <linux/errno.h>
+
 #include "uapi/extension.h"
 
 /*
- * An extension is a KernelSU subsystem that has a richer UI than a single
- * bit. Each subsystem registers a handler; the kernel keeps a table indexed
- * by extension_id. A single ioctl (KSU_IOCTL_EXTENSION) dispatches into
- * this table.
+ * An extension is a KernelSU subsystem richer than a single bit. Each
+ * registers a handler; the kernel keeps a table indexed by extension_id,
+ * dispatched through KSU_IOCTL_EXTENSION.
  *
- * Two kind of handlers exist:
+ * Two flavours:
+ *   - value: sticky enable bit via get/set ops. KPM, DYNAMIC_MANAGER.
+ *   - io   : raw user pointer forwarded to io_handler. CPU_SPOOF,
+ *            UMOUNT_PATHS.
  *
- *   - "value" : sticky enable bit. Caller passes a struct
- *               ksu_extension_value_cmd. The handler may simply set/get a
- *               bit. This is what KPM, DYNAMIC_MANAGER and UMOUNT_PATHS
- *               use to advertise whether the subsystem is enabled.
+ * Forced-by-config (force_extension=<id>:<value>) is replayed on every
+ * boot: value-flavoured handlers go through ops->set; io-flavoured
+ * handlers go through apply_forced. A handler with neither refuses to
+ * be forced (warning + clear pending) — this is a deliberate refusal,
+ * not a bug. The old io_handler(id, NULL) fallback was unsafe
+ * (subsystem-dependent NULL semantics) and is no longer used.
  *
- *   - "io"    : the handler receives the raw user pointer and is free
- *               to copy_from_user() / copy_to_user() however it pleases.
- *               CPU spoof keeps its existing ksu_set_spoof_cpu_cmd shape
- *               via this path.
+ * Wipe (KSU_EXTENSION_WIPE) goes through handler->wipe, a
+ * kernel-side callback. A handler with no wipe returns -EOPNOTSUPP.
+ * Wipe is independent of apply_forced.
  */
 
 struct ksu_extension_handler;
@@ -47,6 +51,23 @@ struct ksu_extension_handler_ops {
  */
 typedef int (*ksu_extension_io_fn)(u32 extension_id, void __user *arg);
 
+/*
+ * Forced-by-config callback. Invoked by ksu_extension_apply_forced()
+ * to apply a saved value to an io-flavoured handler on every boot.
+ *
+ * Kernel-side entry point: the value is forced_values[id] (raw u64,
+ * never a userspace pointer). No access_ok, no copy_from_user.
+ * io_handler() is strictly a userspace entry point and must not
+ * branch on "this is a forced sentinel".
+ */
+typedef void (*ksu_extension_apply_forced_fn)(u32 extension_id, u64 value);
+
+/*
+ * Wipe callback. Invoked by ksu_extension_wipe() to clear an
+ * extension's runtime state. Kernel-side; no userspace pointer.
+ */
+typedef int (*ksu_extension_wipe_fn)(u32 extension_id);
+
 struct ksu_extension_handler {
     u32 extension_id;
     const char *name;
@@ -54,6 +75,10 @@ struct ksu_extension_handler {
     const struct ksu_extension_handler_ops *ops;
     /* optional, used by io-flavoured extensions */
     ksu_extension_io_fn io_handler;
+    /* optional, used by io-flavoured extensions to apply a forced value */
+    ksu_extension_apply_forced_fn apply_forced;
+    /* optional, used to clear runtime state on KSU_EXTENSION_WIPE */
+    ksu_extension_wipe_fn wipe;
 };
 
 int ksu_register_extension_handler(const struct ksu_extension_handler *handler);

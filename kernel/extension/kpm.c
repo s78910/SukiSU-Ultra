@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * KPM extension wiring.
+ * KPM extension wiring. Connects KSU_EXTENSION_KPM to the KPM
+ * control surface (kernel/extension/kpm/kpm.c).
  *
- * Connects KSU_EXTENSION_KPM to the actual KPM control surface
- * (kernel/extension/kpm/kpm.c). The sticky-state get/set only flips a
- * soft "KPM has been initialized" bit; KPM is always-on-or-off via the
- * kernel's CONFIG_KPM, so the set handler is largely a no-op. The io
- * handler forwards a struct ksu_kpm_cmd to do_kpm() in the KPM subsys.
+ * Sticky get: CONFIG_KPM -> 1, else 0. No sticky set; userspace
+ * KSU_EXTENSION_SET returns -EOPNOTSUPP.
+ *
+ * Forced-by-config goes through handler->apply_forced. The u64 is
+ * decoded as (sub-op, arg) where sub-op = (u32)(value & 0xffffffff)
+ * and arg = (u32)(value >> 32). SUKISU_KPM_VERSION is a no-op probe;
+ * any other sub-op is a no-op + warning. The forced-pending bit is
+ * cleared in both cases because the value has been consumed.
+ *
+ * The userspace ioctl entry point (ksu_extension_kpm_io) is unchanged.
  */
 #include <linux/errno.h>
 #include <linux/kernel.h>
@@ -27,24 +33,8 @@ int ksu_extension_kpm_get(u32 id, u64 *value)
     return 0;
 }
 
-int ksu_extension_kpm_set(u32 id, u64 value)
-{
-#ifdef CONFIG_KPM
-    pr_info("extension/kpm: set=%llu ignored, KPM is always enabled at runtime\n",
-            value);
-    return 0;
-#else
-    if (value) {
-        pr_warn("extension/kpm: cannot enable KPM at runtime, kernel was built without it\n");
-        return -EOPNOTSUPP;
-    }
-    return 0;
-#endif
-}
-
 const struct ksu_extension_handler_ops ksu_extension_kpm_ops = {
     .get = ksu_extension_kpm_get,
-    .set = ksu_extension_kpm_set,
 };
 
 int ksu_extension_kpm_io(u32 id, void __user *raw)
@@ -55,4 +45,23 @@ int ksu_extension_kpm_io(u32 id, void __user *raw)
     (void)raw;
     return -EOPNOTSUPP;
 #endif
+}
+
+void ksu_extension_kpm_apply_forced(u32 id, u64 value)
+{
+    u32 op = (u32)(value & 0xffffffffu);
+    u32 arg = (u32)(value >> 32);
+
+    switch (op) {
+    case SUKISU_KPM_VERSION:
+#ifdef CONFIG_KPM
+        pr_info("extension/kpm: forced VERSION probe, KPM is built in (arg=%u)\n", arg);
+#else
+        pr_warn("extension/kpm: forced VERSION probe, KPM is *not* built in (arg=%u)\n", arg);
+#endif
+        return;
+    default:
+        pr_warn("extension/kpm: forced op=%u arg=%u not honoured\n", op, arg);
+        return;
+    }
 }

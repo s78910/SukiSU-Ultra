@@ -24,40 +24,40 @@
 
 #include "klog.h" // IWYU pragma: keep
 
-/* Mount table previously owned by feature/kernel_umount.{c,h}. */
 struct list_head mount_list = LIST_HEAD_INIT(mount_list);
 DECLARE_RWSEM(mount_list_lock);
+
+/* Mount table previously owned by feature/kernel_umount.{c,h}. */
 
 /*
  * The legacy add/del/wipe handling lived inline in supercall/dispatch.c.
  * We hoist it here so that KSU_IOCTL_EXTENSION is the only entry point.
  */
+static void do_wipe_umount_local(void)
+{
+    struct mount_entry *entry, *tmp;
+
+    down_write(&mount_list_lock);
+    list_for_each_entry_safe (entry, tmp, &mount_list, list) {
+        list_del(&entry->list);
+        kfree(entry->umountable);
+        kfree(entry);
+    }
+    up_write(&mount_list_lock);
+}
+
 static int do_add_try_umount_local(void __user *arg)
 {
     struct ksu_add_try_umount_cmd cmd;
     struct mount_entry *new_entry, *entry, *tmp;
     char buf[256] = { 0 };
 
-    /*
-     * NULL arg from KSU_EXTENSION_WIPE — caller wants to drop the whole
-     * table without supplying a struct.
-     */
-    if (!arg)
-        goto wipe;
-
     if (copy_from_user(&cmd, arg, sizeof(cmd)))
         return -EFAULT;
 
     switch (cmd.mode) {
     case KSU_UMOUNT_WIPE:
-wipe:
-        down_write(&mount_list_lock);
-        list_for_each_entry_safe (entry, tmp, &mount_list, list) {
-            list_del(&entry->list);
-            kfree(entry->umountable);
-            kfree(entry);
-        }
-        up_write(&mount_list_lock);
+        do_wipe_umount_local();
         return 0;
 
     case KSU_UMOUNT_ADD: {
@@ -192,11 +192,10 @@ int ksu_extension_umount_paths_io(u32 id, void __user *raw)
 {
     struct ksu_extension_umount_cmd hdr;
 
-    /*
-     * NULL user pointer means "wipe" (called by KSU_EXTENSION_WIPE op).
-     */
+    /* io_handler must see a real user pointer. Wipe has its own
+     * callback (ksu_extension_umount_paths_wipe). */
     if (!raw)
-        return do_add_try_umount_local((void __user *)NULL);
+        return -EFAULT;
 
     if (copy_from_user(&hdr, raw, sizeof(hdr)))
         return -EFAULT;
@@ -211,6 +210,12 @@ int ksu_extension_umount_paths_io(u32 id, void __user *raw)
     default:
         return -EINVAL;
     }
+}
+
+int ksu_extension_umount_paths_wipe(u32 id)
+{
+    do_wipe_umount_local();
+    return 0;
 }
 
 #undef EXT_UMOUNT_MAX_SIZE

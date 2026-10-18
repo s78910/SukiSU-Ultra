@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * CPU spoof extension implementation.
+ * CPU spoof extension. io-only: ops = NULL, no sticky enable bit.
  *
- * This file consolidates what used to live in:
- *   - kernel/feature/cpu_spoof.c (the per-CPU MIDR/lpj/hwcap rewrite)
- *   - the ioctl dispatcher in kernel/supercall/dispatch.c (do_set_spoof_cpu)
+ * GET  -> supported=true, value=0 (handler presence is the signal).
+ * SET  -> -EOPNOTSUPP (no sticky bit).
+ * IO   -> MIDR/lpj/hwcap/vDSO rewrite via userspace ksu_set_spoof_cpu_cmd.
  *
- * The sticky-state get/set only flips an "armed" bit. The actual
- * per-CPU MIDR / lpj / hwcap rewrite happens when an io op carries a
- * struct ksu_set_spoof_cpu_cmd copied from userspace.
+ * Forced-by-config is not wired: a force_extension=cpu_spoof:N entry
+ * is rejected with a dmesg warning and clears the forced-pending bit.
+ * The default force semantics are not obvious (per-device MIDR).
  */
 #include <linux/kernel.h>
 #include <linux/types.h>

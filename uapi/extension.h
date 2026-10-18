@@ -90,4 +90,15 @@ struct ksu_extension_umount_cmd {
 static const __u32 KSU_IOCTL_EXTENSION =
     _IOC(_IOC_READ | _IOC_WRITE, 'K', 300, sizeof(struct ksu_extension_cmd));
 
+/*
+ * force_extension=<id>:<value> boot-config encoding.
+ *
+ * <id>   = enum ksu_extension_id
+ * <value>= decimal/hex u64 parsed by the bootloader
+ *
+ * Replayed on boot: value-flavoured handlers go through ops->set;
+ * io-flavoured handlers go through handler->apply_forced. Both
+ * entry points are kernel-side; no userspace pointer is fabricated.
+ */
+
 #endif /* __KSU_UAPI_EXTENSION_H */

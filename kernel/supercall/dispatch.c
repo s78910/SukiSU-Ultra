@@ -755,25 +755,19 @@ static int do_get_hook_type(void __user *arg)
     return 0;
 }
 
-// 102. ENABLE_KPM was relocated to kernel/extension/kpm.c and is reached
-// via KSU_IOCTL_EXTENSION with extension_id=KSU_EXTENSION_KPM and
-// io sub-code KPM_GET. The legacy KSU_IOCTL_ENABLE_KPM number is no
-// longer wired; callers must update.
-
 /*
- * Single entry point for the four extensions: KPM, CPU spoof, umount paths,
- * dynamic manager. Userspace fills struct ksu_extension_cmd with
- * extension_id, and either:
- *   - non-zero .user  -> forward payload to the registered io_handler
- *   - non-zero .value -> toggle the sticky enable bit (GET returns 0/value)
- *
- * Layout (matching uapi/extension.h):
- *   u32 id
- *   u32 op
- *   u32 supported
- *   u32 reserved
- *   u64 value
- *   u64 user_ptr
+ * Single entry point for the four extensions. Userspace fills
+ * struct ksu_extension_cmd with an extension_id and one of:
+ *   GET  -> returns supported/value. value=0 and supported=true
+ *           for io-only handlers (handler presence is the signal).
+ *   SET  -> value-flavoured: forwards to ops->set.
+ *           io-flavoured:    -EOPNOTSUPP (no sticky bit).
+ *           While a force_extension=<id> is in effect, all SETs
+ *           return -EPERM until reboot.
+ *   IO   -> forwards cmd.user_ptr to the registered io_handler.
+ *   WIPE -> handler->wipe (kernel-side). Today only umount_paths
+ *           registers one; other handlers return -EOPNOTSUPP. Wipe
+ *           does not go through io_handler.
  */
 static int do_extension(void __user *arg)
 {
@@ -797,12 +791,11 @@ static int do_extension(void __user *arg)
     if (cmd.op == KSU_EXTENSION_WIPE)
         return ksu_extension_wipe(extension_id);
 
-    /* op == SET -> sticky-bit toggle */
     if (cmd.op == KSU_EXTENSION_SET) {
         ret = ksu_extension_set(extension_id, cmd.value);
-        if (ret == 0)
-            return 0;
-        /* fall through to GET on error */
+        if (ret)
+            return ret;
+        return 0;
     }
 
     {

@@ -215,6 +215,9 @@ int ksu_extension_set(u32 extension_id, u64 value)
     if (extension_id >= KSU_EXTENSION_MAX)
         return -EINVAL;
 
+    /* Forced extensions are locked for the lifetime of the boot.
+     * Replay is done in ksu_extension_apply_forced(); userspace
+     * SETs are refused until reboot clears forced_mask. */
     if (test_bit(extension_id, forced_mask)) {
         pr_warn("extension: extension %u is forced by boot config\n",
                 extension_id);
@@ -271,16 +274,11 @@ int ksu_extension_wipe(u32 extension_id)
 
     mutex_lock(&extension_mutex);
     handler = extension_handlers[extension_id];
-    if (!handler || !handler->io_handler) {
+    if (!handler || !handler->wipe) {
         ret = -EOPNOTSUPP;
         goto out;
     }
-    /*
-     * Re-use the io_handler with a NULL user pointer. Subsystems that
-     * support a "wipe" semantics interpret the NULL pointer as "drop
-     * all entries" (umount paths), while others return -EOPNOTSUPP.
-     */
-    ret = handler->io_handler(extension_id, NULL);
+    ret = handler->wipe(extension_id);
 out:
     mutex_unlock(&extension_mutex);
     return ret;
@@ -299,20 +297,26 @@ void ksu_extension_apply_forced(void)
         if (!handler)
             continue;
 
-        /*
-         * Forced-by-config takes precedence: prefer the set op when
-         * present (value-flavoured), otherwise pass-through to the
-         * io_handler with the saved bit as a u64.
-         */
+        /* Dispatch order is fixed:
+         *   1. ops->set      — value-flavoured handlers, replay the
+         *                       raw u64 forced_values[id].
+         *   2. apply_forced  — io-flavoured handlers, kernel-side
+         *                       callback that receives the raw u64.
+         *                       No user pointer is fabricated.
+         *   3. neither       — log and clear forced_pending. The
+         *                       old io_handler(id, NULL) fallback
+         *                       was unsafe (NULL is WIPE for
+         *                       umount_paths, EFAULT for others)
+         *                       and is no longer used here. */
         if (handler->ops && handler->ops->set) {
             ret = handler->ops->set(id, forced_values[id]);
-        } else if (handler->io_handler) {
-            ret = handler->io_handler(id, (void __user *)(uintptr_t)0);
-            /* io-flavored extensions don't always accept a value-set;
-             * any sentinel or EOPNOTSUPP is acceptable here. */
-            if (ret == -EOPNOTSUPP)
-                ret = 0;
+        } else if (handler->apply_forced) {
+            handler->apply_forced(id, forced_values[id]);
+            ret = 0;
         } else {
+            pr_warn("extension: force_extension=%s=%llu ignored: handler has no apply_forced and no ops->set\n",
+                    extension_names[id], forced_values[id]);
+            clear_bit(id, forced_pending);
             continue;
         }
 
@@ -346,11 +350,18 @@ void __init ksu_extension_init(void)
  */
 void __init ksu_extension_register_all(void)
 {
+    /* KPM exposes .get (so KSU_EXTENSION_GET reports CONFIG_KPM)
+     * but no .set. Forced-by-config is applied through
+     * ksu_extension_kpm_apply_forced, a kernel-side callback that
+     * receives the raw forced_values[id] u64 and never a userspace
+     * pointer. The userspace ioctl entry point (ksu_extension_kpm_io)
+     * sees only real user addresses and forwards them to do_kpm(). */
     static const struct ksu_extension_handler kpm_handler = {
         .extension_id = KSU_EXTENSION_KPM,
         .name = "kpm",
         .ops = &ksu_extension_kpm_ops,
         .io_handler = ksu_extension_kpm_io,
+        .apply_forced = ksu_extension_kpm_apply_forced,
     };
     static const struct ksu_extension_handler cpu_spoof_handler = {
         .extension_id = KSU_EXTENSION_CPU_SPOOF,
@@ -363,6 +374,7 @@ void __init ksu_extension_register_all(void)
         .name = "umount_paths",
         .ops = NULL,
         .io_handler = ksu_extension_umount_paths_io,
+        .wipe = ksu_extension_umount_paths_wipe,
     };
     static const struct ksu_extension_handler dynamic_manager_handler = {
         .extension_id = KSU_EXTENSION_DYNAMIC_MANAGER,

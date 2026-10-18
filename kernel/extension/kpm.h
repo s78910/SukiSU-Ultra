@@ -11,8 +11,8 @@
  * unconditionally so extension/extension.c can reference the symbols
  * regardless of CONFIG_KPM. */
 int ksu_extension_kpm_get(u32 id, u64 *value);
-int ksu_extension_kpm_set(u32 id, u64 value);
 int ksu_extension_kpm_io(u32 id, void __user *raw);
+void ksu_extension_kpm_apply_forced(u32 id, u64 value);
 
 extern const struct ksu_extension_handler_ops ksu_extension_kpm_ops;
 
