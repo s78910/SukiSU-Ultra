@@ -12,7 +12,6 @@
 #include "policy/feature.h"
 #include "klog.h" // IWYU pragma: keep
 #include "manager/manager_observer.h"
-#include "extension/dynamic_manager.h"
 #include "manager/throne_tracker.h"
 #include "hook/syscall_hook_manager.h"
 #include "hook/lsm_hook.h"
@@ -32,10 +31,6 @@
 #include "infra/symbol_resolver.h"
 #include "preinit/preinit.h"
 #include "extension/extension.h"
-#include "extension/kpm/kpm.h"
-#include "extension/cpu_spoof.h"
-#include "extension/umount_paths.h"
-#include "extension/dynamic_manager.h"
 
 #if defined(__x86_64__) && !defined(CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER)
 #include <asm/cpufeature.h>

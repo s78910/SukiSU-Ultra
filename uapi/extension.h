@@ -82,6 +82,36 @@ struct ksu_extension_cmd {
     __u64 user_ptr;            /* opaque user pointer, in (for KSU_EXTENSION_IO) */
 };
 
+// 0. KPM
+static const __u32 SUKISU_KPM_LOAD = 1;
+static const __u32 SUKISU_KPM_UNLOAD = 2;
+static const __u32 SUKISU_KPM_NUM = 3;
+static const __u32 SUKISU_KPM_LIST = 4;
+static const __u32 SUKISU_KPM_INFO = 5;
+static const __u32 SUKISU_KPM_CONTROL = 6;
+static const __u32 SUKISU_KPM_VERSION = 7;
+
+struct ksu_kpm_cmd {
+    __aligned_u64 control_code;
+    __aligned_u64 arg1;
+    __aligned_u64 arg2;
+    __aligned_u64 result_code;
+};
+
+// 1. CPU_SPOOF
+struct ksu_set_spoof_cpu_cmd {
+    __u32 cpu_index;  /* Target processor core index */
+    __u32 midr;       /* Main ID Register payload */
+    __u32 bogomips;   /* BogoMIPS performance timing metric */
+    __u64 hwcap;      /* Main ELF Hardware Capabilities mask */
+    __u64 hwcap2;     /* Auxiliary ELF Hardware Capabilities mask */
+};
+// 2. UMOUNT_PATHS
+struct ksu_list_try_umount_cmd {
+    __aligned_u64 arg; // User buffer
+    __u32 buf_size; // Buffer size provided by userspace
+};
+
 /*
  * Umount paths extension io payload. A small header is followed by the
  * legacy ksu_add_try_umount_cmd or ksu_list_try_umount_cmd payload.

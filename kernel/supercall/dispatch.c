@@ -30,6 +30,7 @@
 #include "preinit/preinit.h"
 #include "feature/uts_spoof.h"
 #include "extension/extension.h"
+#include "extension/umount_paths.h"
 
 static int do_grant_root(void __user *arg)
 {
@@ -962,6 +963,12 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
         .cmd = KSU_IOCTL_NUKE_EXT4_SYSFS,
         .name = "NUKE_EXT4_SYSFS",
         .handler = do_nuke_ext4_sysfs,
+        .perm_check = manager_or_root
+    },
+    {
+        .cmd = KSU_IOCTL_ADD_TRY_UMOUNT,
+        .name = "ADD_TRY_UMOUNT",
+        .handler = add_try_umount,
         .perm_check = manager_or_root
     },
     {
