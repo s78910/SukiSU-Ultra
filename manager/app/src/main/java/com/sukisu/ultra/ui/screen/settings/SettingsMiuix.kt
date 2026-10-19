@@ -33,7 +33,6 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.material.icons.rounded.VerifiedUser
@@ -79,7 +78,6 @@ fun SettingPagerMiuix(
     uiState: SettingsUiState,
     actions: SettingsScreenActions,
     bottomInnerPadding: Dp,
-    isSusfsSupported: Boolean
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val enableBlur = LocalEnableBlur.current
@@ -281,33 +279,6 @@ fun SettingPagerMiuix(
                                     actions.onOpenTools()
                                 }
                             )
-                        }
-                    }
-
-                    KsuIsValid {
-                        if (isSusfsSupported) {
-                            Card(
-                                modifier = Modifier
-                                    .padding(top = 12.dp)
-                                    .fillMaxWidth(),
-                            ) {
-                                val susfsTitle = stringResource(id = R.string.susfs_config_title)
-                                ArrowPreference(
-                                    title = susfsTitle,
-                                    summary = stringResource(id = R.string.susfs_config_summary),
-                                    startAction = {
-                                        Icon(
-                                            Icons.Rounded.Settings,
-                                            modifier = Modifier.padding(end = 6.dp),
-                                            contentDescription = susfsTitle,
-                                            tint = colorScheme.onBackground
-                                        )
-                                    },
-                                    onClick = {
-                                        actions.onOpenSusfsConfig()
-                                    }
-                                )
-                            }
                         }
                     }
 

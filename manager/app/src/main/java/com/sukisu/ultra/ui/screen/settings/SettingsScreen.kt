@@ -27,7 +27,6 @@ fun SettingPager(
     val context = LocalContext.current
     val viewModel = viewModel<SettingsViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isSusfsSupported = getSuSFSStatus().equals("true", ignoreCase = true)
     val latestIsCurrentPage by rememberUpdatedState(isCurrentPage)
     val initialResumeHandled = rememberSaveable { mutableStateOf(false) }
 
@@ -77,13 +76,11 @@ fun SettingPager(
             uiState = uiState,
             actions = actions,
             bottomInnerPadding = bottomInnerPadding,
-            isSusfsSupported = isSusfsSupported
         )
         UiMode.Material -> SettingPagerMaterial(
             uiState = uiState,
             actions = actions,
             bottomInnerPadding = bottomInnerPadding,
-            isSusfsSupported = isSusfsSupported
         )
     }
 }

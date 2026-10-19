@@ -731,6 +731,8 @@
     <string name="extension_umount_paths_summary">Manage the list of mount points the kernel will umount when an app starts.</string>
     <string name="extension_dynamic_manager_title">Dynamic manager</string>
     <string name="extension_dynamic_manager_summary">Allow more than one app to act as the KernelSU manager, authenticated by signing certificate.</string>
+    <string name="extension_susfs_title">SuSFS</string>
+    <string name="extension_susfs_summary">Configure hide-mount, spoof uname, redirect-open, kstat and other low-level kernel tricks. Requires the SuSFS kernel module to be installed.</string>
     <string name="extension_open_details">Open details</string>
 
     <!-- Empty state shown when no extension state has been observed
