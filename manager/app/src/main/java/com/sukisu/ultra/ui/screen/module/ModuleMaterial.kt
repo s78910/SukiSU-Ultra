@@ -143,6 +143,7 @@ import com.sukisu.ultra.ui.component.material.TonalCard
 import com.sukisu.ultra.ui.component.statustag.StatusTag
 import com.sukisu.ultra.ui.theme.LocalModuleDescriptionMaxLines
 import com.sukisu.ultra.ui.util.reboot
+import top.yukonga.miuix.kmp.nav.gesture.WindowNavigationEventBridge
 
 @SuppressLint("StringFormatInvalid")
 @Composable
@@ -579,6 +580,7 @@ private fun ModuleShortcutSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
     ) {
+        WindowNavigationEventBridge()
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
