@@ -15,7 +15,9 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.dialog.ConfirmResult
 import com.sukisu.ultra.ui.component.dialog.rememberConfirmDialog
 import com.sukisu.ultra.ui.screen.flash.FlashIt
+import com.sukisu.ultra.ui.screen.scriptrun.ScriptRunArg
 import com.sukisu.ultra.ui.util.getFileName
+import com.sukisu.ultra.data.script.ScriptRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -173,6 +175,18 @@ private suspend fun handleConfirmed(
 
     val cachedUris = withContext(Dispatchers.IO) {
         moduleUris.mapNotNull { copyUriToCache(context, it) }
+    }
+
+    if (cachedUris.size == 1) {
+        val script = ScriptRepository.peekOneshot(cachedUris.single())
+        if (script != null) {
+            navigator.push(
+                Route.ScriptRun(
+                    ScriptRunArg(cachedUris.single(), offerInstall = true, displayName = script.name)
+                )
+            )
+            return
+        }
     }
 
     if (cachedUris.isNotEmpty()) {
