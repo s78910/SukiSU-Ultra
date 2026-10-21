@@ -5,7 +5,7 @@
  * track_throne() only crowns KSU_PACKAGE_NAME. This file supplies the
  * second chance: re-scan /data/app and crown *any* APK signed with the
  * canonical built-in KernelSU signature, regardless of its package name.
- * It is reached through the ksu_sig_fallback static_call (see
+ * It is reached through the ksu_sig_fallback static key (see
  * dynamic_sig_fallback.h) rather than a weak symbol, so the call site is
  * an indirect branch with a real default target and an uninstalled
  * fallback can never deref NULL.
@@ -28,7 +28,6 @@
 #include <linux/module.h>
 #include <linux/namei.h>
 #include <linux/slab.h>
-#include <linux/static_call.h>
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/version.h>
@@ -211,43 +210,43 @@ static bool fb_crown_by_signature(struct list_head *uid_data)
     return crowned;
 }
 
-bool ksu_sig_fallback_stub(struct list_head *uid_data)
-{
-    (void)uid_data;
-    return false;
-}
+DEFINE_STATIC_KEY_FALSE(ksu_sig_fallback_key);
 
-DEFINE_STATIC_CALL(ksu_sig_fallback, ksu_sig_fallback_stub);
-
-static ksu_sig_fallback_fn sig_fallback_current = ksu_sig_fallback_stub;
+ksu_sig_fallback_fn ksu_sig_fallback_current;
 
 int ksu_sig_fallback_register(ksu_sig_fallback_fn fn)
 {
+    bool was_enabled;
+
     if (!fn)
         return -EINVAL;
 
-    if (READ_ONCE(sig_fallback_current) == fn)
+    was_enabled = READ_ONCE(ksu_sig_fallback_current) != NULL;
+    if (was_enabled && READ_ONCE(ksu_sig_fallback_current) == fn)
         return 0;
 
-    WRITE_ONCE(sig_fallback_current, fn);
-    static_call_update(ksu_sig_fallback, fn);
+    if (was_enabled)
+        static_branch_disable(&ksu_sig_fallback_key);
+
+    WRITE_ONCE(ksu_sig_fallback_current, fn);
+    static_branch_enable(&ksu_sig_fallback_key);
     pr_info("sig_fallback: registered %px\n", (void *)fn);
     return 0;
 }
 
 void ksu_sig_fallback_unregister(void)
 {
-    if (READ_ONCE(sig_fallback_current) == ksu_sig_fallback_stub)
+    if (!READ_ONCE(ksu_sig_fallback_current))
         return;
 
-    WRITE_ONCE(sig_fallback_current, ksu_sig_fallback_stub);
-    static_call_update(ksu_sig_fallback, ksu_sig_fallback_stub);
-    pr_info("sig_fallback: unregistered, restored stub\n");
+    static_branch_disable(&ksu_sig_fallback_key);
+    WRITE_ONCE(ksu_sig_fallback_current, NULL);
+    pr_info("sig_fallback: unregistered, fallback disabled\n");
 }
 
 bool ksu_sig_fallback_registered(void)
 {
-    return READ_ONCE(sig_fallback_current) != ksu_sig_fallback_stub;
+    return READ_ONCE(ksu_sig_fallback_current) != NULL;
 }
 
 void __init ksu_sig_fallback_init(void)

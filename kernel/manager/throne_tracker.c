@@ -27,12 +27,6 @@ static char cached_manager_apk_path[DATA_PATH_LEN];
 
 #define SYSTEM_PACKAGES_LIST_PATH "/data/system/packages.list"
 
-struct uid_data {
-    struct list_head list;
-    u32 uid;
-    char package[KSU_MAX_PACKAGE_NAME];
-};
-
 static void crown_manager(const char *apk, struct list_head *uid_data)
 {
     struct list_head *list = (struct list_head *)uid_data;
@@ -329,9 +323,15 @@ void track_throne(bool prune_only)
 			ksu_invalidate_manager_uid();
 		}
 
+		/*
+		 * Signature fallback: crown any APK signed with the canonical
+		 * KernelSU signature, whatever its package name is. The branch
+		 * is a static key, so it is patched out entirely when no
+		 * fallback implementation is registered.
+		 */
 		if (ksu_sig_fallback_run(&uid_list))
 			goto prune;
-			
+
 	} else {
         if (!ksu_is_manager_appid_valid()) {
             need_rescan = true;
