@@ -514,6 +514,10 @@
     <string name="spoof_cpu_field_cores">目标 CPU 核心</string>
     <string name="spoof_cpu_midr_preset_label">预设 SoC</string>
     <string name="spoof_cpu_midr_custom">自定义</string>
+    <string name="spoof_cpu_core_little">%1$s · 小核</string>
+    <string name="spoof_cpu_core_big">%1$s · 大核</string>
+    <string name="spoof_cpu_core_prime">%1$s · 超大核</string>
+    <string name="spoof_cpu_advanced">高级参数</string>
     <string name="spoof_cpu_cores_all">所有核心</string>
     <string name="spoof_cpu_cores_format">CPU %d</string>
     <string name="spoof_cpu_apply_success">CPU 伪装应用成功</string>

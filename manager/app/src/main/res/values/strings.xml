@@ -517,6 +517,10 @@
     <string name="spoof_cpu_field_cores">Target CPU cores</string>
     <string name="spoof_cpu_midr_preset_label">Preset SoC</string>
     <string name="spoof_cpu_midr_custom">Custom</string>
+    <string name="spoof_cpu_core_little">%1$s · little core</string>
+    <string name="spoof_cpu_core_big">%1$s · big core</string>
+    <string name="spoof_cpu_core_prime">%1$s · prime core</string>
+    <string name="spoof_cpu_advanced">Advanced parameters</string>
     <string name="spoof_cpu_cores_all">All cores</string>
     <string name="spoof_cpu_cores_format">CPU %d</string>
     <string name="spoof_cpu_apply_success">CPU spoofing applied successfully</string>

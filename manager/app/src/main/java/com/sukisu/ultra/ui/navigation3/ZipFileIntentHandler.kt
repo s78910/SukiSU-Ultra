@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,13 +25,20 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.zip.ZipInputStream
 
+private const val TAG = "ZipFileIntentHandler"
+private val ZIP_MIME_TYPES = setOf(
+    "application/zip",
+    "application/x-zip",
+    "application/x-zip-compressed",
+)
+private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
+
 @Composable
-fun HandleZipFileIntent() {
+fun HandleZipFileIntent(intent: Intent?, onProcessed: () -> Unit) {
     val context = LocalContext.current
-    val activity = LocalActivity.current ?: return
     val navigator = LocalNavigator.current
     val confirmDialog = rememberConfirmDialog()
-    var processed by remember { mutableStateOf(false) }
+    var processedIntent by remember { mutableStateOf<Intent?>(null) }
 
     val strings = Strings(
         safeMode = stringResource(R.string.safe_mode_module_disabled),
@@ -41,33 +48,37 @@ fun HandleZipFileIntent() {
         module = stringResource(R.string.module),
     )
 
-    LaunchedEffect(Unit) {
-        if (processed) return@LaunchedEffect
+    LaunchedEffect(intent) {
+        if (intent == null || intent === processedIntent) return@LaunchedEffect
 
-        val zipUris = extractZipUris(activity.intent)
+        val zipUris = extractZipUris(context, intent)
         if (zipUris.isEmpty()) return@LaunchedEffect
 
-        processed = true
-        activity.intent.data = null
-        activity.intent.type = null
+        processedIntent = intent
+        onProcessed()
 
         val zipTypes = withContext(Dispatchers.IO) {
             zipUris.map { uri -> detectZipType(context, uri) }
         }
-
         val (moduleUris, unknownUris) = categorizeUris(zipUris, zipTypes)
         val finalModuleUris = moduleUris + unknownUris
-
         val fileNames = buildFileNames(zipUris, zipTypes, context, strings)
         val confirmContent = strings.moduleInstallPrompt.format(fileNames)
 
-        if (confirmDialog.awaitConfirm(title = strings.module, content = confirmContent) != ConfirmResult.Confirmed) {
+        if (confirmDialog.awaitConfirm(
+                title = strings.module,
+                content = confirmContent,
+            ) != ConfirmResult.Confirmed
+        ) {
             return@LaunchedEffect
         }
 
         handleConfirmed(finalModuleUris, context, navigator, strings)
     }
 }
+
+fun hasZipFileIntent(context: Context, intent: Intent): Boolean =
+    extractZipUris(context, intent).isNotEmpty()
 
 private data class Strings(
     val safeMode: String,
@@ -77,46 +88,55 @@ private data class Strings(
     val module: String,
 )
 
-private fun extractZipUris(intent: Intent): List<Uri> {
-    val uris = mutableSetOf<Uri>()
+private fun extractZipUris(context: Context, intent: Intent): List<Uri> {
+    val uris = linkedSetOf<Uri>()
 
-    fun isZipFile(uri: Uri?): Boolean {
-        if (uri == null) return false
-        val uriString = uri.toString()
-        return uriString.endsWith(".zip", ignoreCase = true) ||
-               uriString.endsWith(".apk", ignoreCase = true)
+    fun addIfZip(uri: Uri?) {
+        if (uri != null && isZipFile(context, intent, uri)) uris.add(uri)
     }
 
     when (intent.action) {
         Intent.ACTION_VIEW, Intent.ACTION_SEND -> {
-            val data = intent.data
-            val stream = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(Intent.EXTRA_STREAM)
-            }
-            if (isZipFile(data)) uris.add(data!!)
-            if (isZipFile(stream)) uris.add(stream!!)
+            addIfZip(intent.data)
+            addIfZip(intent.getStreamUri())
         }
+
         Intent.ACTION_SEND_MULTIPLE -> {
-            val streamList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
-            }
-            streamList?.filter { isZipFile(it) }?.let { uris.addAll(it) }
+            intent.getStreamUris()?.forEach(::addIfZip)
         }
     }
 
-    intent.clipData?.let { clipData ->
-        for (i in 0 until clipData.itemCount) {
-            clipData.getItemAt(i)?.uri?.let { if (isZipFile(it)) uris.add(it) }
-        }
+    for (index in 0 until (intent.clipData?.itemCount ?: 0)) {
+        addIfZip(intent.clipData?.getItemAt(index)?.uri)
     }
 
     return uris.toList()
+}
+
+private fun Intent.getStreamUri(): Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+} else {
+    @Suppress("DEPRECATION")
+    getParcelableExtra(Intent.EXTRA_STREAM)
+}
+
+private fun Intent.getStreamUris(): List<Uri>? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+} else {
+    @Suppress("DEPRECATION")
+    getParcelableArrayListExtra(Intent.EXTRA_STREAM)
+}
+
+private fun isZipFile(context: Context, intent: Intent, uri: Uri): Boolean {
+    val mimeType = (intent.type ?: context.contentResolver.getType(uri))
+        ?.substringBefore(';')
+        ?.trim()
+        ?.lowercase()
+    if (mimeType in ZIP_MIME_TYPES || mimeType == APK_MIME_TYPE) return true
+
+    val fileName = uri.getFileName(context) ?: uri.lastPathSegment.orEmpty()
+    return fileName.substringBefore('?').endsWith(".zip", ignoreCase = true) ||
+        fileName.substringBefore('?').endsWith(".apk", ignoreCase = true)
 }
 
 private fun categorizeUris(uris: List<Uri>, types: List<ZipType>): Pair<List<Uri>, List<Uri>> {
@@ -136,23 +156,21 @@ private fun buildFileNames(
     uris: List<Uri>,
     types: List<ZipType>,
     context: Context,
-    strings: Strings
-): String {
-    return uris.mapIndexed { index, uri ->
-        val fileName = uri.getFileName(context) ?: strings.zipFileUnknown
-        val typeStr = when (types[index]) {
-            ZipType.MODULE -> strings.zipTypeModule
-            ZipType.UNKNOWN -> strings.zipFileUnknown
-        }
-        "\n${index + 1}. $fileName$typeStr"
-    }.joinToString("")
-}
+    strings: Strings,
+): String = uris.mapIndexed { index, uri ->
+    val fileName = uri.getFileName(context) ?: strings.zipFileUnknown
+    val typeStr = when (types[index]) {
+        ZipType.MODULE -> strings.zipTypeModule
+        ZipType.UNKNOWN -> strings.zipFileUnknown
+    }
+    "\n${index + 1}. $fileName$typeStr"
+}.joinToString("")
 
 private suspend fun handleConfirmed(
     moduleUris: List<Uri>,
     context: Context,
     navigator: Navigator,
-    strings: Strings
+    strings: Strings,
 ) {
     if (moduleUris.isEmpty()) return
 
@@ -168,71 +186,65 @@ private suspend fun handleConfirmed(
     if (cachedUris.isNotEmpty()) {
         navigator.push(Route.Flash(FlashIt.FlashModules(cachedUris)))
     } else {
-        Toast.makeText(context, R.string.zip_file_unknown, Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, strings.zipFileUnknown, Toast.LENGTH_SHORT).show()
     }
 }
 
 private fun copyUriToCache(context: Context, uri: Uri): Uri? {
     return try {
-        val fileName = uri.getFileName(context) ?: "module_${System.currentTimeMillis()}.zip"
-        val destFile = File(context.cacheDir, fileName)
+        val originalName = uri.getFileName(context) ?: "module.zip"
+        val safeName = File(originalName).name
+        val suffix = if (safeName.endsWith(".apk", ignoreCase = true)) ".apk" else ".zip"
+        val destFile = File.createTempFile("module_", suffix, context.cacheDir)
 
         context.contentResolver.openInputStream(uri)?.use { input ->
             destFile.outputStream().use { output -> input.copyTo(output) }
-        }
+        } ?: return null
 
         Uri.fromFile(destFile)
-    } catch (e: Exception) {
-        e.printStackTrace()
+    } catch (exception: Exception) {
+        Log.w(TAG, "Unable to cache ZIP file: $uri", exception)
         null
     }
 }
 
 enum class ZipType {
     MODULE,
-    UNKNOWN
+    UNKNOWN,
 }
 
 private fun detectZipType(context: Context, uri: Uri): ZipType {
-    val isApk = uri.toString().lowercase().endsWith(".apk", ignoreCase = true)
+    val isApk = (uri.getFileName(context) ?: uri.toString()).endsWith(".apk", ignoreCase = true)
 
     return try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            ZipInputStream(inputStream).use { zipStream ->
-                detectFromZipStream(zipStream)
-            }
+            ZipInputStream(inputStream).use(::detectFromZipStream)
         } ?: defaultType(isApk)
-    } catch (e: Exception) {
-        e.printStackTrace()
+    } catch (exception: Exception) {
+        Log.w(TAG, "Unable to inspect ZIP file: $uri", exception)
         defaultType(isApk)
     }
 }
 
 private fun detectFromZipStream(zipStream: ZipInputStream): ZipType {
-    var hasModuleProp = false
-    var hasInstallScript = false
-    var hasActionScript = false
-    var hasSePolicyPatch = false
-
     var entry = zipStream.nextEntry
     while (entry != null) {
         val entryName = entry.name.lowercase()
-        when {
-            entryName == "module.prop" || entryName.endsWith("/module.prop") -> hasModuleProp = true
-            entryName == "install.sh" || entryName.endsWith("/install.sh") -> hasInstallScript = true
-            entryName == "action.sh" || entryName.endsWith("/action.sh") -> hasActionScript = true
-            entryName.endsWith(".patch") || entryName == "sepolicy.rule" || entryName.endsWith("/sepolicy.rule") ->
-                hasSePolicyPatch = true
-        }
+        val isModuleEntry = entryName == "module.prop" ||
+            entryName.endsWith("/module.prop") ||
+            entryName == "install.sh" ||
+            entryName.endsWith("/install.sh") ||
+            entryName == "action.sh" ||
+            entryName.endsWith("/action.sh") ||
+            entryName.endsWith(".patch") ||
+            entryName == "sepolicy.rule" ||
+            entryName.endsWith("/sepolicy.rule")
+
         zipStream.closeEntry()
+        if (isModuleEntry) return ZipType.MODULE
         entry = zipStream.nextEntry
     }
-
-    return if (hasModuleProp || hasInstallScript || hasActionScript || hasSePolicyPatch) {
-        ZipType.MODULE
-    } else {
-        ZipType.UNKNOWN
-    }
+    return ZipType.UNKNOWN
 }
 
 private fun defaultType(isApk: Boolean) = if (isApk) ZipType.MODULE else ZipType.UNKNOWN

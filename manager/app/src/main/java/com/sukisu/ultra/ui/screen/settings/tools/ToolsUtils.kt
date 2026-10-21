@@ -2,6 +2,7 @@ package com.sukisu.ultra.ui.screen.settings.tools
 
 import android.content.Context
 import android.net.Uri
+import com.sukisu.ultra.R
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -82,6 +83,39 @@ data class CpuInfo(
     val coreCount: Int,
     val hwcap: String,
     val hwcap2: String
+)
+
+data class CpuPreset(
+    val midrHex: String,
+    val model: String,
+    val coreTypeRes: Int? = null
+)
+
+fun spoofCpuPresetList(): List<CpuPreset> = listOf(
+    CpuPreset("custom", ""),
+    CpuPreset("0x410fd030", "Cortex-A53", R.string.spoof_cpu_core_little),
+    CpuPreset("0x413fd050", "Cortex-A55", R.string.spoof_cpu_core_little),
+    CpuPreset("0x410fd070", "Cortex-A57", R.string.spoof_cpu_core_big),
+    CpuPreset("0x410fd080", "Cortex-A72", R.string.spoof_cpu_core_big),
+    CpuPreset("0x410fd090", "Cortex-A73", R.string.spoof_cpu_core_big),
+    CpuPreset("0x411fd0a0", "Cortex-A75", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0b1", "Cortex-A76", R.string.spoof_cpu_core_big),
+    CpuPreset("0x410fd0d0", "Cortex-A77", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0d2", "Cortex-A78", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0c1", "Cortex-X1", R.string.spoof_cpu_core_prime),
+    CpuPreset("0x413fd0d4", "Cortex-A710", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0d5", "Cortex-A715", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0e0", "Cortex-X2", R.string.spoof_cpu_core_prime),
+    CpuPreset("0x413fd0e3", "Cortex-X3", R.string.spoof_cpu_core_prime),
+    CpuPreset("0x413fd0c0", "Neoverse N1", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0e1", "Neoverse N2", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0f0", "Neoverse V2", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0e4", "Cortex-A720", R.string.spoof_cpu_core_big),
+    CpuPreset("0x413fd0f1", "Cortex-X4", R.string.spoof_cpu_core_prime),
+    CpuPreset("0x511f804d", "Kryo 4xx Gold", R.string.spoof_cpu_core_big),
+    CpuPreset("0x511f805c", "Kryo 5xx Gold", R.string.spoof_cpu_core_big),
+    CpuPreset("0x513f8050", "Kryo 6xx Gold+", R.string.spoof_cpu_core_big),
+    CpuPreset("0x553f1000", "Exynos M5", R.string.spoof_cpu_core_big)
 )
 
 suspend fun readCurrentCpuIdentity(): CpuInfo? = withContext(Dispatchers.IO) {
