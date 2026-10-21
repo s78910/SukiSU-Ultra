@@ -31,6 +31,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -170,7 +171,8 @@ private fun AllowlistBackupSectionMaterial(
 fun SpoofCpuDialogMaterial(
     currentCpuInfo: CpuInfo?,
     onDismiss: () -> Unit,
-    onApply: (SpoofCpuParams) -> Unit
+    onApply: (SpoofCpuParams) -> Unit,
+    onRestore: () -> Unit
 ) {
     var selectedPreset by remember { mutableStateOf("custom") }
     var midrValue by remember { mutableStateOf(currentCpuInfo?.midrHex ?: "0x0") }
@@ -198,6 +200,14 @@ fun SpoofCpuDialogMaterial(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                OutlinedButton(
+                    onClick = onRestore,
+                    enabled = currentCpuInfo != null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.spoof_cpu_restore))
+                }
+
                 Text(
                     text = stringResource(R.string.spoof_cpu_warning),
                     style = MaterialTheme.typography.bodySmall,
@@ -215,7 +225,7 @@ fun SpoofCpuDialogMaterial(
                     onExpandedChange = { presetExpanded = it }
                 ) {
                     OutlinedTextField(
-                        value = presetLabels.getOrElse(presetList.indexOfFirst { it.midrHex == selectedPreset }) { "" },
+                        value = presetLabels.getOrElse(presetList.indexOfFirst { it.id == selectedPreset }) { "" },
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.spoof_cpu_midr_preset_label)) },
@@ -232,7 +242,7 @@ fun SpoofCpuDialogMaterial(
                             DropdownMenuItem(
                                 text = { Text(presetLabels[presetList.indexOf(preset)]) },
                                 onClick = {
-                                    selectedPreset = preset.midrHex
+                                    selectedPreset = preset.id
                                     if (preset.midrHex != "custom") {
                                         midrValue = preset.midrHex
                                     }

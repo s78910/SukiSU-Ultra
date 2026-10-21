@@ -203,7 +203,8 @@ private fun AllowlistBackupSectionMiuix(
 fun SpoofCpuDialogMiuix(
     currentCpuInfo: CpuInfo?,
     onDismiss: () -> Unit,
-    onApply: (SpoofCpuParams) -> Unit
+    onApply: (SpoofCpuParams) -> Unit,
+    onRestore: () -> Unit
 ) {
     var selectedPreset by remember { mutableStateOf("custom") }
     var midrValue by remember { mutableStateOf(currentCpuInfo?.midrHex ?: "0x0") }
@@ -237,6 +238,15 @@ fun SpoofCpuDialogMiuix(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // 警告提示
+                    Button(
+                        onClick = onRestore,
+                        enabled = currentCpuInfo != null,
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
+                        cornerRadius = 8.dp
+                    ) {
+                        Text(stringResource(R.string.spoof_cpu_restore))
+                    }
+
                     Text(
                         text = stringResource(R.string.spoof_cpu_warning),
                         color = colorScheme.error,
@@ -251,12 +261,12 @@ fun SpoofCpuDialogMiuix(
 
                     OverlayDropdownPreference(
                         title = stringResource(R.string.spoof_cpu_midr_preset_label),
-                        summary = presetLabels.getOrElse(presetList.indexOfFirst { it.midrHex == selectedPreset }) { "" },
+                        summary = presetLabels.getOrElse(presetList.indexOfFirst { it.id == selectedPreset }) { "" },
                         items = presetLabels,
-                        selectedIndex = presetList.indexOfFirst { it.midrHex == selectedPreset }.coerceAtLeast(0),
+                        selectedIndex = presetList.indexOfFirst { it.id == selectedPreset }.coerceAtLeast(0),
                         onSelectedIndexChange = { index ->
                             val preset = presetList[index]
-                            selectedPreset = preset.midrHex
+                            selectedPreset = preset.id
                             if (preset.midrHex != "custom") {
                                 midrValue = preset.midrHex
                             }
