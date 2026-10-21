@@ -4,10 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.channels.ReceiveChannel
 import com.sukisu.ultra.Natives
@@ -76,18 +72,13 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val isManager = Natives.isManager
-    var zipIntent by remember { mutableStateOf<Intent?>(null) }
-
-    HandleZipFileIntent(
-        intent = zipIntent,
-        onProcessed = { zipIntent = null },
-    )
+    val handleZipIntent = rememberZipFileIntentHandler()
 
     CollectIntentChannel(intentChannel) { intent ->
         if (!isManager) return@CollectIntentChannel
 
         if (hasZipFileIntent(context, intent)) {
-            zipIntent = intent
+            handleZipIntent(intent)
             return@CollectIntentChannel
         }
 

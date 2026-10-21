@@ -59,6 +59,7 @@
                 <data android:mimeType="application/x-zip" />
                 <data android:mimeType="application/x-zip-compressed" />
                 <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
@@ -67,6 +68,7 @@
                 <data android:mimeType="application/x-zip" />
                 <data android:mimeType="application/x-zip-compressed" />
                 <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -116,6 +118,7 @@
                 <data android:mimeType="application/x-zip" />
                 <data android:mimeType="application/x-zip-compressed" />
                 <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
@@ -124,6 +127,7 @@
                 <data android:mimeType="application/x-zip" />
                 <data android:mimeType="application/x-zip-compressed" />
                 <data android:mimeType="application/vnd.android.package-archive" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

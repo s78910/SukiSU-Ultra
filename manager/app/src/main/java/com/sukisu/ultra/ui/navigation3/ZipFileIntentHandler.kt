@@ -7,11 +7,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.sukisu.ultra.Natives
@@ -30,16 +26,16 @@ private val ZIP_MIME_TYPES = setOf(
     "application/zip",
     "application/x-zip",
     "application/x-zip-compressed",
+    "application/octet-stream",
+    "application/x-android-package-archive",
 )
 private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
 
 @Composable
-fun HandleZipFileIntent(intent: Intent?, onProcessed: () -> Unit) {
+fun rememberZipFileIntentHandler(): suspend (Intent) -> Unit {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val confirmDialog = rememberConfirmDialog()
-    var processedIntent by remember { mutableStateOf<Intent?>(null) }
-
     val strings = Strings(
         safeMode = stringResource(R.string.safe_mode_module_disabled),
         zipTypeModule = stringResource(R.string.zip_type_module),
@@ -48,32 +44,28 @@ fun HandleZipFileIntent(intent: Intent?, onProcessed: () -> Unit) {
         module = stringResource(R.string.module),
     )
 
-    LaunchedEffect(intent) {
-        if (intent == null || intent === processedIntent) return@LaunchedEffect
+    return remember(context, navigator, confirmDialog, strings) {
+        val handler: suspend (Intent) -> Unit = { intent ->
+            val zipUris = extractZipUris(context, intent)
+            if (zipUris.isNotEmpty()) {
+                val zipTypes = withContext(Dispatchers.IO) {
+                    zipUris.map { uri -> detectZipType(context, uri) }
+                }
+                val (moduleUris, unknownUris) = categorizeUris(zipUris, zipTypes)
+                val finalModuleUris = moduleUris + unknownUris
+                val fileNames = buildFileNames(zipUris, zipTypes, context, strings)
+                val confirmContent = strings.moduleInstallPrompt.format(fileNames)
 
-        val zipUris = extractZipUris(context, intent)
-        if (zipUris.isEmpty()) return@LaunchedEffect
-
-        processedIntent = intent
-        onProcessed()
-
-        val zipTypes = withContext(Dispatchers.IO) {
-            zipUris.map { uri -> detectZipType(context, uri) }
+                if (confirmDialog.awaitConfirm(
+                        title = strings.module,
+                        content = confirmContent,
+                    ) == ConfirmResult.Confirmed
+                ) {
+                    handleConfirmed(finalModuleUris, context, navigator, strings)
+                }
+            }
         }
-        val (moduleUris, unknownUris) = categorizeUris(zipUris, zipTypes)
-        val finalModuleUris = moduleUris + unknownUris
-        val fileNames = buildFileNames(zipUris, zipTypes, context, strings)
-        val confirmContent = strings.moduleInstallPrompt.format(fileNames)
-
-        if (confirmDialog.awaitConfirm(
-                title = strings.module,
-                content = confirmContent,
-            ) != ConfirmResult.Confirmed
-        ) {
-            return@LaunchedEffect
-        }
-
-        handleConfirmed(finalModuleUris, context, navigator, strings)
+        handler
     }
 }
 
