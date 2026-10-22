@@ -56,19 +56,18 @@ fun checkNewVersion(): LatestVersionInfo {
     val url = "https://api.github.com/repos/SukiSU-Ultra/SukiSU-Ultra/releases/latest"
     // default null value if failed
     val defaultValue = LatestVersionInfo()
+
+    val releaseApkRegex =
+        Regex("""^SukiSU_v(.+?)_(\d+)-release(?!-spoofed)[A-Za-z0-9-]*\.apk$""")
+
     runCatching {
         ksuApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute()
             .use { response ->
                 if (!response.isSuccessful) {
                     return defaultValue
                 }
-                val body = response.body.string()
-                val json = org.json.JSONObject(body)
+                val json = org.json.JSONObject(response.body.string())
                 val changelog = json.optString("body")
-
-                val releaseApkRegex =
-                    Regex("""^SukiSU_v(.+?)_(\d+)-release\.apk$""")
-
                 val assets = json.getJSONArray("assets")
                 for (i in 0 until assets.length()) {
                     val asset = assets.getJSONObject(i)
