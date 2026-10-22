@@ -747,4 +747,15 @@
     <string name="extension_empty_subtitle">下拉刷新,或检查当前内核是否包含扩展中心。</string>
     <string name="external_kernel_flash_prompt">是否刷写 AnyKernel3 内核“%1$s”？请确认内核适配当前设备，接下来将选择槽位和 KPM 模式。</string>
     <string name="external_kernel_separate_files">请单独打开一个内核 ZIP，不要与模块文件一起选择。</string>
+    <string name="susfs_tab_feature_toggles">功能开关</string>
+    <string name="susfs_slot_draft_hint">选择后填入编辑框，需回到基础设置点击应用才会生效。不可用字段无法填入；压缩的内核镜像可能无法读取版本信息。</string>
+    <string name="susfs_slot_value_filled">已填入编辑框</string>
+    <string name="susfs_features_summary">已启用 %1$d / %2$d 项功能</string>
+    <string name="susfs_runtime_unknown">未知</string>
+    <string name="susfs_runtime_available">可用</string>
+    <string name="susfs_runtime_unavailable">不可用</string>
+    <string name="susfs_runtime_status">状态</string>
+    <string name="susfs_runtime_version">版本</string>
+    <string name="susfs_runtime_variant">内核类型</string>
+    <string name="susfs_runtime_implementation">实现方式</string>
 </resources>

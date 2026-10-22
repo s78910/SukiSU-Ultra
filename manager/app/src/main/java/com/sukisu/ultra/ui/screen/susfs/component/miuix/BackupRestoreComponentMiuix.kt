@@ -13,7 +13,7 @@ import com.sukisu.ultra.ui.screen.susfs.util.BackupData
 import com.sukisu.ultra.ui.screen.susfs.util.SuSFSManager
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.*
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.window.WindowDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.File
 import java.text.SimpleDateFormat
@@ -212,7 +212,7 @@ private fun BackupDialogMiuix(
     }
 
     if (showDialogState.value) {
-        OverlayDialog(
+        WindowDialog(
             show = showDialogState.value,
             title = stringResource(R.string.susfs_backup_title),
             onDismissRequest = onDismiss,
@@ -232,8 +232,6 @@ private fun BackupDialogMiuix(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
                         ) {
                             Text(stringResource(R.string.cancel))
                         }
@@ -243,8 +241,6 @@ private fun BackupDialogMiuix(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
                         ) {
                             Text(stringResource(R.string.susfs_backup_create))
                         }
@@ -269,7 +265,7 @@ private fun RestoreDialogMiuix(
     }
 
     if (showDialogState.value) {
-        OverlayDialog(
+        WindowDialog(
             show = showDialogState.value,
             title = stringResource(R.string.susfs_restore_title),
             onDismissRequest = onDismiss,
@@ -289,8 +285,6 @@ private fun RestoreDialogMiuix(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
                         ) {
                             Text(stringResource(R.string.cancel))
                         }
@@ -300,8 +294,6 @@ private fun RestoreDialogMiuix(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
                         ) {
                             Text(stringResource(R.string.susfs_restore_select_file))
                         }
@@ -327,7 +319,7 @@ private fun RestoreConfirmDialogMiuix(
     }
 
     if (showDialogState.value && backupInfo != null) {
-        OverlayDialog(
+        WindowDialog(
             show = showDialogState.value,
             title = stringResource(R.string.susfs_restore_confirm_title),
             onDismissRequest = onDismiss,
@@ -375,8 +367,6 @@ private fun RestoreConfirmDialogMiuix(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
                         ) {
                             Text(stringResource(R.string.cancel))
                         }
@@ -386,8 +376,6 @@ private fun RestoreConfirmDialogMiuix(
                             modifier = Modifier
                                 .weight(1f)
                                 .heightIn(min = 48.dp)
-                                .padding(vertical = 8.dp),
-                            cornerRadius = 8.dp
                         ) {
                             Text(stringResource(R.string.susfs_restore_confirm))
                         }

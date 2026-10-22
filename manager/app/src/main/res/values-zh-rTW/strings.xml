@@ -663,4 +663,15 @@
     <string name="extension_empty_subtitle">下拉重新整理,或檢查目前核心是否包含擴充中心。</string>
     <string name="external_kernel_flash_prompt">是否刷寫 AnyKernel3 核心「%1$s」？請確認核心適用於目前裝置，接下來將選擇槽位及 KPM 模式。</string>
     <string name="external_kernel_separate_files">請單獨開啟一個核心 ZIP，不要與模組檔案一起選取。</string>
+    <string name="susfs_tab_feature_toggles">功能開關</string>
+    <string name="susfs_slot_draft_hint">選擇後填入編輯框，需回到基本設定點擊套用才會生效。不可用欄位無法填入；壓縮的核心映像可能無法讀取版本資訊。</string>
+    <string name="susfs_slot_value_filled">已填入編輯框</string>
+    <string name="susfs_features_summary">已啟用 %1$d / %2$d 項功能</string>
+    <string name="susfs_runtime_unknown">未知</string>
+    <string name="susfs_runtime_available">可用</string>
+    <string name="susfs_runtime_unavailable">不可用</string>
+    <string name="susfs_runtime_status">狀態</string>
+    <string name="susfs_runtime_version">版本</string>
+    <string name="susfs_runtime_variant">核心類型</string>
+    <string name="susfs_runtime_implementation">實作方式</string>
 </resources>

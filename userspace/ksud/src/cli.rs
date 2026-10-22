@@ -683,6 +683,8 @@ enum Susfs {
     Version,
     /// Get SUSFS Variant
     Variant,
+    /// Get SUSFS implementation: builtin, lkm, unsupported or unknown
+    Implementation,
     /// Get SUSFS enabled Features
     Features,
     /// Spoof kernel uname
@@ -1315,6 +1317,10 @@ pub fn run() -> Result<()> {
                 }
                 Susfs::Variant => {
                     println!("{}", susfs::get_susfs_variant());
+                    Ok(())
+                }
+                Susfs::Implementation => {
+                    println!("{}", susfs::get_susfs_implementation());
                     Ok(())
                 }
                 Susfs::Features => {

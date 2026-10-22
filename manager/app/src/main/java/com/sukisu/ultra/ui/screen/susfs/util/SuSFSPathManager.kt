@@ -10,8 +10,6 @@ import com.sukisu.ultra.ui.util.getRootShell
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import com.topjohnwu.superuser.io.SuFile
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import java.io.File
 
@@ -25,7 +23,11 @@ object SuSFSPathManager {
         try {
             val allApps = mutableMapOf<String, AppInfo>()
 
-            SuperUserViewModel.getAppsSafely().forEach { superUserApp ->
+            val cachedApps = SuperUserViewModel.getAppsSafely()
+            val sourceApps = cachedApps.ifEmpty {
+                com.sukisu.ultra.data.repository.SuperUserRepositoryImpl().getAppList().getOrThrow().first
+            }
+            sourceApps.forEach { superUserApp ->
                 try {
                     val isSystemApp = superUserApp.packageInfo.applicationInfo?.let {
                         (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0
@@ -41,25 +43,15 @@ object SuSFSPathManager {
                 } catch (_: Exception) {}
             }
 
-            val filteredApps = allApps.values.map { appInfo ->
-                async(Dispatchers.IO) {
-                    val dataPath = "${SuSFSConfig.MEDIA_DATA_PATH}/${appInfo.packageName}"
-                    val exists = try {
-                        val shell = getRootShell()
-                        val outputList = mutableListOf<String>()
-                        shell.newJob()
-                            .add("[ -d \"$dataPath\" ] && echo 'exists' || echo 'not_exists'")
-                            .to(outputList, null)
-                            .exec()
-                        outputList.isNotEmpty() && outputList[0].trim() == "exists"
-                    } catch (_: Exception) { false }
-                    if (exists) appInfo else null
-                }
-            }.awaitAll().filterNotNull()
-
-            filteredApps.sortedBy { it.appName }
-        } catch (_: Exception) {
-            emptyList()
+            val directories = mutableListOf<String>()
+            val result = getRootShell().newJob()
+                .add("find ${SuSFSConfig.MEDIA_DATA_PATH} -mindepth 1 -maxdepth 1 -type d")
+                .to(directories, null).exec()
+            check(result.isSuccess) { "Unable to read app data directories" }
+            val packagesWithData = directories.map { it.trimEnd('/').substringAfterLast('/') }.toSet()
+            allApps.values.filter { it.packageName in packagesWithData }.sortedBy { it.appName.lowercase() }
+        } catch (e: Exception) {
+            throw e
         }
     }
 
