@@ -91,7 +91,6 @@ data class SettingsScreenActions(
     val onSetAutoJailbreak: (Boolean) -> Unit,
     val onSetUseSoftReboot: (Boolean) -> Unit,
     val onOpenAbout: () -> Unit,
-    val onSetAlternativeIcon: (Boolean) -> Unit,
     val onOpenTools: () -> Unit,
     val onOpenSusfsConfig: () -> Unit,
     val onOpenExtensions: () -> Unit,

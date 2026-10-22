@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.SystemUpdateAlt
-import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Icon
@@ -169,15 +168,7 @@ fun SettingPagerMaterial(
                             }
                         )
                     }
-                    add {
-                        SegmentedSwitchItem(
-                            icon = Icons.Rounded.Android,
-                            title = stringResource(id = R.string.icon_switch_title),
-                            summary = stringResource(id = R.string.icon_switch_summary),
-                            checked = uiState.alternativeIcon,
-                            onCheckedChange = actions.onSetAlternativeIcon
-                        )
-                    }
+
                 }
             )
 

@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.automirrored.rounded.Rule
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.AdminPanelSettings
-import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
@@ -203,20 +202,7 @@ fun SettingPagerMiuix(
                             },
                             onClick = actions.onOpenTheme
                         )
-                        SwitchPreference(
-                        title = stringResource(id = R.string.icon_switch_title),
-                        summary = stringResource(id = R.string.icon_switch_summary),
-                        startAction = {
-                            Icon(
-                                Icons.Rounded.Android,
-                                modifier = Modifier.padding(end = 6.dp),
-                                contentDescription = stringResource(id = R.string.icon_switch_title),
-                                tint = colorScheme.onBackground
-                            )
-                        },
-                        checked = uiState.alternativeIcon,
-                        onCheckedChange = actions.onSetAlternativeIcon
-                        )
+
                     }
 
                     KsuIsValid {
