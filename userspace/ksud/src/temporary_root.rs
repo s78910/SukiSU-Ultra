@@ -1,15 +1,30 @@
 //! Best-effort userspace leases. These are NOT enforced on the kernel's grant path.
 use anyhow::{Context, Result, bail};
-use std::fs::{self, File, OpenOptions};
-use std::os::fd::AsRawFd;
-use std::os::unix::{fs::OpenOptionsExt, process::CommandExt};
+use chacha20poly1305::{
+    XChaCha20Poly1305, XNonce,
+    aead::{Aead, KeyInit, Payload},
+};
+use std::ffi::CString;
+use std::fs::{self, File};
+use std::io::{Read, Write};
+use std::os::fd::{AsRawFd, FromRawFd};
+use std::os::unix::{
+    fs::{MetadataExt, PermissionsExt},
+    process::CommandExt,
+};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use crate::{ksu_uapi as uapi, ksucalls};
 
 const DIR: &str = "/data/adb/ksu/temporary-root";
-const STATE: &str = "/data/adb/ksu/temporary-root/leases.conf";
+const STATE: &str = "leases.conf";
+const KEY_FILE: &str = "state.key";
+const MAGIC_1: u32 = 0x5355_4b49;
+const MAGIC_2: u32 = 0x5452_4c53;
+const FORMAT_VERSION: u32 = 2;
+const NONCE_LEN: usize = 24;
+const MAX_STATE_SIZE: u64 = 16 * 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq)]
 struct Lease {
@@ -34,15 +49,174 @@ fn boottime() -> Result<u64> {
     Ok(ts.tv_sec as u64)
 }
 
+// Walk from / using directory fds: O_NOFOLLOW on just the final path would
+// still allow symlinked ancestors. All later operations are relative to this fd.
+fn state_dir() -> Result<File> {
+    if unsafe { libc::getuid() } != 0 || unsafe { libc::geteuid() } != 0 {
+        bail!("root required");
+    }
+    let mut dir = File::open("/")?;
+    for part in DIR.split('/').filter(|part| !part.is_empty()) {
+        let name = CString::new(part)?;
+        if part == "temporary-root" {
+            let ret = unsafe { libc::mkdirat(dir.as_raw_fd(), name.as_ptr(), 0o700) };
+            if ret != 0
+                && std::io::Error::last_os_error().kind() != std::io::ErrorKind::AlreadyExists
+            {
+                return Err(std::io::Error::last_os_error().into());
+            }
+        }
+        let fd = unsafe {
+            libc::openat(
+                dir.as_raw_fd(),
+                name.as_ptr(),
+                libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+            )
+        };
+        if fd < 0 {
+            return Err(std::io::Error::last_os_error().into());
+        }
+        dir = unsafe { File::from_raw_fd(fd) };
+        let meta = dir.metadata()?;
+        // Android's /data may be system-owned; only the private state
+        // directory must be root:root. Never traverse world-writable parents.
+        if !meta.is_dir() || meta.mode() & 0o002 != 0 {
+            bail!("unsafe temporary root parent directory");
+        }
+        if part == "temporary-root" && (meta.uid() != 0 || meta.gid() != 0) {
+            bail!("temporary root directory must be root-owned");
+        }
+    }
+    // Upgrade directories created by the old implementation (usually 0755).
+    dir.set_permissions(fs::Permissions::from_mode(0o700))?;
+    if dir.metadata()?.mode() & 0o7777 != 0o700 {
+        bail!("invalid temporary root directory permissions");
+    }
+    Ok(dir)
+}
+
+fn secure_open(dir: &File, name: &str, flags: i32) -> Result<File> {
+    let name = CString::new(name)?;
+    let fd = unsafe {
+        libc::openat(
+            dir.as_raw_fd(),
+            name.as_ptr(),
+            flags | libc::O_NOFOLLOW | libc::O_CLOEXEC | libc::O_NONBLOCK,
+            0o600,
+        )
+    };
+    if fd < 0 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let file = unsafe { File::from_raw_fd(fd) };
+    let meta = file.metadata()?;
+    if !meta.is_file()
+        || meta.uid() != 0
+        || meta.gid() != 0
+        || meta.nlink() != 1
+        || meta.mode() & 0o7777 != 0o600
+    {
+        bail!("invalid temporary root file type, ownership, link count or permissions");
+    }
+    Ok(file)
+}
+
+fn not_found(error: &anyhow::Error) -> bool {
+    error
+        .downcast_ref::<std::io::Error>()
+        .is_some_and(|e| e.kind() == std::io::ErrorKind::NotFound)
+}
+
+fn random_bytes(bytes: &mut [u8]) -> Result<()> {
+    let mut offset = 0;
+    while offset < bytes.len() {
+        let count = unsafe {
+            libc::syscall(
+                libc::SYS_getrandom,
+                bytes[offset..].as_mut_ptr(),
+                bytes.len() - offset,
+                0,
+            )
+        };
+        if count < 0 {
+            let error = std::io::Error::last_os_error();
+            if error.kind() == std::io::ErrorKind::Interrupted {
+                continue;
+            }
+            return Err(error.into());
+        }
+        if count == 0 {
+            bail!("random source returned no bytes");
+        }
+        offset += count as usize;
+    }
+    Ok(())
+}
+
+// Caller holds state.lock. Never regenerate a missing key for existing ciphertext.
+fn state_key(dir: &File, create: bool) -> Result<[u8; 32]> {
+    let mut key = [0u8; 32];
+    match secure_open(dir, KEY_FILE, libc::O_RDONLY) {
+        Ok(mut file) => {
+            if file.metadata()?.len() != key.len() as u64 {
+                bail!("invalid temporary root key length");
+            }
+            file.read_exact(&mut key)?;
+        }
+        Err(e) if not_found(&e) && create => {
+            random_bytes(&mut key)?;
+            atomic_write(dir, KEY_FILE, &key)?;
+        }
+        Err(e) => return Err(e.context("read temporary root encryption key")),
+    }
+    Ok(key)
+}
+
+fn atomic_write(dir: &File, name: &str, bytes: &[u8]) -> Result<()> {
+    // Reject an existing symlink, hardlink, foreign owner or unexpected mode.
+    match secure_open(dir, name, libc::O_RDONLY) {
+        Ok(_) => {}
+        Err(e) if not_found(&e) => {}
+        Err(e) => return Err(e),
+    }
+    let mut random = [0u8; 16];
+    random_bytes(&mut random)?;
+    let temporary = format!(".{name}.{:032x}.tmp", u128::from_le_bytes(random));
+    let mut file = secure_open(
+        dir,
+        &temporary,
+        libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL,
+    )?;
+    let source = CString::new(temporary)?;
+    let destination = CString::new(name)?;
+    let result = (|| -> Result<()> {
+        file.write_all(bytes)?;
+        file.sync_all()?;
+        if unsafe {
+            libc::renameat(
+                dir.as_raw_fd(),
+                source.as_ptr(),
+                dir.as_raw_fd(),
+                destination.as_ptr(),
+            )
+        } != 0
+        {
+            return Err(std::io::Error::last_os_error().into());
+        }
+        dir.sync_all()?;
+        Ok(())
+    })();
+    if result.is_err() {
+        unsafe {
+            libc::unlinkat(dir.as_raw_fd(), source.as_ptr(), 0);
+        }
+    }
+    result
+}
+
 fn lock(name: &str, nonblocking: bool) -> Result<File> {
-    fs::create_dir_all(DIR)?;
-    let file = OpenOptions::new()
-        .create(true)
-        .truncate(false)
-        .read(true)
-        .write(true)
-        .mode(0o600)
-        .open(format!("{DIR}/{name}"))?;
+    let dir = state_dir()?;
+    let file = secure_open(&dir, name, libc::O_CREAT | libc::O_RDWR)?;
     let flags = libc::LOCK_EX | if nonblocking { libc::LOCK_NB } else { 0 };
     if unsafe { libc::flock(file.as_raw_fd(), flags) } != 0 {
         return Err(std::io::Error::last_os_error().into());
@@ -113,28 +287,90 @@ fn decode(text: &str) -> Result<Vec<Lease>> {
     Ok(leases)
 }
 
-fn load() -> Result<Vec<Lease>> {
-    match fs::read(STATE) {
-        Ok(bytes) => decode(std::str::from_utf8(&bytes)?),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Vec::new()),
-        Err(e) => Err(e.into()),
+fn envelope_header() -> Vec<u8> {
+    [MAGIC_1, MAGIC_2, FORMAT_VERSION]
+        .into_iter()
+        .flat_map(u32::to_le_bytes)
+        .collect()
+}
+
+fn seal(plaintext: &[u8], key: &[u8; 32], nonce: &[u8; NONCE_LEN]) -> Result<Vec<u8>> {
+    let header = envelope_header();
+    let cipher = XChaCha20Poly1305::new(key.into());
+    let ciphertext = cipher
+        .encrypt(
+            XNonce::from_slice(nonce),
+            Payload {
+                msg: plaintext,
+                aad: &header,
+            },
+        )
+        .map_err(|_| anyhow::anyhow!("encrypt temporary root state failed"))?;
+    let mut output = header;
+    output.extend_from_slice(nonce);
+    output.extend_from_slice(&ciphertext);
+    Ok(output)
+}
+
+fn unseal(bytes: &[u8], key: &[u8; 32]) -> Result<Vec<u8>> {
+    let header = envelope_header();
+    let offset = header.len() + NONCE_LEN;
+    if bytes.len() < offset + 16 || !bytes.starts_with(&header) {
+        bail!("invalid encrypted temporary root state header");
     }
+    XChaCha20Poly1305::new(key.into())
+        .decrypt(
+            XNonce::from_slice(&bytes[header.len()..offset]),
+            Payload {
+                msg: &bytes[offset..],
+                aad: &header,
+            },
+        )
+        .map_err(|_| anyhow::anyhow!("temporary root state authentication failed"))
+}
+
+fn load() -> Result<Vec<Lease>> {
+    let dir = state_dir()?;
+    let mut file = match secure_open(&dir, STATE, libc::O_RDONLY) {
+        Ok(file) => file,
+        Err(e) if not_found(&e) => return Ok(Vec::new()),
+        Err(e) => return Err(e),
+    };
+    if file.metadata()?.len() > MAX_STATE_SIZE {
+        bail!("temporary root state too large");
+    }
+    let mut bytes = Vec::new();
+    (&mut file)
+        .take(MAX_STATE_SIZE + 1)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > MAX_STATE_SIZE {
+        bail!("temporary root state too large");
+    }
+    // One-time migration only when no encryption key exists. Once provisioned,
+    // never accept plaintext again (including after an authentication failure).
+    if bytes.starts_with(HEADER.as_bytes()) {
+        match secure_open(&dir, KEY_FILE, libc::O_RDONLY) {
+            Err(e) if not_found(&e) => {}
+            _ => bail!("refusing plaintext state after encryption was provisioned"),
+        }
+        let leases = decode(std::str::from_utf8(&bytes)?)?;
+        save(&leases)?;
+        return Ok(leases);
+    }
+    let plaintext = unseal(&bytes, &state_key(&dir, false)?)?;
+    decode(std::str::from_utf8(&plaintext)?)
 }
 
 fn save(leases: &[Lease]) -> Result<()> {
-    use std::io::Write;
-    let path = format!("{STATE}.tmp");
-    let mut file = OpenOptions::new()
-        .create(true)
-        .truncate(true)
-        .write(true)
-        .mode(0o600)
-        .open(&path)?;
-    file.write_all(encode(leases)?.as_bytes())?;
-    file.sync_all()?;
-    fs::rename(path, STATE)?;
-    File::open(DIR)?.sync_all()?;
-    Ok(())
+    let plaintext = encode(leases)?;
+    if plaintext.len() as u64 > MAX_STATE_SIZE - 64 {
+        bail!("temporary root state too large");
+    }
+    let dir = state_dir()?;
+    let key = state_key(&dir, true)?;
+    let mut nonce = [0u8; NONCE_LEN];
+    random_bytes(&mut nonce)?;
+    atomic_write(&dir, STATE, &seal(plaintext.as_bytes(), &key, &nonce)?)
 }
 
 // Run identity changes in a short-lived, single-threaded child. The setresuid
@@ -600,5 +836,44 @@ mod apply_tests {
         assert!(copy_text(&mut dst, "a\0b").is_err());
         assert!(copy_text(&mut dst, "abc").is_ok());
         assert_eq!(dst[3], 0);
+    }
+}
+
+#[cfg(test)]
+mod encrypted_state_tests {
+    use super::{envelope_header, seal, unseal};
+
+    #[test]
+    fn authenticated_roundtrip() {
+        let key = [7u8; 32];
+        let nonce = [9u8; 24];
+        let plaintext = b"private lease data";
+        let encrypted = seal(plaintext, &key, &nonce).unwrap();
+        assert!(encrypted.starts_with(&envelope_header()));
+        assert_eq!(unseal(&encrypted, &key).unwrap(), plaintext);
+        assert!(unseal(&encrypted, &[8u8; 32]).is_err());
+    }
+
+    #[test]
+    fn reject_tampering_and_truncation() {
+        let key = [7u8; 32];
+        let encrypted = seal(b"lease", &key, &[9u8; 24]).unwrap();
+        for index in 0..encrypted.len() {
+            let mut changed = encrypted.clone();
+            changed[index] ^= 1;
+            assert!(unseal(&changed, &key).is_err());
+        }
+        for length in 0..encrypted.len() {
+            assert!(unseal(&encrypted[..length], &key).is_err());
+        }
+    }
+
+    #[test]
+    fn different_nonces_produce_different_ciphertext() {
+        let key = [7u8; 32];
+        let a = seal(b"lease", &key, &[1u8; 24]).unwrap();
+        let b = seal(b"lease", &key, &[2u8; 24]).unwrap();
+        assert_ne!(a, b);
+        assert_eq!(unseal(&a, &key).unwrap(), unseal(&b, &key).unwrap());
     }
 }
