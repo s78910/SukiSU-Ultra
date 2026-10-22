@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.sukisu.ultra.R
@@ -42,7 +44,7 @@ import com.sukisu.ultra.ui.theme.LocalEnableBlur
 import com.sukisu.ultra.ui.util.BlurredBar
 import com.sukisu.ultra.ui.util.getSELinuxStatusRaw
 import com.sukisu.ultra.ui.util.rememberBlurBackdrop
-import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -238,14 +240,13 @@ fun SpoofCpuDialogMiuix(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // 警告提示
-                    Button(
+                    TextButton(
+                        text = stringResource(R.string.spoof_cpu_restore),
                         onClick = onRestore,
                         enabled = currentCpuInfo != null,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
                         cornerRadius = 8.dp
-                    ) {
-                        Text(stringResource(R.string.spoof_cpu_restore))
-                    }
+                    )
 
                     Text(
                         text = stringResource(R.string.spoof_cpu_warning),
@@ -293,6 +294,11 @@ fun SpoofCpuDialogMiuix(
                         Text(stringResource(R.string.spoof_cpu_field_cores), style = textStyles.body1)
                         TextButton(
                             text = stringResource(R.string.spoof_cpu_cores_all),
+                            colors = if (selectedCores.size == coreCount) {
+                                ButtonDefaults.textButtonColorsPrimary()
+                            } else {
+                                ButtonDefaults.textButtonColors()
+                            },
                             onClick = {
                                 selectedCores = if (selectedCores.size == coreCount) emptyList() else (0 until coreCount).toList()
                             }
@@ -305,20 +311,31 @@ fun SpoofCpuDialogMiuix(
                     ) {
                         repeat(coreCount) { index ->
                             val selected = index in selectedCores
-                            Button(
+                            TextButton(
+                                text = stringResource(R.string.spoof_cpu_cores_format, index),
+                                colors = if (selected) {
+                                    ButtonDefaults.textButtonColorsPrimary()
+                                } else {
+                                    ButtonDefaults.textButtonColors()
+                                },
                                 onClick = {
                                     selectedCores = if (selected) selectedCores - index else selectedCores + index
                                 },
-                                modifier = Modifier.heightIn(min = 40.dp),
+                                modifier = Modifier
+                                    .heightIn(min = 40.dp)
+                                    .semantics { this.selected = selected },
                                 cornerRadius = 20.dp
-                            ) {
-                                Text(stringResource(R.string.spoof_cpu_cores_format, index))
-                            }
+                            )
                         }
                     }
 
                     TextButton(
                         text = stringResource(R.string.spoof_cpu_advanced),
+                        colors = if (advancedExpanded) {
+                            ButtonDefaults.textButtonColorsPrimary()
+                        } else {
+                            ButtonDefaults.textButtonColors()
+                        },
                         onClick = { advancedExpanded = !advancedExpanded }
                     )
 
@@ -351,7 +368,8 @@ fun SpoofCpuDialogMiuix(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Button(
+                        TextButton(
+                            text = stringResource(R.string.spoof_cpu_cancel),
                             onClick = {
                                 showDialogState.value = false
                                 onDismiss()
@@ -361,10 +379,10 @@ fun SpoofCpuDialogMiuix(
                                 .heightIn(min = 48.dp)
                                 .padding(vertical = 8.dp),
                             cornerRadius = 8.dp
-                        ) {
-                            Text(text = stringResource(R.string.spoof_cpu_cancel))
-                        }
-                        Button(
+                        )
+                        TextButton(
+                            text = stringResource(R.string.spoof_cpu_apply),
+                            colors = ButtonDefaults.textButtonColorsPrimary(),
                             onClick = {
                                 val params = SpoofCpuParams(
                                     cpuIndices = selectedCores,
@@ -382,9 +400,7 @@ fun SpoofCpuDialogMiuix(
                                 .heightIn(min = 48.dp)
                                 .padding(vertical = 8.dp),
                             cornerRadius = 8.dp
-                        ) {
-                            Text(text = stringResource(R.string.spoof_cpu_apply))
-                        }
+                        )
                     }
                 }
             }
