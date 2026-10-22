@@ -14,6 +14,7 @@
 
 #include "prelude.h"
 #include "ksu.h"
+#include "allowlist_bounds.h"
 
 static int fd = -1;
 
@@ -94,17 +95,16 @@ uint32_t get_version() {
 }
 
 bool get_allow_list(struct ksu_new_get_allow_list_cmd *cmd) {
+    const uint16_t capacity = cmd->count;
     if (ksuctl(KSU_IOCTL_NEW_GET_ALLOW_LIST, cmd) == 0) {
         return true;
     }
 
-    // fallback to legacy
+    // fallback to legacy; never trust the returned size or a modified ioctl count.
     int size = 0;
-    int uids[1024];
+    int uids[KSU_ALLOWLIST_CAPACITY];
     if (legacy_get_allow_list(uids, &size)) {
-        cmd->count = size;
-        memcpy(cmd->uids, uids, sizeof(int) * size);
-        return true;
+        return copy_legacy_allowlist(cmd, uids, size, capacity);
     }
 
     return false;

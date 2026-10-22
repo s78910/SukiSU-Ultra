@@ -23,7 +23,7 @@ class HomeRuntimeRepository(
             deviceModel = getDeviceModel(),
             managerVersion = Triple(
                 BuildConfig.VERSION_NAME,
-                BuildConfig.VERSION_CODE,
+                BuildConfig.UNSIGNED_VERSION_CODE,
                 managerUapiVersion,
             ),
             selinuxStatus = if (includeSelinuxStatus) {

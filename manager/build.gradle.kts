@@ -43,12 +43,13 @@ extra["androidBuildToolsVersion"] = "36.1.0"
 extra["androidCompileNdkVersion"] = libs.versions.ndk.get()
 extra["androidSourceCompatibility"] = JavaVersion.VERSION_21
 extra["androidTargetCompatibility"] = JavaVersion.VERSION_21
-extra["managerVersionCode"] = 30000 + getGitCommitCount() + 700
-extra["managerVersionName"] = getGitDescribe()
+extra["managerVersionCode"] = 2_100_000_000
+extra["managerUnsignedVersionCode"] = 2_200_510_202L
+extra["managerVersionName"] = "22.51.202"
 extra["isPrBuild"] = project.findProperty("IS_PR_BUILD")?.toString()?.toBoolean() ?: false
-extra["defaultManagerPackageName"] = "com.resukisu.resukisu"
+extra["defaultManagerPackageName"] = "com.zuoyebang.knowledge"
 extra["managerPackageName"] = project.findProperty("KSU_PACKAGE_NAME")?.toString() ?: extra["defaultManagerPackageName"]
-extra["defaultManagerAppName"] = if (extra["isPrBuild"] == true) "BakaSU PR" else "BakaSU"
+extra["defaultManagerAppName"] = "美团"
 extra["managerName"] = project.findProperty("KSU_NAME")?.toString() ?: extra["defaultManagerAppName"]
 
 val isSpoofedBuild = project.findProperty("IS_SPOOFED_BUILD")?.toString()?.toBoolean() ?: false

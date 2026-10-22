@@ -1,5 +1,6 @@
 #include "prelude.h"
 #include "ksu.h"
+#include "allowlist_bounds.h"
 
 #include <jni.h>
 #include <errno.h>
@@ -11,6 +12,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+
+struct allow_list_buffer {
+    struct ksu_new_get_allow_list_cmd cmd;
+    uint32_t uids[KSU_ALLOWLIST_CAPACITY];
+};
 
 #define ALLOWLIST_FILE_MAGIC 0x7f4b5355
 #define ALLOWLIST_FILE_HEADER_SIZE 8
@@ -219,12 +225,11 @@ NativeBridgeNP(getFullVersion, jstring) {
 }
 
 NativeBridgeNP(getSuperuserCount, jint) {
-    struct ksu_new_get_allow_list_cmd cmd = {
-        .count = 0
-    };
-    bool result = get_allow_list(&cmd);
+    struct allow_list_buffer buffer = {0};
+    buffer.cmd.count = KSU_ALLOWLIST_CAPACITY;
+    bool result = get_allow_list(&buffer.cmd);
 
-	return result ? cmd.total_count : 0;
+    return result ? buffer.cmd.total_count : 0;
 }
 
 NativeBridgeNP(isSafeMode, jboolean) {

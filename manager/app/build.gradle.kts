@@ -18,8 +18,12 @@ val androidTargetSdkVersion = rootProject.extra["androidTargetSdkVersion"] as In
 val androidSourceCompatibility = rootProject.extra["androidSourceCompatibility"] as JavaVersion
 val androidTargetCompatibility = rootProject.extra["androidTargetCompatibility"] as JavaVersion
 val managerVersionCode = rootProject.extra["managerVersionCode"] as Int
+val managerUnsignedVersionCode = rootProject.extra["managerUnsignedVersionCode"] as Long
 val managerVersionName = rootProject.extra["managerVersionName"] as String
-val managerPackageName = rootProject.extra["managerPackageName"] as String
+val managerApplicationId = project.findProperty("KSU_PACKAGE_NAME")?.toString()
+    ?: providers.environmentVariable("MANAGER_APPLICATION_ID")
+        .orElse("com.zuoyebang.knowledge")
+        .get()
 val managerName = rootProject.extra["managerName"] as String
 
 apksign {
@@ -133,10 +137,11 @@ android {
         targetSdk = androidTargetSdkVersion
         versionCode = managerVersionCode
         versionName = managerVersionName
-        applicationId = managerPackageName
+        applicationId = managerApplicationId
 
         val isPrBuild = rootProject.extra["isPrBuild"] as Boolean
         buildConfigField("boolean", "IS_PR_BUILD", isPrBuild.toString())
+        buildConfigField("long", "UNSIGNED_VERSION_CODE", "${managerUnsignedVersionCode}L")
         resValue("string", "app_name", managerName)
 
         externalNativeBuild {
@@ -180,7 +185,7 @@ baselineProfile {
 
 base {
     archivesName.set(
-        "BakaSU_${managerVersionName}_$managerVersionCode",
+        "BakaSU_${managerVersionName}_${managerUnsignedVersionCode}",
     )
 }
 

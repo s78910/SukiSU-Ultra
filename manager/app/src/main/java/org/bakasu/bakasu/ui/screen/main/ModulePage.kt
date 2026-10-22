@@ -1,5 +1,14 @@
 package org.bakasu.bakasu.ui.screen.main
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.twotone.Visibility
+import androidx.compose.material.icons.twotone.VisibilityOff
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import org.bakasu.bakasu.ui.component.rememberCustomDialog
+
 import android.annotation.SuppressLint
 import android.app.Activity.CLIPBOARD_SERVICE
 import android.app.Activity.RESULT_OK
@@ -193,6 +202,69 @@ fun ModulePage(bottomPadding: Dp) {
     val snackBarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
     var lastClickTime by remember { mutableStateOf(0L) }
+    var hiddenPassword by remember { mutableStateOf("") }
+    var hiddenConfirmation by remember { mutableStateOf("") }
+    val hiddenDialog = rememberCustomDialog { dismiss ->
+        AlertDialog(
+            onDismissRequest = {
+                hiddenPassword = ""
+                hiddenConfirmation = ""
+                viewModel.dispatchHidden(HiddenModuleAction.ToggleManagement)
+                dismiss()
+            },
+            title = { Text(stringResource(if (uiState.hidden.hasPassword) R.string.module_hidden_password_verify_title else R.string.module_hidden_password_setup_title)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = hiddenPassword,
+                        onValueChange = { hiddenPassword = it },
+                        label = { Text(stringResource(R.string.module_hidden_password)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        enabled = !uiState.hidden.busy,
+                    )
+                    if (!uiState.hidden.hasPassword) {
+                        OutlinedTextField(
+                            value = hiddenConfirmation,
+                            onValueChange = { hiddenConfirmation = it },
+                            label = { Text(stringResource(R.string.module_hidden_password_confirm)) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true,
+                            enabled = !uiState.hidden.busy,
+                        )
+                    }
+                    uiState.hidden.error?.let { Text(stringResource(it), color = MaterialTheme.colorScheme.error) }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !uiState.hidden.busy,
+                    onClick = {
+                        viewModel.dispatchHidden(HiddenModuleAction.Authenticate(hiddenPassword, hiddenConfirmation))
+                        hiddenPassword = ""
+                        hiddenConfirmation = ""
+                    },
+                ) { Text(stringResource(R.string.confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    hiddenPassword = ""
+                    hiddenConfirmation = ""
+                    viewModel.dispatchHidden(HiddenModuleAction.ToggleManagement)
+                    dismiss()
+                }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+    LaunchedEffect(uiState.hidden.requestPassword) {
+        if (uiState.hidden.requestPassword) hiddenDialog.show() else hiddenDialog.hide()
+    }
+    LaunchedEffect(uiState.hidden.error, uiState.hidden.requestPassword) {
+        if (!uiState.hidden.requestPassword) {
+            uiState.hidden.error?.let { snackBarHost.showReplacingSnackbar(context.getString(it)) }
+        }
+    }
+
 
     var showDropdown by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -320,6 +392,20 @@ fun ModulePage(bottomPadding: Dp) {
                     viewModel.dispatch(ModuleUiAction.Search(query))
                 },
                 dropdownContent = {
+                    IconButton(onClick = { viewModel.dispatchHidden(HiddenModuleAction.ToggleManagement) }) {
+                        Icon(
+                            imageVector = if (uiState.hidden.management) Icons.TwoTone.VisibilityOff else Icons.TwoTone.Visibility,
+                            contentDescription = stringResource(if (uiState.hidden.management) R.string.module_hidden_mode_disable else R.string.module_hidden_mode_enable),
+                        )
+                    }
+                    if (uiState.hidden.management) {
+                        TextButton(enabled = !uiState.hidden.busy && uiState.hidden.selected.isNotEmpty(), onClick = { viewModel.dispatchHidden(HiddenModuleAction.ToggleSelectedVisibility) }) {
+                            Text(stringResource(R.string.module_hidden_toggle))
+                        }
+                        TextButton(onClick = { viewModel.dispatchHidden(HiddenModuleAction.ClearSelection) }) {
+                            Text(stringResource(R.string.module_hidden_clear_selection))
+                        }
+                    }
                     IconButton(
                         onClick = { showDropdown = true },
                     ) {
@@ -970,6 +1056,10 @@ private fun ModuleList(
                         onModuleAddShortcut(module, type)
                     },
                     showMoreModuleInfo = uiState.showMoreModuleInfo,
+                    hiddenManagement = uiState.hidden.management,
+                    hiddenSelected = module.id in uiState.hidden.selected,
+                    hiddenMarked = module.id in uiState.hidden.hiddenIds,
+                    onHiddenSelect = { viewModel.dispatchHidden(HiddenModuleAction.Select(module.id)) },
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1191,6 +1281,10 @@ fun ModuleItem(
     onClick: (InstalledModule) -> Unit,
     onModuleAddShortcut: (InstalledModule, ShortcutType) -> Unit,
     showMoreModuleInfo: Boolean,
+    hiddenManagement: Boolean = false,
+    hiddenSelected: Boolean = false,
+    hiddenMarked: Boolean = false,
+    onHiddenSelect: () -> Unit = {},
 ) {
     val themeConfig: ThemeConfig = koinInject()
     val cardConfig: CardConfig = koinInject()
@@ -1253,8 +1347,11 @@ fun ModuleItem(
                 val moduleVersion = stringResource(id = R.string.module_version)
                 val moduleAuthor = stringResource(id = R.string.module_author)
 
+                if (hiddenManagement) {
+                    Checkbox(checked = hiddenSelected, onCheckedChange = { onHiddenSelect() })
+                }
                 Column(
-                    modifier = Modifier.fillMaxWidth(0.8f),
+                    modifier = Modifier.weight(1f),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -1271,6 +1368,9 @@ fun ModuleItem(
                         )
                     }
 
+                    if (hiddenManagement && hiddenMarked) {
+                        Text(stringResource(R.string.module_hidden_badge), color = MaterialTheme.colorScheme.primary)
+                    }
                     Text(
                         text = "$moduleVersion: ${module.version}",
                         fontSize = MaterialTheme.typography.bodySmall.fontSize,
@@ -1322,47 +1422,40 @@ fun ModuleItem(
                     }
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Switch(
-                        enabled = !module.update && !isChangingEnabled,
-                        checked = isEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                isChangingEnabled = true
-                                try {
-                                    if (onCheckChanged(enabled)) {
-                                        isEnabled = enabled
-                                    }
-                                } finally {
-                                    isChangingEnabled = false
+                Switch(
+                    enabled = !module.update && !isChangingEnabled,
+                    checked = isEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch {
+                            isChangingEnabled = true
+                            try {
+                                if (onCheckChanged(enabled)) {
+                                    isEnabled = enabled
                                 }
+                            } finally {
+                                isChangingEnabled = false
                             }
-                        },
-                        interactionSource = if (!module.hasWebUi) interactionSource else null,
-                        thumbContent = {
-                            if (isEnabled) {
-                                Icon(
-                                    imageVector = Icons.TwoTone.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.TwoTone.Close,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.surfaceBright,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            }
-                        },
-                    )
-                }
+                        }
+                    },
+                    interactionSource = if (!module.hasWebUi) interactionSource else null,
+                    thumbContent = {
+                        if (isEnabled) {
+                            Icon(
+                                imageVector = Icons.TwoTone.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(SwitchDefaults.IconSize),
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.TwoTone.Close,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.surfaceBright,
+                                modifier = Modifier.size(SwitchDefaults.IconSize),
+                            )
+                        }
+                    },
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))

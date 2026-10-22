@@ -23,10 +23,17 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class ModuleRepository(
+    private val hiddenModuleStore: HiddenModuleStore,
     private val networkStatusRepository: NetworkStatusRepository,
     private val networkRequestRepository: NetworkRequestRepository,
     private val ksuCliRepository: KsuCliRepository,
 ) {
+    suspend fun loadHiddenModules() = withContext(Dispatchers.IO) { hiddenModuleStore.loadSnapshot() }
+    suspend fun authenticateHiddenModules(password: String, confirmation: String) =
+        withContext(Dispatchers.IO) { hiddenModuleStore.authenticate(password, confirmation) }
+    suspend fun saveHiddenModules(ids: Set<String>) =
+        withContext(Dispatchers.IO) { hiddenModuleStore.setHiddenModuleIds(ids) }
+
     private val refreshMutex = Mutex()
     private val mutableInstalledModules = MutableStateFlow(InstalledModulesState())
     val installedModules: StateFlow<InstalledModulesState> =
@@ -217,5 +224,33 @@ private fun JSONObject.getIntCompat(key: String, default: Int = 0): Int = if (!h
         is Number -> value.toInt()
         is String -> value.toIntOrNull() ?: default
         else -> default
+    }
+}
+
+/** Only encrypted payloads and the binary master key cross this root I/O boundary. */
+class RootHiddenModuleFiles(private val cli: KsuCliRepository) : HiddenModuleFiles {
+    private fun quote(value: String) = "'${value.replace("'", "'\"'\"'")}'"
+    override fun exists(path: String): Boolean {
+        val result = cli.getRootShell().newJob().add("if [ -f ${quote(path)} ]; then echo yes; elif [ -e ${quote(path)} ]; then exit 2; else echo no; fi").to(ArrayList(), null).exec()
+        check(result.isSuccess)
+        return when (result.out.singleOrNull()) {
+            "yes" -> true
+            "no" -> false
+            else -> error("Uncertain hidden module file state")
+        }
+    }
+    override fun read(path: String): ByteArray? {
+        if (!exists(path)) return null
+        val result = cli.getRootShell().newJob().add("/data/adb/ksu/bin/busybox base64 ${quote(path)}").to(ArrayList(), null).exec()
+        check(result.isSuccess)
+        return java.util.Base64.getDecoder().decode(result.out.joinToString(""))
+    }
+    override fun write(path: String, bytes: ByteArray): Boolean {
+        val parent = java.io.File(path).parent ?: return false
+        val encoded = java.util.Base64.getEncoder().encodeToString(bytes)
+        val temp = "$path.tmp"
+        return cli.getRootShell().newJob().add(
+            "mkdir -p ${quote(parent)} && umask 077 && printf %s ${quote(encoded)} | /data/adb/ksu/bin/busybox base64 -d > ${quote(temp)} && chmod 600 ${quote(temp)} && mv -f ${quote(temp)} ${quote(path)} && chmod 600 ${quote(path)}",
+        ).exec().isSuccess
     }
 }

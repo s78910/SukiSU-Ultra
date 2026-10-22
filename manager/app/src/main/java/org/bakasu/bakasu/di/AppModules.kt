@@ -26,6 +26,10 @@ import org.bakasu.bakasu.data.logging.SulogRepository
 import org.bakasu.bakasu.data.module.ModuleActionRepository
 import org.bakasu.bakasu.data.module.ModuleCatalogRepository
 import org.bakasu.bakasu.data.module.ModulePreferencesRepository
+import org.bakasu.bakasu.data.module.HiddenModuleStore
+import org.bakasu.bakasu.data.module.HiddenModuleFiles
+import org.bakasu.bakasu.data.module.RootHiddenModuleFiles
+import org.bakasu.bakasu.domain.usecase.HiddenModuleUseCases
 import org.bakasu.bakasu.data.module.ModuleRepository
 import org.bakasu.bakasu.data.network.NetworkRequestRepository
 import org.bakasu.bakasu.data.network.NetworkStatusRepository
@@ -195,7 +199,7 @@ val coreModule = module {
             .addInterceptor { chain ->
                 chain.proceed(
                     chain.request().newBuilder()
-                        .header("User-Agent", "BakaSU/${BuildConfig.VERSION_CODE}")
+                        .header("User-Agent", "BakaSU/${BuildConfig.UNSIGNED_VERSION_CODE}")
                         .header("Accept-Language", Locale.getDefault().toLanguageTag())
                         .build(),
                 )
@@ -264,6 +268,8 @@ val repositoryModule = module {
     singleOf(::BugreportRepository)
     singleOf(::UmountRepository)
     singleOf(::ModuleCatalogRepository)
+    single<HiddenModuleFiles> { RootHiddenModuleFiles(get()) }
+    singleOf(::HiddenModuleStore)
     singleOf(::ModuleRepository)
     singleOf(::ModulePreferencesRepository)
     singleOf(::ModuleActionRepository)
@@ -294,6 +300,7 @@ val repositoryModule = module {
 }
 
 val useCaseModule = module {
+    factoryOf(::HiddenModuleUseCases)
     factoryOf(::InitializeApplicationUseCase)
     factoryOf(::GetHomeBasicInfoUseCase)
     factoryOf(::IsNetworkAvailableUseCase)

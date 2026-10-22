@@ -1,5 +1,11 @@
 package org.bakasu.bakasu.ui.viewmodel
 
+import org.bakasu.bakasu.R
+import org.bakasu.bakasu.domain.usecase.HiddenModuleUseCases
+import org.bakasu.bakasu.ui.screen.main.HiddenModuleAction
+import org.bakasu.bakasu.ui.screen.main.HiddenModuleControls
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import java.text.Collator
@@ -29,6 +35,7 @@ import org.bakasu.bakasu.domain.usecase.TransliterateTextUseCase
 import org.bakasu.bakasu.domain.usecase.UpdateCachedModuleEnabledUseCase
 
 data class ModuleUiState(
+    val hidden: HiddenModuleControls = HiddenModuleControls(),
     val moduleList: List<InstalledModule> = emptyList(),
     val moduleSizes: Map<String, String> = emptyMap(),
     val isRefreshing: Boolean = false,
@@ -79,6 +86,7 @@ private data class ModuleControls(
 )
 
 class ModuleViewModel(
+    private val hiddenModules: HiddenModuleUseCases,
     observeInstalledModules: ObserveInstalledModulesUseCase,
     private val modulePreferences: ModulePreferencesRepository,
     private val refreshInstalledModules: RefreshInstalledModulesUseCase,
@@ -91,6 +99,77 @@ class ModuleViewModel(
     private val reboot: RebootUseCase,
     private val isSoftRebootPreferred: IsSoftRebootPreferredUseCase,
 ) : ViewModel() {
+    private val hiddenControls = MutableStateFlow(HiddenModuleControls())
+    private val hiddenMutex = Mutex()
+    init {
+        viewModelScope.launch { reloadHiddenModules() }
+    }
+
+    private suspend fun reloadHiddenModules() {
+        hiddenMutex.withLock {
+            val snapshot = hiddenModules.load()
+            hiddenControls.update {
+                it.copy(
+                    hiddenIds = snapshot.hiddenModuleIds,
+                    failed = snapshot.shouldHideAllModules,
+                    hasPassword = snapshot.hasPassword,
+                    management = it.management && !snapshot.shouldHideAllModules,
+                    selected = emptySet(),
+                )
+            }
+        }
+    }
+
+    fun dispatchHidden(action: HiddenModuleAction) {
+        viewModelScope.launch {
+            hiddenMutex.withLock {
+                val current = hiddenControls.value
+                when (action) {
+                    HiddenModuleAction.ToggleManagement -> hiddenControls.value =
+                        if (current.management) current.copy(management = false, selected = emptySet(), error = null)
+                        else current.copy(requestPassword = !current.requestPassword, error = null)
+                    is HiddenModuleAction.Authenticate -> {
+                        hiddenControls.value = current.copy(busy = true)
+                        val success = hiddenModules.authenticate(action.password, action.confirmation)
+                        val snapshot = hiddenModules.load()
+                        hiddenControls.value = current.copy(
+                            hiddenIds = snapshot.hiddenModuleIds,
+                            failed = snapshot.shouldHideAllModules,
+                            hasPassword = snapshot.hasPassword,
+                            management = success && !snapshot.shouldHideAllModules,
+                            requestPassword = !success,
+                            selected = emptySet(),
+                            busy = false,
+                            error = if (success) null else R.string.module_hidden_password_invalid,
+                        )
+                    }
+                    is HiddenModuleAction.Select -> if (current.management && !current.failed) {
+                        hiddenControls.value = current.copy(selected = current.selected.let {
+                            if (action.id in it) it - action.id else it + action.id
+                        })
+                    }
+                    HiddenModuleAction.ClearSelection -> hiddenControls.value = current.copy(selected = emptySet())
+                    HiddenModuleAction.ToggleSelectedVisibility -> if (current.management && !current.failed && current.selected.isNotEmpty()) {
+                        hiddenControls.value = current.copy(busy = true)
+                        val updated = current.hiddenIds.toMutableSet().apply {
+                            current.selected.forEach { if (!remove(it)) add(it) }
+                        }
+                        val snapshot = hiddenModules.save(updated)
+                        val success = !snapshot.shouldHideAllModules && snapshot.hiddenModuleIds == updated
+                        hiddenControls.value = current.copy(
+                            hiddenIds = snapshot.hiddenModuleIds,
+                            failed = !success,
+                            management = success,
+                            selected = emptySet(),
+                            busy = false,
+                            error = if (success) null else R.string.module_hidden_storage_failed,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     private val controls = MutableStateFlow(ModuleControls())
     private val mutableEvents = MutableSharedFlow<ModuleUiEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<ModuleUiEvent> = mutableEvents.asSharedFlow()
@@ -99,10 +178,12 @@ class ModuleViewModel(
         observeInstalledModules(),
         controls,
         modulePreferences.preferences,
-    ) { source, local, preferences ->
+        hiddenControls,
+    ) { source, local, preferences, hidden ->
         ModuleUiState(
+            hidden = hidden,
             moduleList = buildModuleList(
-                modules = source.modules,
+                modules = source.modules.filter { hidden.isVisible(it.id) },
                 search = local.search,
                 sortEnabledFirst = preferences.sortEnabledFirst,
                 sortActionFirst = preferences.sortActionFirst,
@@ -178,6 +259,7 @@ class ModuleViewModel(
             PREF_CHECK_MODULE_UPDATE,
             getBooleanPreference(PREF_CHECK_UPDATE, true),
         )
+        reloadHiddenModules()
         refreshInstalledModules(manual, checkUpdates)
             .onSuccess {
                 controls.update { it.copy(isNeedRefresh = false) }
