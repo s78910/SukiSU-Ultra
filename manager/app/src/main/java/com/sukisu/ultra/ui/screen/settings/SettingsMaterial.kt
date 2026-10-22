@@ -1,5 +1,6 @@
 package com.sukisu.ultra.ui.screen.settings
 
+import com.sukisu.ultra.ui.component.profile.TemporaryRootPreferences
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -227,6 +228,7 @@ fun SettingPagerMaterial(
                         )
                     }
                 )
+                TemporaryRootPreferences()
             }
 
             KsuIsValid {
