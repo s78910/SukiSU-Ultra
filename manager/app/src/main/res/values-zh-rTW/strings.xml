@@ -661,4 +661,6 @@
     <!-- 空狀態:尚未抓到任何擴充狀態,且螢幕也不在重新整理中。 -->
     <string name="extension_empty_title">暫無擴充資料</string>
     <string name="extension_empty_subtitle">下拉重新整理,或檢查目前核心是否包含擴充中心。</string>
+    <string name="external_kernel_flash_prompt">是否刷寫 AnyKernel3 核心「%1$s」？請確認核心適用於目前裝置，接下來將選擇槽位及 KPM 模式。</string>
+    <string name="external_kernel_separate_files">請單獨開啟一個核心 ZIP，不要與模組檔案一起選取。</string>
 </resources>

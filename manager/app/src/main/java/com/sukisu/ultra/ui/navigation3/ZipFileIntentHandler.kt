@@ -14,6 +14,7 @@ import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.dialog.ConfirmResult
 import com.sukisu.ultra.ui.component.dialog.rememberConfirmDialog
+import com.sukisu.ultra.ui.kernelFlash.rememberExternalKernelFlasher
 import com.sukisu.ultra.ui.screen.flash.FlashIt
 import com.sukisu.ultra.ui.screen.scriptrun.ScriptRunArg
 import com.sukisu.ultra.ui.util.getFileName
@@ -38,32 +39,55 @@ fun rememberZipFileIntentHandler(): suspend (Intent) -> Unit {
     val context = LocalContext.current
     val navigator = LocalNavigator.current
     val confirmDialog = rememberConfirmDialog()
+    val flashKernel = rememberExternalKernelFlasher()
     val strings = Strings(
         safeMode = stringResource(R.string.safe_mode_module_disabled),
         zipTypeModule = stringResource(R.string.zip_type_module),
         zipFileUnknown = stringResource(R.string.zip_file_unknown),
         moduleInstallPrompt = stringResource(R.string.module_install_prompt_with_name),
         module = stringResource(R.string.module),
+        kernel = stringResource(R.string.horizon_kernel),
+        kernelInstallPrompt = stringResource(R.string.external_kernel_flash_prompt),
+        separateKernel = stringResource(R.string.external_kernel_separate_files),
     )
 
-    return remember(context, navigator, confirmDialog, strings) {
+    return remember(context, navigator, confirmDialog, strings, flashKernel) {
         val handler: suspend (Intent) -> Unit = { intent ->
             val zipUris = extractZipUris(context, intent)
             if (zipUris.isNotEmpty()) {
                 val zipTypes = withContext(Dispatchers.IO) {
                     zipUris.map { uri -> detectZipType(context, uri) }
                 }
-                val (moduleUris, unknownUris) = categorizeUris(zipUris, zipTypes)
-                val finalModuleUris = moduleUris + unknownUris
-                val fileNames = buildFileNames(zipUris, zipTypes, context, strings)
-                val confirmContent = strings.moduleInstallPrompt.format(fileNames)
+                if (ZipType.ANYKERNEL3 in zipTypes) {
+                    if (zipUris.size != 1) {
+                        Toast.makeText(context, strings.separateKernel, Toast.LENGTH_LONG).show()
+                    } else if (confirmDialog.awaitConfirm(
+                            title = strings.kernel,
+                            content = strings.kernelInstallPrompt.format(
+                                zipUris.single().getFileName(context) ?: strings.zipFileUnknown
+                            ),
+                        ) == ConfirmResult.Confirmed
+                    ) {
+                        val cachedUri = withContext(Dispatchers.IO) {
+                            copyUriToCache(context, zipUris.single())
+                        }
+                        if (cachedUri != null) {
+                            flashKernel(cachedUri)
+                        } else {
+                            Toast.makeText(context, strings.zipFileUnknown, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    val fileNames = buildFileNames(zipUris, zipTypes, context, strings)
+                    val confirmContent = strings.moduleInstallPrompt.format(fileNames)
 
-                if (confirmDialog.awaitConfirm(
-                        title = strings.module,
-                        content = confirmContent,
-                    ) == ConfirmResult.Confirmed
-                ) {
-                    handleConfirmed(finalModuleUris, context, navigator, strings)
+                    if (confirmDialog.awaitConfirm(
+                            title = strings.module,
+                            content = confirmContent,
+                        ) == ConfirmResult.Confirmed
+                    ) {
+                        handleConfirmed(zipUris, context, navigator, strings)
+                    }
                 }
             }
         }
@@ -80,6 +104,9 @@ private data class Strings(
     val zipFileUnknown: String,
     val moduleInstallPrompt: String,
     val module: String,
+    val kernel: String,
+    val kernelInstallPrompt: String,
+    val separateKernel: String,
 )
 
 private fun extractZipUris(context: Context, intent: Intent): List<Uri> {
@@ -133,19 +160,6 @@ private fun isZipFile(context: Context, intent: Intent, uri: Uri): Boolean {
         fileName.substringBefore('?').endsWith(".apk", ignoreCase = true)
 }
 
-private fun categorizeUris(uris: List<Uri>, types: List<ZipType>): Pair<List<Uri>, List<Uri>> {
-    val moduleUris = mutableListOf<Uri>()
-    val unknownUris = mutableListOf<Uri>()
-
-    uris.forEachIndexed { index, uri ->
-        when (types[index]) {
-            ZipType.MODULE -> moduleUris.add(uri)
-            ZipType.UNKNOWN -> unknownUris.add(uri)
-        }
-    }
-    return moduleUris to unknownUris
-}
-
 private fun buildFileNames(
     uris: List<Uri>,
     types: List<ZipType>,
@@ -154,6 +168,7 @@ private fun buildFileNames(
 ): String = uris.mapIndexed { index, uri ->
     val fileName = uri.getFileName(context) ?: strings.zipFileUnknown
     val typeStr = when (types[index]) {
+        ZipType.ANYKERNEL3 -> strings.kernel
         ZipType.MODULE -> strings.zipTypeModule
         ZipType.UNKNOWN -> strings.zipFileUnknown
     }
@@ -201,7 +216,7 @@ private fun copyUriToCache(context: Context, uri: Uri): Uri? {
         val originalName = uri.getFileName(context) ?: "module.zip"
         val safeName = File(originalName).name
         val suffix = if (safeName.endsWith(".apk", ignoreCase = true)) ".apk" else ".zip"
-        val destFile = File.createTempFile("module_", suffix, context.cacheDir)
+        val destFile = File.createTempFile("external_zip_", suffix, context.cacheDir)
 
         context.contentResolver.openInputStream(uri)?.use { input ->
             destFile.outputStream().use { output -> input.copyTo(output) }
@@ -214,13 +229,10 @@ private fun copyUriToCache(context: Context, uri: Uri): Uri? {
     }
 }
 
-enum class ZipType {
-    MODULE,
-    UNKNOWN,
-}
-
 private fun detectZipType(context: Context, uri: Uri): ZipType {
     val isApk = (uri.getFileName(context) ?: uri.toString()).endsWith(".apk", ignoreCase = true)
+
+    if (isApk) return ZipType.MODULE
 
     return try {
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -230,27 +242,6 @@ private fun detectZipType(context: Context, uri: Uri): ZipType {
         Log.w(TAG, "Unable to inspect ZIP file: $uri", exception)
         defaultType(isApk)
     }
-}
-
-private fun detectFromZipStream(zipStream: ZipInputStream): ZipType {
-    var entry = zipStream.nextEntry
-    while (entry != null) {
-        val entryName = entry.name.lowercase()
-        val isModuleEntry = entryName == "module.prop" ||
-            entryName.endsWith("/module.prop") ||
-            entryName == "install.sh" ||
-            entryName.endsWith("/install.sh") ||
-            entryName == "action.sh" ||
-            entryName.endsWith("/action.sh") ||
-            entryName.endsWith(".patch") ||
-            entryName == "sepolicy.rule" ||
-            entryName.endsWith("/sepolicy.rule")
-
-        zipStream.closeEntry()
-        if (isModuleEntry) return ZipType.MODULE
-        entry = zipStream.nextEntry
-    }
-    return ZipType.UNKNOWN
 }
 
 private fun defaultType(isApk: Boolean) = if (isApk) ZipType.MODULE else ZipType.UNKNOWN
