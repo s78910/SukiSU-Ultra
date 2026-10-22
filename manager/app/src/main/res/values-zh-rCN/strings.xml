@@ -727,10 +727,10 @@
     <string name="extension_section_title">拓展功能</string>
     <string name="extension_section_summary">内核拓展功能</string>
     <string name="extension_status_supported">支持</string>
-    <string name="extension_status_unsupported">内核不支持此拓展功能</string>
+    <string name="extension_status_unsupported">@string/config_status_unsupported</string>
     <string name="extension_status_forced">已强制</string>
     <string name="extension_status_managed">模块托管</string>
-    <string name="extension_status_enabled">已启用</string>
+    <string name="extension_status_enabled">@string/config_status_applied</string>
     <string name="extension_status_disabled">已禁用</string>
     <string name="extension_kpm_title">KPM (内核补丁模块)</string>
     <string name="extension_kpm_summary">运行时加载第三方 .kpm 模块。需要内核支持 KPM。</string>
@@ -758,4 +758,17 @@
     <string name="susfs_runtime_version">版本</string>
     <string name="susfs_runtime_variant">内核类型</string>
     <string name="susfs_runtime_implementation">实现方式</string>
+    <string name="config_status_applied">已生效</string>
+    <string name="config_status_reboot">已保存，重启后生效</string>
+    <string name="config_status_unsupported">当前内核不支持</string>
+    <string name="config_status_failed">应用失败</string>
+    <string name="config_status_mismatch">配置与运行状态不一致</string>
+    <string name="config_status_unverified">运行状态尚未验证</string>
+    <string name="config_saved">已保存</string>
+    <string name="config_not_saved">未保存</string>
+    <string name="config_save_unknown">保存状态尚未验证</string>
+    <string name="config_command_rejected">命令被拒绝，请检查内核支持情况和 Root 权限</string>
+    <string name="config_autostart_required">未开启自动启动，重启时不会执行此配置</string>
+    <string name="config_status_explanation">开关表示已保存配置，不代表运行状态。下方结果仅来自本次操作；重新加载配置不会验证内核状态。</string>
+    <string name="config_exit_code">命令退出码：%1$d</string>
 </resources>

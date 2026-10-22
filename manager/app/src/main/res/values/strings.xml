@@ -731,10 +731,10 @@
     <string name="extension_section_title">Extension features</string>
     <string name="extension_section_summary">Kernel extension features</string>
     <string name="extension_status_supported">Supported</string>
-    <string name="extension_status_unsupported">The kernel does not support this extension</string>
+    <string name="extension_status_unsupported">@string/config_status_unsupported</string>
     <string name="extension_status_forced">Forced</string>
     <string name="extension_status_managed">Module-managed</string>
-    <string name="extension_status_enabled">Enabled</string>
+    <string name="extension_status_enabled">@string/config_status_applied</string>
     <string name="extension_status_disabled">Disabled</string>
     <string name="extension_kpm_title">KPM (Kernel Patch Module)</string>
     <string name="extension_kpm_summary">Load third-party .kpm modules at runtime. Requires a KPM-capable kernel build.</string>
@@ -765,4 +765,17 @@
     <string name="susfs_runtime_version">Version</string>
     <string name="susfs_runtime_variant">Kernel variant</string>
     <string name="susfs_runtime_implementation">Implementation</string>
+    <string name="config_status_applied">Applied</string>
+    <string name="config_status_reboot">Saved; takes effect after reboot</string>
+    <string name="config_status_unsupported">Not supported by the current kernel</string>
+    <string name="config_status_failed">Application failed</string>
+    <string name="config_status_mismatch">Configuration and runtime state differ</string>
+    <string name="config_status_unverified">Runtime state not verified</string>
+    <string name="config_saved">Saved</string>
+    <string name="config_not_saved">Not saved</string>
+    <string name="config_save_unknown">Save state not verified</string>
+    <string name="config_command_rejected">Command rejected; check kernel support and root access</string>
+    <string name="config_autostart_required">Auto-start is disabled; this configuration will not run on reboot</string>
+    <string name="config_status_explanation">Switches show saved configuration, not runtime state. Runtime results below are from this session; reload does not verify kernel state.</string>
+    <string name="config_exit_code">Command exit code: %1$d</string>
 </resources>

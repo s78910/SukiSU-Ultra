@@ -93,30 +93,41 @@ object SuSFSPathManager {
     }
 
     @SuppressLint("StringFormatMatches")
-    suspend fun addAppPaths(context: Context, packageName: String): Boolean {
-        val path1 = "${SuSFSConfig.DEFAULT_ANDROID_DATA_PATH}/$packageName"
-        val path2 = "${SuSFSConfig.MEDIA_DATA_PATH}/$packageName"
-        val uid = getAppUid(context, packageName) ?: return false
-        val path3 = buildUidPath(uid)
-
-        var successCount = 0
-        if (addSusPathInternal(context, path1, showToast = false)) successCount++
-        if (addSusPathInternal(context, path2, showToast = false)) successCount++
-        if (addSusPathInternal(context, path3, showToast = false)) successCount++
-        return successCount > 0
+    suspend fun getAppPaths(context: Context, packageName: String): List<String> {
+        val uid = getAppUid(context, packageName) ?: return emptyList()
+        return listOf(
+            "${SuSFSConfig.DEFAULT_ANDROID_DATA_PATH}/$packageName",
+            "${SuSFSConfig.MEDIA_DATA_PATH}/$packageName",
+            buildUidPath(uid)
+        )
     }
 
-    @SuppressLint("StringFormatInvalid")
-    private suspend fun addSusPathInternal(context: Context, path: String, showToast: Boolean = true): Boolean {
-        val result = SuSFSCommands.executeSusfsCommandWithOutput("add-sus-path '$path'")
-        val isActuallySuccessful = result.isSuccess && !result.output.contains("not found, skip adding")
-        if (isActuallySuccessful) {
+    suspend fun addAppPaths(context: Context, packageName: String): Boolean {
+        val paths = getAppPaths(context, packageName)
+        val results = paths.map { addSusPathInternal(context, it, showToast = false) }
+        return results.isNotEmpty() && results.all { it }
+    }
+
+    suspend fun addSusPathWithResult(context: Context, path: String): SuSFSCommands.CommandResult {
+        val result = SuSFSCommands.executeSusfsCommandWithOutput("add-sus-path ${SuSFSConfig.shellQuote(path)}")
+        val success = result.isSuccess && !result.output.contains("not found, skip adding")
+        if (success) {
             SuSFSRepository.saveSusPaths(SuSFSRepository.getSusPaths() + path)
-            if (SuSFSRepository.isAutoStartEnabled()) SuSFSCommands.updateMagiskModule()
-        } else if (showToast) {
-            showToast(context, result.errorOutput.ifEmpty { context.getString(R.string.susfs_command_failed) })
+            if (SuSFSRepository.isAutoStartEnabled()) {
+                check(SuSFSCommands.updateMagiskModule()) { "Failed to update SUSFS boot module" }
+            }
         }
-        return isActuallySuccessful
+        return result.copy(isSuccess = success)
+    }
+
+    private suspend fun addSusPathInternal(context: Context, path: String, showToast: Boolean = true): Boolean {
+        val result = addSusPathWithResult(context, path)
+        if (!result.isSuccess && showToast) {
+            showToast(context, result.errorOutput.ifBlank { result.output }.ifBlank {
+                context.getString(R.string.susfs_command_failed)
+            })
+        }
+        return result.isSuccess
     }
 
     suspend fun addSusPath(context: Context, path: String): Boolean = addSusPathInternal(context, path, showToast = true)

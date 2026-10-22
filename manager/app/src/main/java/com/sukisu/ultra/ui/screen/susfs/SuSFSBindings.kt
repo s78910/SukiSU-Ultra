@@ -97,15 +97,7 @@ internal fun SuSFSDialogs(uiState: SuSFSUiState, viewModel: SuSFSViewModel) {
         showDialog = uiState.showAddAppPathDialog,
         onDismiss = { viewModel.closeAddAppPathDialog() },
         onConfirm = { packageNames ->
-            viewModel.performOperation {
-                var successCount = 0
-                packageNames.forEach { packageName ->
-                    if (SuSFSManager.addAppPaths(context, packageName)) successCount++
-                }
-                check(successCount > 0)
-                viewModel.refreshConfig()
-                viewModel.closeAddAppPathDialog()
-            }
+            viewModel.addAppPaths(context, packageNames.toList())
         },
         isLoading = uiState.isLoading,
         apps = uiState.installedApps,
@@ -235,6 +227,7 @@ internal fun SuSFSDialogs(uiState: SuSFSUiState, viewModel: SuSFSViewModel) {
 @Composable
 internal fun SuSFSTabContent(uiState: SuSFSUiState, viewModel: SuSFSViewModel) {
     val context = LocalContext.current
+    com.sukisu.ultra.ui.component.ConfigResults(uiState.operationResults)
     when (uiState.selectedTab) {
         SuSFSTab.BASIC_SETTINGS -> {
             RuntimeInfoContent(uiState.runtimeInfo)

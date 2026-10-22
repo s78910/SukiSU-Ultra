@@ -29,6 +29,7 @@ fun FeatureTogglesContent(
     hideSusMountsForAllProcs: Boolean,
     onHideSusMountsForAllProcsChange: (Boolean) -> Unit,
 ) {
+    com.sukisu.ultra.ui.component.ConfigStatusNote(stringResource(R.string.config_status_explanation))
     when (LocalUiMode.current) {
         UiMode.Material -> {
             SegmentedColumn(
