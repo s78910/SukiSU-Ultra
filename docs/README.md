@@ -39,7 +39,7 @@ See [`guide/how-to-integrate.md`](guide/how-to-integrate.md)
 
 ## Translation
 
-If you need to submit a translation for the manager, please go to [Crowdin](https://crowdin.com/project/SukiSU-Ultra).
+If you need to contribute to the translation of the manager, please go to [Weblate](https://hosted.weblate.org/projects/sukisu-ultra/).
 
 ## KPM Support
 

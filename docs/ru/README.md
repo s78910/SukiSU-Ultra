@@ -39,7 +39,7 @@
 
 ## Перевод
 
-Если вы хотите предложить перевод для менеджера, пожалуйста, воспользуйтесь [Crowdin](https://crowdin.com/project/SukiSU-Ultra).
+Если вы хотите предложить перевод для менеджера, пожалуйста, воспользуйтесь [Weblate](https://hosted.weblate.org/projects/sukisu-ultra/).
 
 ## Поддержка KPM
 

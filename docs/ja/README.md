@@ -83,7 +83,7 @@ KPM テンプレートのアドレス: https://github.com/udochina/KPM-Build-Any
 
 ## その他のリンク
 
-**マネージャーの翻訳を行う場合** https://crowdin.com/project/SukiSU-Ultra
+**マネージャーの翻訳を行う場合** https://hosted.weblate.org/projects/sukisu-ultra/
 
 - [その他パッチ済み GKI](https://github.com/ShirkNeko/GKI_KernelSU_SUSFS) ZRAM パッチ、KPM、susfs が含まれています...
 - [パッチの少ない GKI](https://github.com/MiRinFork/GKI_SukiSU_SUSFS/releases) susfs のみ
