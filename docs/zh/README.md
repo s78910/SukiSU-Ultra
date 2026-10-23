@@ -37,10 +37,6 @@
 
 查看 [`guide/how-to-integrate.md`](guide/how-to-integrate.md)
 
-## 参与翻译
-
-要将 SukiSU 翻译成您的语言，或完善现有的翻译，请使用 [Weblate](https://hosted.weblate.org/projects/sukisu-ultra/).
-
 ## KPM 支持
 
 - 基于 KernelPatch 开发，移除了与 KernelSU 重复的功能。
@@ -60,6 +56,13 @@
 
 1. 卸载管理器后系统卡住？
    卸载 _com.sony.playmemories.mobile_
+
+
+## 参与翻译
+
+要将 SukiSU 翻译成您的语言，或完善现有的翻译，请使用 [Weblate](https://hosted.weblate.org/projects/sukisu-ultra/).
+
+<a href="https://hosted.weblate.org/engage/sukisu-ultra/"><img src="https://hosted.weblate.org/widget/sukisu-ultra/multi-auto.svg" alt="翻译状态"></a>
 
 ## 许可证
 

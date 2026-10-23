@@ -37,10 +37,6 @@ See [`guide/installation.md`](guide/installation.md)
 
 See [`guide/how-to-integrate.md`](guide/how-to-integrate.md)
 
-## Translation
-
-If you need to contribute to the translation of the manager, please go to [Weblate](https://hosted.weblate.org/projects/sukisu-ultra/).
-
 ## KPM Support
 
 - Based on KernelPatch, we removed features redundant with KSU and retained only KPM support.
@@ -60,6 +56,12 @@ If you need to contribute to the translation of the manager, please go to [Webla
 
 1. Device stuck upon manager app uninstallation?
    Uninstall _com.sony.playmemories.mobile_
+
+## Translation
+
+If you need to contribute to the translation of the manager, please go to [Weblate](https://hosted.weblate.org/projects/sukisu-ultra/).
+
+<a href="https://hosted.weblate.org/engage/sukisu-ultra/"><img src="https://hosted.weblate.org/widget/sukisu-ultra/multi-auto.svg" alt="Translation status"></a>
 
 ## Sponsor
 
