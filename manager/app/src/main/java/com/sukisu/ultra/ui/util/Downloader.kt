@@ -62,7 +62,10 @@ private fun checkReleaseVersion(endpoint: String, isCi: Boolean): LatestVersionI
     val url = "https://api.github.com/repos/SukiSU-Ultra/SukiSU-Ultra/releases/$endpoint"
     return runCatching {
         ksuApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
-            if (!response.isSuccessful) return LatestVersionInfo()
+            if (!response.isSuccessful) {
+                android.util.Log.w("UpdateCheck", "$endpoint: HTTP ${response.code}")
+                return LatestVersionInfo()
+            }
             val json = org.json.JSONObject(response.body.string())
             val assets = json.getJSONArray("assets")
             val changelog = json.optString("body")
@@ -71,12 +74,15 @@ private fun checkReleaseVersion(endpoint: String, isCi: Boolean): LatestVersionI
                     ?.groupValues?.get(1)?.toLongOrNull() ?: return LatestVersionInfo()
                 val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: return LatestVersionInfo()
                 val apkPattern = Regex(
-                    """^SukiSU_v.+_${versionCode}-${Regex.escape(abi)}-release\.apk$"""
+                    """^SukiSU_.+_${versionCode}-${Regex.escape(abi)}-release\.apk$"""
                 )
                 val apk = (0 until assets.length()).asSequence()
                     .mapNotNull { assets.optJSONObject(it) }
                     .firstOrNull { apkPattern.matches(it.optString("name")) }
-                    ?: return LatestVersionInfo()
+                    ?: run {
+                        android.util.Log.w("UpdateCheck", "CI: no APK for version=$versionCode, abi=$abi")
+                        return LatestVersionInfo()
+                    }
                 val downloadUrl = apk.optString("browser_download_url")
                     .takeIf { it.startsWith("https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/manager-ci/") }
                     ?: return LatestVersionInfo()
@@ -99,5 +105,7 @@ private fun checkReleaseVersion(endpoint: String, isCi: Boolean): LatestVersionI
             }
             LatestVersionInfo()
         }
+    }.onFailure {
+        android.util.Log.w("UpdateCheck", "$endpoint: update check failed", it)
     }.getOrDefault(LatestVersionInfo())
 }
