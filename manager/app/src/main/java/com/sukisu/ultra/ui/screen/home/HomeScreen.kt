@@ -29,6 +29,7 @@ import com.sukisu.ultra.ui.component.bottombar.BottomBarDestination
 import com.sukisu.ultra.ui.component.dialog.rememberLoadingDialog
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
+import com.sukisu.ultra.ui.util.rootAvailable
 import com.sukisu.ultra.ui.viewmodel.HomeViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -47,10 +48,8 @@ fun HomePager(
     val latestIsCurrentPage by rememberUpdatedState(isCurrentPage)
     val initialResumeHandled = rememberSaveable { mutableStateOf(false) }
 
-    var hasActivated by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(isCurrentPage) {
-        if (isCurrentPage && !hasActivated) {
-            hasActivated = true
+        if (isCurrentPage) {
             viewModel.refresh()
         }
     }
@@ -69,6 +68,16 @@ fun HomePager(
         onSuperuserClick = { mainPagerState.animateToPage(BottomBarDestination.SuperUser.ordinal) },
         onModuleClick = { mainPagerState.animateToPage(BottomBarDestination.Module.ordinal) },
         onOpenUrl = uriHandler::openUri,
+        onCiUpdateClick = {
+            if (!rootAvailable() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O &&
+                !context.packageManager.canRequestPackageInstalls()) {
+                Toast.makeText(context, R.string.ci_update_install_permission, Toast.LENGTH_LONG).show()
+                context.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    android.net.Uri.parse("package:${context.packageName}")))
+            } else {
+                viewModel.installCiUpdate()
+            }
+        },
         onJailbreakClick = {
             loadingDialog.showLoading()
             context.startService(Intent(context, MagicaService::class.java))

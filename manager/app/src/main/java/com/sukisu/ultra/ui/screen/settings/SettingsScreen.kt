@@ -1,9 +1,9 @@
 package com.sukisu.ultra.ui.screen.settings
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -15,7 +15,6 @@ import com.sukisu.ultra.ui.LocalUiMode
 import com.sukisu.ultra.ui.UiMode
 import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
-import com.sukisu.ultra.ui.util.getSuSFSStatus
 import com.sukisu.ultra.ui.viewmodel.SettingsViewModel
 
 @Composable
@@ -44,8 +43,10 @@ fun SettingPager(
         onPauseOrDispose { }
     }
 
+
     val actions = SettingsScreenActions(
         onSetCheckUpdate = viewModel::setCheckUpdate,
+        onSetCheckCiUpdate = viewModel::setCheckCiUpdate,
         onSetCheckModuleUpdate = viewModel::setCheckModuleUpdate,
         onOpenTheme = { navigator.push(Route.ColorPalette) },
         onSetUiModeIndex = { index ->

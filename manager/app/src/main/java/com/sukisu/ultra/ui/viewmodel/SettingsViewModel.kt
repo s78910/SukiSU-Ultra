@@ -104,6 +104,7 @@ class SettingsViewModel(
                     uiMode = uiMode,
                     appLanguage = appLanguage,
                     checkUpdate = checkUpdate,
+                    checkCiUpdate = repo.checkCiUpdate,
                     checkModuleUpdate = checkModuleUpdate,
                     alternativeIcon = alternativeIcon,
                     themeMode = themeMode,
@@ -145,6 +146,11 @@ class SettingsViewModel(
                 )
             }
         }
+    }
+
+    fun setCheckCiUpdate(enabled: Boolean) {
+        repo.checkCiUpdate = enabled
+        _uiState.update { it.copy(checkCiUpdate = enabled) }
     }
 
     fun setCheckUpdate(enabled: Boolean) {

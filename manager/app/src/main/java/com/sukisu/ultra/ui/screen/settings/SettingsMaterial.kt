@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.SystemUpdateAlt
@@ -101,30 +102,39 @@ fun SettingPagerMaterial(
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
         ) {
-            KsuIsValid {
-                SegmentedColumn(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
-                    content = listOf(
-                        {
-                            SegmentedSwitchItem(
-                                icon = Icons.Filled.SystemUpdate,
-                                title = stringResource(id = R.string.settings_check_update),
-                                summary = stringResource(id = R.string.settings_check_update_summary),
-                                checked = uiState.checkUpdate,
-                                onCheckedChange = actions.onSetCheckUpdate
-                            )
-                        },
-                        {
-                            SegmentedSwitchItem(
-                                icon = Icons.Filled.SystemUpdateAlt,
-                                title = stringResource(id = R.string.settings_module_check_update),
-                                summary = stringResource(id = R.string.settings_check_update_summary),
-                                checked = uiState.checkModuleUpdate,
-                                onCheckedChange = actions.onSetCheckModuleUpdate
-                            )
-                        }
+            SegmentedColumn(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+            ) {
+                item {
+                    SegmentedSwitchItem(
+                        icon = Icons.Filled.SystemUpdate,
+                        title = stringResource(R.string.settings_check_update),
+                        summary = stringResource(R.string.settings_check_update_summary),
+                        checked = uiState.checkUpdate,
+                        onCheckedChange = actions.onSetCheckUpdate,
                     )
-                )
+                }
+                item(visible = uiState.checkUpdate) {
+                    SegmentedSwitchItem(
+                        icon = Icons.Filled.Science,
+                        title = stringResource(R.string.settings_check_ci_update),
+                        summary = stringResource(R.string.settings_check_ci_update_summary),
+                        checked = uiState.checkCiUpdate,
+                        onCheckedChange = actions.onSetCheckCiUpdate,
+                    )
+                }
+
+                item {
+                    KsuIsValid {
+                        SegmentedSwitchItem(
+                            icon = Icons.Filled.SystemUpdateAlt,
+                            title = stringResource(R.string.settings_module_check_update),
+                            summary = stringResource(R.string.settings_check_update_summary),
+                            checked = uiState.checkModuleUpdate,
+                            onCheckedChange = actions.onSetCheckModuleUpdate,
+                        )
+                    }
+                }
             }
 
             SegmentedColumn(
