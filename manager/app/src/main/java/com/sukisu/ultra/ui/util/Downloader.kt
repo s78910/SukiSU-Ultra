@@ -1,6 +1,7 @@
 package com.sukisu.ultra.ui.util
 
 import android.net.Uri
+import android.os.Build
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
@@ -59,8 +60,6 @@ fun checkNewCiVersion(): LatestVersionInfo = checkReleaseVersion("tags/manager-c
 private fun checkReleaseVersion(endpoint: String, isCi: Boolean): LatestVersionInfo {
     if (!isNetworkAvailable(ksuApp)) return LatestVersionInfo()
     val url = "https://api.github.com/repos/SukiSU-Ultra/SukiSU-Ultra/releases/$endpoint"
-    val releaseApkRegex =
-        Regex("""^SukiSU_v(.+?)_(\d+)-release(?!-spoofed)[A-Za-z0-9-]*\.apk$""")
     return runCatching {
         ksuApp.okhttpClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
             if (!response.isSuccessful) return LatestVersionInfo()
@@ -70,23 +69,33 @@ private fun checkReleaseVersion(endpoint: String, isCi: Boolean): LatestVersionI
             if (isCi) {
                 val versionCode = Regex("""\((\d+)\)""").find(json.optString("name"))
                     ?.groupValues?.get(1)?.toLongOrNull() ?: return LatestVersionInfo()
+                val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: return LatestVersionInfo()
+                val apkPattern = Regex(
+                    """^SukiSU_v.+_${versionCode}-${Regex.escape(abi)}-release\.apk$"""
+                )
                 val apk = (0 until assets.length()).asSequence()
                     .mapNotNull { assets.optJSONObject(it) }
-                    .firstOrNull { it.optString("name") == "manager-ci.apk" }
+                    .firstOrNull { apkPattern.matches(it.optString("name")) }
                     ?: return LatestVersionInfo()
                 val downloadUrl = apk.optString("browser_download_url")
                     .takeIf { it.startsWith("https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/manager-ci/") }
                     ?: return LatestVersionInfo()
                 return LatestVersionInfo(versionCode, downloadUrl, changelog)
             }
-            for (i in 0 until assets.length()) {
-                val asset = assets.getJSONObject(i)
-                val match = releaseApkRegex.matchEntire(asset.getString("name")) ?: continue
-                return LatestVersionInfo(
-                    match.groupValues[2].toLong(),
-                    asset.getString("browser_download_url"),
-                    json.optString("body"),
-                )
+            val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: return LatestVersionInfo()
+            val archPattern = Regex("""^SukiSU_v(.+?)_(\d+)-${Regex.escape(abi)}-release\.apk$""")
+            val universalPattern = Regex("""^SukiSU_v(.+?)_(\d+)-release\.apk$""")
+            val apkAssets = (0 until assets.length()).map { assets.getJSONObject(it) }
+            // Prefer the device-specific asset, falling back to an actual universal APK only.
+            for (pattern in listOf(archPattern, universalPattern)) {
+                for (asset in apkAssets) {
+                    val match = pattern.matchEntire(asset.getString("name")) ?: continue
+                    return LatestVersionInfo(
+                        match.groupValues[2].toLong(),
+                        asset.getString("browser_download_url"),
+                        changelog,
+                    )
+                }
             }
             LatestVersionInfo()
         }

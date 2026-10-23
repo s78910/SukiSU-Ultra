@@ -70,10 +70,14 @@ class HomeViewModel(
         }
     }
 
-    fun installCiUpdate() {
-        val info = _uiState.value.ciLatestVersionInfo
+    fun installCiUpdate() = installUpdate(isCi = true)
+
+    fun installReleaseUpdate() = installUpdate(isCi = false)
+
+    private fun installUpdate(isCi: Boolean) {
+        val info = if (isCi) _uiState.value.ciLatestVersionInfo else _uiState.value.latestVersionInfo
         if (info.versionCode <= _uiState.value.currentManagerVersionCode || info.downloadUrl.isBlank()) return
-        if (!settingsRepo.checkUpdate || !settingsRepo.checkCiUpdate || _uiState.value.ciUpdateBusy) return
+        if (!settingsRepo.checkUpdate || (isCi && !settingsRepo.checkCiUpdate) || _uiState.value.ciUpdateBusy) return
         _uiState.update { it.copy(ciUpdateBusy = true) }
         viewModelScope.launch {
             try {

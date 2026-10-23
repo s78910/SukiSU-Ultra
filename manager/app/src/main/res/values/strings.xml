@@ -809,8 +809,8 @@
     <string name="ci_update_not_newer">The latest CI build is not newer than the installed version.</string>
     <string name="ci_update_signature_mismatch">CI APK signature differs from this installation. Update cancelled.</string>
     <string name="ci_update_install_permission">Allow this app to install unknown apps, then check again.</string>
-    <string name="ci_update_install_submitted">CI update submitted to the system installer. Confirm installation if prompted.</string>
-    <string name="ci_update_install_success">CI update installed successfully.</string>
-    <string name="ci_update_install_failed">CI update installation failed or was cancelled.</string>
+    <string name="ci_update_install_submitted">Update submitted to the system installer. Confirm installation if prompted.</string>
+    <string name="ci_update_install_success">Update installed successfully.</string>
+    <string name="ci_update_install_failed">Update installation failed or was cancelled.</string>
     <string name="ci_update_available">New CI build available (#%1$d)</string>
 </resources>

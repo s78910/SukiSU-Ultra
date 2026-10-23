@@ -77,4 +77,5 @@ data class HomeActions(
     val onSuperuserClick: () -> Unit = {},
     val onModuleClick: () -> Unit = {},
     val onCiUpdateClick: () -> Unit = {},
+    val onReleaseUpdateClick: () -> Unit = {},
 )

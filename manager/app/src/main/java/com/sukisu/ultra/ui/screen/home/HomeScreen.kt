@@ -1,5 +1,11 @@
 package com.sukisu.ultra.ui.screen.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -62,22 +68,39 @@ fun HomePager(
         onPauseOrDispose { }
     }
 
+    var pendingCiInstall by rememberSaveable { mutableStateOf(false) }
+    val storagePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            if (pendingCiInstall) viewModel.installCiUpdate() else viewModel.installReleaseUpdate()
+        }
+    }
+    val startUpdate: (Boolean) -> Unit = { isCi ->
+        scope.launch {
+            val hasRoot = withContext(Dispatchers.IO) { rootAvailable() }
+            when {
+                !hasRoot && !context.packageManager.canRequestPackageInstalls() -> {
+                    Toast.makeText(context, R.string.ci_update_install_permission, Toast.LENGTH_LONG).show()
+                    context.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        android.net.Uri.parse("package:${context.packageName}")))
+                }
+                Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED -> {
+                    pendingCiInstall = isCi
+                    storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                }
+                else -> if (isCi) viewModel.installCiUpdate() else viewModel.installReleaseUpdate()
+            }
+        }
+    }
+
     val mainPagerState = LocalMainPagerState.current
     val actions = HomeActions(
         onInstallClick = { navigator.push(Route.Install()) },
         onSuperuserClick = { mainPagerState.animateToPage(BottomBarDestination.SuperUser.ordinal) },
         onModuleClick = { mainPagerState.animateToPage(BottomBarDestination.Module.ordinal) },
         onOpenUrl = uriHandler::openUri,
-        onCiUpdateClick = {
-            if (!rootAvailable() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O &&
-                !context.packageManager.canRequestPackageInstalls()) {
-                Toast.makeText(context, R.string.ci_update_install_permission, Toast.LENGTH_LONG).show()
-                context.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                    android.net.Uri.parse("package:${context.packageName}")))
-            } else {
-                viewModel.installCiUpdate()
-            }
-        },
+        onCiUpdateClick = { startUpdate(true) },
+        onReleaseUpdateClick = { startUpdate(false) },
         onJailbreakClick = {
             loadingDialog.showLoading()
             context.startService(Intent(context, MagicaService::class.java))

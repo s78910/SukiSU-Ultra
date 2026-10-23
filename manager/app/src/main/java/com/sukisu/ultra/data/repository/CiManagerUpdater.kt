@@ -1,5 +1,10 @@
 package com.sukisu.ultra.data.repository
 
+import android.content.ContentValues
+import android.os.Environment
+import android.provider.MediaStore
+import android.media.MediaScannerConnection
+import androidx.core.net.toUri
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -18,7 +23,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipFile
 
-/** Downloads the APK asset from the public rolling CI prerelease and installs it. */
+/** Shared in-app release/CI installer. Keeps a verified APK in public Downloads before installing. */
 class CiManagerUpdater(private val context: Context) {
     fun updateAndInstall(update: LatestVersionInfo): Boolean {
         if (!update.downloadUrl.startsWith(RELEASE_ASSET_PREFIX)) {
@@ -30,6 +35,7 @@ class CiManagerUpdater(private val context: Context) {
         try {
             download(update.downloadUrl, apk)
             verifyApk(apk, abi, update.versionCode)
+            saveToDownloads(apk, update.downloadUrl)
             if (getRootShell().isRoot) {
                 val result = withNewRootShell {
                     if (!isRoot) throw IOException(context.getString(R.string.ci_update_install_failed))
@@ -51,6 +57,51 @@ class CiManagerUpdater(private val context: Context) {
             }
         } finally {
             apk.delete()
+        }
+    }
+
+    private fun saveToDownloads(apk: File, url: String) {
+        val name = url.toUri().lastPathSegment
+            ?.substringAfterLast('/')?.substringAfterLast('\\')
+            ?.takeIf { it.endsWith(".apk") } ?: "SukiSU-update.apk"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = context.contentResolver
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, name)
+                put(MediaStore.Downloads.MIME_TYPE, "application/vnd.android.package-archive")
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw IOException("Cannot create APK in Downloads")
+            try {
+                val output = resolver.openOutputStream(uri) ?: throw IOException("Cannot write APK to Downloads")
+                output.use { out -> apk.inputStream().use { it.copyTo(out) } }
+                values.clear()
+                values.put(MediaStore.Downloads.IS_PENDING, 0)
+                if (resolver.update(uri, values, null, null) != 1) throw IOException("Cannot publish APK in Downloads")
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                throw e
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (!directory.isDirectory && !directory.mkdirs()) throw IOException("Cannot create Downloads directory")
+            // Never overwrite another user's download; an incomplete copy is deleted on failure.
+            var destination = File(directory, name)
+            var index = 1
+            while (!destination.createNewFile()) {
+                destination = File(directory, "${name.removeSuffix(".apk")} (${index++}).apk")
+            }
+            try {
+                apk.inputStream().use { input -> destination.outputStream().use { input.copyTo(it) } }
+            } catch (e: Exception) {
+                destination.delete()
+                throw e
+            }
+            MediaScannerConnection.scanFile(context, arrayOf(destination.absolutePath),
+                arrayOf("application/vnd.android.package-archive"), null)
         }
     }
 
@@ -185,7 +236,7 @@ class CiManagerUpdater(private val context: Context) {
 
     companion object {
         private const val RELEASE_ASSET_PREFIX =
-            "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/manager-ci/"
+            "https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases/download/"
         private const val MAX_APK_BYTES = 512L * 1024 * 1024
         private val SUPPORTED_ABIS = setOf("arm64-v8a", "armeabi-v7a", "x86_64", "riscv64")
     }

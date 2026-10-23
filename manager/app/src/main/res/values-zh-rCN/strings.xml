@@ -802,8 +802,8 @@
     <string name="ci_update_not_newer">最新 CI 构建不高于当前已安装版本</string>
     <string name="ci_update_signature_mismatch">CI APK 签名与当前安装版本不一致，已取消更新</string>
     <string name="ci_update_install_permission">请允许此应用安装未知应用，然后返回主页再次点击 CI 更新提示</string>
-    <string name="ci_update_install_submitted">CI 更新已提交系统安装器，如有提示请确认安装</string>
-    <string name="ci_update_install_success">CI 版本更新安装成功</string>
-    <string name="ci_update_install_failed">CI 版本更新安装失败或已取消</string>
+    <string name="ci_update_install_submitted">更新已提交系统安装器，如有提示请确认安装</string>
+    <string name="ci_update_install_success">版本更新安装成功</string>
+    <string name="ci_update_install_failed">版本更新安装失败或已取消</string>
     <string name="ci_update_available">发现新的 CI 构建（#%1$d）</string>
 </resources>

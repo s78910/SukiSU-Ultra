@@ -705,6 +705,33 @@ jobs:
         with:
           name: Manager
           path: ci-release
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Split and sign CI APKs by architecture
+        env:
+          PROD_KEYSTORE: ${{ secrets.KEYSTORE }}
+          PROD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          PROD_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          PROD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$PROD_KEYSTORE"
+          KEYSTORE="$RUNNER_TEMP/manager-ci.jks"
+          trap 'rm -f "$KEYSTORE"' EXIT
+          printf '%s' "$PROD_KEYSTORE" | base64 -d > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          APK=$(find ci-release -type f -name '*.apk' -print -quit)
+          test -n "$APK"
+          python3 split_apk_by_arch.py \
+            -i "$APK" \
+            -o ci-release/split \
+            -K "$KEYSTORE" \
+            -A "$PROD_KEY_ALIAS" \
+            -P "$PROD_KEYSTORE_PASSWORD" \
+            -S "$PROD_KEY_PASSWORD"
       - name: Publish rolling CI prerelease
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -718,20 +745,19 @@ jobs:
             echo "Skipping outdated build"
             exit 0
           fi
-          APK=$(find ci-release -type f -name '*.apk' | head -n 1)
+          APK=$(find ci-release/split -type f -name '*.apk' -print -quit)
           test -n "$APK"
           VERSION_CODE=$(python3 -c 'import re,sys; m=re.search(r"_(\d+)-(?:(?:arm64-v8a|armeabi-v7a|x86_64|riscv64)-)?release",sys.argv[1]); print(m.group(1) if m else "")' "$APK")
           test -n "$VERSION_CODE"
-          mv "$APK" ci-release/manager-ci.apk
           if ! gh release view manager-ci >/dev/null 2>&1; then
             gh release create manager-ci --target "$GITHUB_SHA" --prerelease --latest=false \
               --title "Manager CI ($VERSION_CODE)" --notes 'Rolling main-branch CI build. Experimental; may be unstable.'
           fi
-          # Replace the rolling APK; publish its version and Markdown notes in the release.
+          # Publish architecture-specific APKs with their original versioned names.
           gh release view manager-ci --json assets --jq '.assets[].name' | while IFS= read -r name; do
             gh release delete-asset manager-ci "$name" --yes
           done
-          gh release upload manager-ci ci-release/manager-ci.apk --clobber
+          gh release upload manager-ci ci-release/split/*.apk --clobber
           {
             printf '## Manager CI\n\n'
             printf -- '- **Branch:** `main`\n'
