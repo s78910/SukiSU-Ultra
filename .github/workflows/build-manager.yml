@@ -741,6 +741,26 @@ jobs:
           name: Manager-spoofed
           path: apks/manager-spoofed
 
+      
+      # --------------------------------------------------------
+      # Prepare signing inputs (needed by split + apksigner)
+      # --------------------------------------------------------
+
+      - name: Prepare signing inputs
+        if: steps.need_upload.outputs.UPLOAD == 'true'
+        env:
+          PROD_KEYSTORE: ${{ secrets.KEYSTORE }}
+          PROD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          PROD_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          PROD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          test -n "$PROD_KEYSTORE"
+          echo "$PROD_KEYSTORE" | base64 -d > key.jks
+          echo "SIGN_KEYSTORE_FILE=key.jks" >> "$GITHUB_ENV"
+          echo "SIGN_KEY_ALIAS=$PROD_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "SIGN_KEYSTORE_PASSWORD=$PROD_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "SIGN_KEY_PASSWORD=$PROD_KEY_PASSWORD" >> "$GITHUB_ENV"
+
 
       # --------------------------------------------------------
       # Split per-arch before uploading (keep full original name)
