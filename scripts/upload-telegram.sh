@@ -31,7 +31,7 @@ html_escape() {
 
 # Keep the useful build context while staying comfortably below Telegram's
 # 1024-character document-caption limit.
-commit_text="$(git log -5 --format='%s by %an' "${GITHUB_SHA:-HEAD}")"
+commit_text="$(git log -1 --format='%s by %an' "${GITHUB_SHA:-HEAD}")"
 commit_text="${commit_text:0:500}"
 title_html="$(html_escape "$TITLE")"
 branch_html="$(html_escape "$BRANCH")"
