@@ -707,7 +707,7 @@ jobs:
           path: ci-release
       - name: Publish rolling CI prerelease
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |

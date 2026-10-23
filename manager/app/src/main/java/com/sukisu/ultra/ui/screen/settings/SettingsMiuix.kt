@@ -1,5 +1,10 @@
 package com.sukisu.ultra.ui.screen.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import com.sukisu.ultra.ui.component.profile.TemporaryRootPreferences
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -133,7 +138,11 @@ fun SettingPagerMiuix(
                             checked = uiState.checkUpdate,
                             onCheckedChange = actions.onSetCheckUpdate
                         )
-                        if (uiState.checkUpdate) {
+                        AnimatedVisibility(
+                            visible = uiState.checkUpdate,
+                            enter = fadeIn() + expandVertically(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
                             SwitchPreference(
                                 title = stringResource(R.string.settings_check_ci_update),
                                 summary = stringResource(R.string.settings_check_ci_update_summary),
@@ -142,7 +151,7 @@ fun SettingPagerMiuix(
                                         Icons.Rounded.Science,
                                         modifier = Modifier.padding(end = 6.dp),
                                         contentDescription = stringResource(R.string.settings_check_ci_update),
-                                        tint = colorScheme.onBackground,
+                                        tint = colorScheme.onBackground
                                     )
                                 },
                                 checked = uiState.checkCiUpdate,
