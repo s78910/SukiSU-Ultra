@@ -43,6 +43,12 @@ on:
       - 'Cargo.toml'
 
   workflow_call:
+    inputs:
+      release_upload:
+        description: 'Upload to the releases Telegram thread'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
 
@@ -903,7 +909,7 @@ jobs:
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID }}
+          MESSAGE_THREAD_ID: ${{ inputs.release_upload && secrets.MESSAGE_RELEASES_THREAD_ID || secrets.MESSAGE_THREAD_ID }}
           GITHUB_EVENT: ${{ toJson(github.event) }}
 
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -929,7 +935,7 @@ jobs:
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_SPOOFED_THREAD_ID }}
+          MESSAGE_THREAD_ID: ${{ inputs.release_upload && secrets.MESSAGE_RELEASES_THREAD_ID || secrets.MESSAGE_SPOOFED_THREAD_ID }}
           GITHUB_EVENT: ${{ toJson(github.event) }}
 
           COMMIT_URL: ${{ github.event.head_commit.url }}
