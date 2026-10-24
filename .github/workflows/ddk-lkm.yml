@@ -27,6 +27,11 @@ on:
         required: false
         default: ''
         type: string
+      release_build:
+        description: 'Mark version metadata as a release build'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build-kernelsu-ko:
@@ -45,6 +50,7 @@ jobs:
         PACKAGE_NAME: ${{ inputs.package_name }}
         EXPECTED_SIZE: ${{ inputs.expected_size }}
         EXPECTED_HASH: ${{ inputs.expected_hash }}
+        RELEASE_BUILD: ${{ inputs.release_build }}
       run: |
         git config --global --add safe.directory /__w/SukiSU-Ultra/SukiSU-Ultra
         cd kernel
@@ -60,6 +66,9 @@ jobs:
         fi
         if [ -n "$EXPECTED_HASH" ]; then
           EXTRA_ARGS="$EXTRA_ARGS KSU_EXPECTED_HASH=$EXPECTED_HASH"
+        fi
+        if [ "$RELEASE_BUILD" = "true" ]; then
+          EXTRA_ARGS="$EXTRA_ARGS KSU_BUILD_REF=release"
         fi
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           EXTRA_ARGS="$EXTRA_ARGS KSU_IS_PR_BUILD=1"
@@ -93,6 +102,7 @@ jobs:
         PACKAGE_NAME: ${{ inputs.package_name }}
         EXPECTED_SIZE: ${{ inputs.expected_size }}
         EXPECTED_HASH: ${{ inputs.expected_hash }}
+        RELEASE_BUILD: ${{ inputs.release_build }}
       run: |
         cd kernel
         make clean
@@ -137,6 +147,9 @@ jobs:
         fi
         if [ -n "$EXPECTED_HASH" ]; then
           EXTRA_ARGS="$EXTRA_ARGS KSU_EXPECTED_HASH=$EXPECTED_HASH"
+        fi
+        if [ "$RELEASE_BUILD" = "true" ]; then
+          EXTRA_ARGS="$EXTRA_ARGS KSU_BUILD_REF=release"
         fi
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           EXTRA_ARGS="$EXTRA_ARGS KSU_IS_PR_BUILD=1"

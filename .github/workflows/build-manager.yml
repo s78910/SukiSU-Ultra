@@ -49,6 +49,11 @@ on:
         required: false
         default: false
         type: boolean
+      release_build:
+        description: 'Mark version metadata as a release build'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
 
@@ -115,6 +120,7 @@ jobs:
     with:
       expected_size: ${{ needs.generate-key.outputs.expected_size || '' }}
       expected_hash: ${{ needs.generate-key.outputs.expected_hash || '' }}
+      release_build: ${{ inputs.release_build || github.ref_type == 'tag' }}
     secrets: inherit
 
   build-ksuinit:
