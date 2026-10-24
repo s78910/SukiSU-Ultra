@@ -30,10 +30,7 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Policy
-import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.SystemUpdate
-import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Icon
@@ -102,40 +99,6 @@ fun SettingPagerMaterial(
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(rememberScrollState())
         ) {
-            KsuIsValid {
-                SegmentedColumn(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
-                ) {
-                    item {
-                        SegmentedSwitchItem(
-                            icon = Icons.Filled.SystemUpdate,
-                            title = stringResource(id = R.string.settings_check_update),
-                            summary = stringResource(id = R.string.settings_check_update_summary),
-                            checked = uiState.checkUpdate,
-                            onCheckedChange = actions.onSetCheckUpdate
-                        )
-                    }
-                    item(visible = uiState.checkUpdate) {
-                        SegmentedSwitchItem(
-                            icon = Icons.Filled.Science,
-                            title = stringResource(id = R.string.settings_check_ci_update),
-                            summary = stringResource(id = R.string.settings_check_ci_update_summary),
-                            checked = uiState.checkCiUpdate,
-                            onCheckedChange = actions.onSetCheckCiUpdate
-                        )
-                    }
-                    item {
-                        SegmentedSwitchItem(
-                            icon = Icons.Filled.SystemUpdateAlt,
-                            title = stringResource(id = R.string.settings_module_check_update),
-                            summary = stringResource(id = R.string.settings_check_update_summary),
-                            checked = uiState.checkModuleUpdate,
-                            onCheckedChange = actions.onSetCheckModuleUpdate
-                        )
-                    }
-                }
-            }
-
             SegmentedColumn(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
                 content = buildList {

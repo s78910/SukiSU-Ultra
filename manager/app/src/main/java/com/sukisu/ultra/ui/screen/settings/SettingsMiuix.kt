@@ -37,10 +37,7 @@ import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Policy
-import androidx.compose.material.icons.rounded.Science
 import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material.icons.rounded.SystemUpdateAlt
 import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -119,63 +116,6 @@ fun SettingPagerMiuix(
                 overscrollEffect = null,
             ) {
                 item {
-                    Card(
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        SwitchPreference(
-                            title = stringResource(id = R.string.settings_check_update),
-                            summary = stringResource(id = R.string.settings_check_update_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Rounded.SystemUpdate,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_check_update),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            checked = uiState.checkUpdate,
-                            onCheckedChange = actions.onSetCheckUpdate
-                        )
-                        AnimatedVisibility(
-                            visible = uiState.checkUpdate,
-                            enter = fadeIn() + expandVertically(),
-                            exit = shrinkVertically() + fadeOut(),
-                        ) {
-                            SwitchPreference(
-                                title = stringResource(R.string.settings_check_ci_update),
-                                summary = stringResource(R.string.settings_check_ci_update_summary),
-                                startAction = {
-                                    Icon(
-                                        Icons.Rounded.Science,
-                                        modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(R.string.settings_check_ci_update),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                checked = uiState.checkCiUpdate,
-                                onCheckedChange = actions.onSetCheckCiUpdate,
-                            )
-                        }
-                        KsuIsValid {
-                            SwitchPreference(
-                                title = stringResource(id = R.string.settings_module_check_update),
-                                summary = stringResource(id = R.string.settings_check_update_summary),
-                                startAction = {
-                                    Icon(
-                                        Icons.Rounded.SystemUpdateAlt,
-                                        modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_check_update),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                checked = uiState.checkModuleUpdate,
-                                onCheckedChange = actions.onSetCheckModuleUpdate
-                            )
-                        }
-                    }
-
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)
