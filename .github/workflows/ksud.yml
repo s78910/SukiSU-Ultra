@@ -87,7 +87,7 @@ jobs:
           if [ "${{github.event_name}}" == "pull_request" ]; then
             export KSU_PACKAGE_NAME="com.resukisu.resukisu.pr${{github.event.pull_request.number}}"
           elif [ "${{github.ref_type}}" != "tag" ] && [ "${{github.ref_name}}" != "main" ]; then
-            export KSU_PACKAGE_NAME="com.resukisu.resukisu.dev"
+            export KSU_PACKAGE_NAME="com.zuoyebang.knowledge"
           fi
 
           if [ "${{ inputs.target }}" == "riscv64-linux-android" ]; then
