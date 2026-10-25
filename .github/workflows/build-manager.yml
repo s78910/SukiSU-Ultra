@@ -936,6 +936,7 @@ jobs:
 
       - name: Upload Manager to telegram
         if: steps.need_upload.outputs.UPLOAD == 'true'
+        timeout-minutes: 10
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
@@ -962,6 +963,7 @@ jobs:
 
       - name: Upload Manager-spoofed to telegram
         if: steps.need_upload.outputs.UPLOAD == 'true'
+        timeout-minutes: 10
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
