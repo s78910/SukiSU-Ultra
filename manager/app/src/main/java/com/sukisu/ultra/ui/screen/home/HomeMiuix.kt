@@ -126,9 +126,15 @@ fun HomePagerMiuix(
                             state = state,
                             actions = actions,
                         )
-                        if (state.checkUpdateEnabled) {
-                            UpdateCard(state = state, actions = actions)
-                        }
+                if (state.showVersionMismatchWarning) {
+                    WarningCard(
+                        stringResource(R.string.version_spoof_home_warning),
+                        onClick = actions.onOpenVersionSpoof,
+                    )
+                }
+                if (state.checkUpdateEnabled) {
+                    UpdateCard(state = state, actions = actions)
+                }
                         if (state.showManagerPrBuildWarning && state.showFullStatus) {
                             WarningCard(stringResource(id = R.string.home_pr_build_warning), level = WarningLevel.Notice)
                         } else if (state.showKernelPrBuildWarning && state.showFullStatus) {
@@ -513,7 +519,7 @@ private fun SupportLinks(
                     tint = colorScheme.onBackground,
                 )
             },
-            onClick = { onOpenUrl("https://patreon.com/weishu") },
+            onClick = { onOpenUrl("https://opencollective.com/sukisu-ultra") },
         )
         ArrowPreference(
             title = stringResource(R.string.home_learn_kernelsu),
