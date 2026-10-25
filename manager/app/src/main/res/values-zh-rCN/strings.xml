@@ -840,4 +840,6 @@
     <string name="version_spoof_section_fields">对外报告的版本</string>
     <string name="version_spoof_section_recovery">警告设置与恢复</string>
     <string name="version_spoof_recovery">恢复内核原始版本：使用 Root 权限删除 /data/adb/ksu/.version_spoof_config，然后重启设备。\n\n重新显示警告：使用 Root 权限删除 /data/adb/ksu/.version_spoof_warning_hidden，然后重启管理器或设备。删除此文件不会清除自定义版本。若管理器无法打开，请使用其他可用的 Root 或 Recovery 环境操作。</string>
+    <string name="settings_hide_home_warnings">隐藏主页警告</string>
+    <string name="settings_hide_home_warnings_summary">隐藏首页的警告卡片（PR 构建、内核/管理器更新、LKM 更新、预览模式）</string>
 </resources>

@@ -35,9 +35,13 @@ data class HomeUiState(
     val ciLatestVersionInfo: LatestVersionInfo = LatestVersionInfo(),
     val ciUpdateBusy: Boolean = false,
     val showFullStatus: Boolean = true,
+    val hideHomeWarnings: Boolean = false,
     // Root without a SukiSU kernel: pages are browsable but kernel features are unavailable.
     val isPreviewMode: Boolean = false,
     val hideVersionMismatchWarning: Boolean = false,
+    // Whether the kernel supports the version-spoof extension. When false the
+    // home warning card is meaningless (the user cannot spoof to resolve the mismatch).
+    val isVersionSpoofSupported: Boolean = true,
     // Null until loaded through the root shell; kpmCount stays null when KPM is unavailable.
     val superuserCount: Int? = null,
     val moduleCount: Int? = null,
@@ -68,7 +72,7 @@ data class HomeUiState(
         get() = isManager && (kernelUAPIVersion != managerUAPIVersion || ksuVersion?.toUInt()?.toLong() != currentManagerVersionCode)
 
     val showVersionMismatchWarning: Boolean
-        get() = isVersionMismatch && !hideVersionMismatchWarning
+        get() = isVersionMismatch && isVersionSpoofSupported && !hideVersionMismatchWarning
 
     val showRootWarning: Boolean
         get() = ksuVersion != null && !isRootAvailable

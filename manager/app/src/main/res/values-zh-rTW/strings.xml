@@ -726,4 +726,6 @@
     <string name="version_spoof_section_fields">對外回報的版本</string>
     <string name="version_spoof_section_recovery">警告設定與還原</string>
     <string name="version_spoof_recovery">還原核心原始版本：使用 Root 權限刪除 /data/adb/ksu/.version_spoof_config，然後重新開機。\n\n重新顯示警告：使用 Root 權限刪除 /data/adb/ksu/.version_spoof_warning_hidden，然後重新啟動管理器或裝置。刪除此檔案不會清除自訂版本。若管理器無法開啟，請使用其他可用的 Root 或 Recovery 環境操作。</string>
+    <string name="settings_hide_home_warnings">隱藏首頁警告</string>
+    <string name="settings_hide_home_warnings_summary">隱藏首頁的警告卡片（PR 建置、核心/管理器更新、LKM 更新、預覽模式）</string>
 </resources>

@@ -53,6 +53,7 @@ class SettingsViewModel(
             val moduleDescriptionMaxLines = repo.moduleDescriptionMaxLines
             val enableWebDebugging = repo.enableWebDebugging
             val showFullStatus = repo.showFullStatus
+            val hideHomeWarnings = repo.hideHomeWarnings
             val colorStyle = repo.colorStyle
             val colorSpec = repo.colorSpec
             val isLkmMode = repo.isLkmMode()
@@ -125,6 +126,7 @@ class SettingsViewModel(
                     moduleDescriptionMaxLines = moduleDescriptionMaxLines,
                     enableWebDebugging = enableWebDebugging,
                     showFullStatus = showFullStatus,
+                    hideHomeWarnings = hideHomeWarnings,
                     colorStyle = colorStyle,
                     colorSpec = colorSpec,
                     suCompatStatus = suCompatStatus,
@@ -310,6 +312,11 @@ class SettingsViewModel(
     fun setShowFullStatus(enabled: Boolean) {
         repo.showFullStatus = enabled
         _uiState.update { it.copy(showFullStatus = enabled) }
+    }
+
+    fun setHideHomeWarnings(enabled: Boolean) {
+        repo.hideHomeWarnings = enabled
+        _uiState.update { it.copy(hideHomeWarnings = enabled) }
     }
 
     fun setSuCompatMode(mode: Int) {

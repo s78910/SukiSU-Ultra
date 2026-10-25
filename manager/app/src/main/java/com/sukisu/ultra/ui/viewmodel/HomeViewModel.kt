@@ -177,8 +177,20 @@ class HomeViewModel(
             )
         } else null
 
+        val isVersionSpoofSupported: Boolean
+        val hideVersionMismatchWarning: Boolean
+        if (isManager && isRootAvailable) {
+            val (supported, hidden) = VersionSpoofRepository.probeWarning()
+            isVersionSpoofSupported = supported
+            hideVersionMismatchWarning = hidden
+        } else {
+            isVersionSpoofSupported = false
+            hideVersionMismatchWarning = false
+        }
+
         return HomeUiState(
-            hideVersionMismatchWarning = isManager && isRootAvailable && VersionSpoofRepository.isWarningHidden(),
+            hideVersionMismatchWarning = hideVersionMismatchWarning,
+            isVersionSpoofSupported = isVersionSpoofSupported,
             kernelVersion = kernelVersion,
             ksuVersion = ksuVersion,
             lkmMode = lkmMode,
@@ -201,6 +213,8 @@ class HomeViewModel(
             checkCiUpdateEnabled = settingsRepo.checkUpdate && settingsRepo.checkCiUpdate,
             showFullStatus = ksuApp.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .getBoolean("show_fingerprint", true),
+            hideHomeWarnings = ksuApp.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                .getBoolean("hide_home_warnings", false),
             latestVersionInfo = LatestVersionInfo(),
             currentManagerVersionCode = managerVersion.versionCode,
             systemInfo = SystemInfo(

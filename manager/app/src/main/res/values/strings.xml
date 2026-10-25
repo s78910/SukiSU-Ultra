@@ -847,4 +847,6 @@
     <string name="version_spoof_section_fields">Reported versions</string>
     <string name="version_spoof_section_recovery">Warning preferences and recovery</string>
     <string name="version_spoof_recovery">Restore kernel versions: delete /data/adb/ksu/.version_spoof_config as root, then reboot the device.\n\nShow warnings again: delete /data/adb/ksu/.version_spoof_warning_hidden as root, then restart Manager or reboot. Removing this file does not reset version overrides. If Manager cannot open, use another available root or recovery environment.</string>
+    <string name="settings_hide_home_warnings">Hide Home Warnings</string>
+    <string name="settings_hide_home_warnings_summary">Hide warning cards on the home page (PR build, kernel/manager update, LKM update, preview mode)</string>
 </resources>

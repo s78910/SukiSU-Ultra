@@ -34,6 +34,18 @@ object VersionSpoofRepository {
         false
     }
 
+    /**
+     * Probe extension support and warning state in a single root call.
+     * Returns (supported, warningHidden); unsupported kernels report (false, false).
+     */
+    suspend fun probeWarning(): Pair<Boolean, Boolean> = try {
+        true to (command("warning-get").trim() == "true")
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        false to false
+    }
+
     suspend fun setWarningHidden(hidden: Boolean) {
         command(if (hidden) "warning-set --hidden" else "warning-set")
     }
