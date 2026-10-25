@@ -27,6 +27,10 @@ import org.bakasu.bakasu.data.module.ModuleActionRepository
 import org.bakasu.bakasu.data.module.ModuleCatalogRepository
 import org.bakasu.bakasu.data.module.ModuleIconRepository
 import org.bakasu.bakasu.data.module.ModulePreferencesRepository
+import org.bakasu.bakasu.data.module.HiddenModuleStore
+import org.bakasu.bakasu.data.module.HiddenModuleFiles
+import org.bakasu.bakasu.data.module.RootHiddenModuleFiles
+import org.bakasu.bakasu.domain.usecase.HiddenModuleUseCases
 import org.bakasu.bakasu.data.module.ModuleReleaseRepository
 import org.bakasu.bakasu.data.module.ModuleRepository
 import org.bakasu.bakasu.data.module.RepositorySourceStore
@@ -218,7 +222,7 @@ val coreModule = module {
             .addInterceptor { chain ->
                 chain.proceed(
                     chain.request().newBuilder()
-                        .header("User-Agent", "BakaSU/${BuildConfig.VERSION_CODE}")
+                        .header("User-Agent", "BakaSU/${BuildConfig.UNSIGNED_VERSION_CODE}")
                         .header("Accept-Language", Locale.getDefault().toLanguageTag())
                         .build(),
                 )
@@ -290,6 +294,8 @@ val repositoryModule = module {
     singleOf(::ModuleIconRepository)
     single { KernelSuRegistryRepository(get(), get(), get(), get()) }
     singleOf(::RepositorySourceStore)
+    single<HiddenModuleFiles> { RootHiddenModuleFiles(get()) }
+    singleOf(::HiddenModuleStore)
     singleOf(::ModuleRepository)
     singleOf(::ModulePreferencesRepository)
     singleOf(::ModuleActionRepository)
@@ -321,6 +327,7 @@ val repositoryModule = module {
 }
 
 val useCaseModule = module {
+    factoryOf(::HiddenModuleUseCases)
     factoryOf(::InitializeApplicationUseCase)
     factoryOf(::GetHomeBasicInfoUseCase)
     factoryOf(::IsNetworkAvailableUseCase)

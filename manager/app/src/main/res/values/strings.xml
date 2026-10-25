@@ -675,4 +675,21 @@
     <string name="superuser_root_access_required">Root access is required to load applications.</string>
     <string name="superuser_service_start_failed">RootService failed to start. Retry to load applications.</string>
     <string name="superuser_packages_load_failed">Failed to load applications from RootService. Please retry.</string>
+
+    <string name="module_hidden_empty">No visible modules. Use the top-right debug button to manage hidden modules.</string>
+    <string name="module_hidden_badge" translatable="false">HIDDEN</string>
+    <string name="module_hidden_mode_enable">Enter hidden module debug mode</string>
+    <string name="module_hidden_mode_disable">Exit hidden module debug mode</string>
+    <string name="module_hidden_toggle">Toggle selected modules hidden state</string>
+    <string name="module_hidden_password_setup_title">Set hidden module password</string>
+    <string name="module_hidden_password_verify_title">Verify hidden module password</string>
+    <string name="module_hidden_password">Password</string>
+    <string name="module_hidden_password_confirm">Confirm password</string>
+    <string name="module_hidden_password_mismatch">The two passwords do not match</string>
+    <string name="module_hidden_password_invalid">Incorrect password</string>
+    <string name="module_hidden_password_empty">Password cannot be empty</string>
+    <string name="module_hidden_clear_selection">Clear selected modules</string>
+    <string name="module_hidden_selection_cleared">Selection cleared</string>
+    <string name="module_hidden_toggle_success">Module visibility updated</string>
+    <string name="module_hidden_storage_failed">Hidden module data could not be saved or verified</string>
 </resources>

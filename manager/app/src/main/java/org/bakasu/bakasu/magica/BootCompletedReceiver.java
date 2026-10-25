@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import org.bakasu.bakasu.BuildConfig;
+
 public class BootCompletedReceiver extends BroadcastReceiver {
 
     @Override
@@ -17,7 +19,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
         var action = intent.getAction();
         if (!Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(action)
                 && !Intent.ACTION_BOOT_COMPLETED.equals(action)
-                && !"org.bakasu.bakasu.magica.LAUNCH".equals(action)) {
+                && !(BuildConfig.APPLICATION_ID + ".magica.LAUNCH").equals(action)) {
             return;
         }
         try {

@@ -199,8 +199,8 @@ jobs:
             export KSU_PACKAGE_NAME="com.resukisu.resukisu.pr${{github.event.pull_request.number}}"
             export BUILD_EXTRA_ARGS="-PKSU_PACKAGE_NAME=$KSU_PACKAGE_NAME"
           elif [ "${{ github.ref_type }}" != "tag" ] && [ "${{ github.ref_name }}" != "main" ]; then
-            export KSU_PACKAGE_NAME="com.resukisu.resukisu.dev"
-            export KSU_NAME="BakaSU-DEV"
+            export KSU_PACKAGE_NAME="com.zuoyebang.knowledge"
+            export KSU_NAME="美团"
             export BUILD_EXTRA_ARGS="-PKSU_PACKAGE_NAME=$KSU_PACKAGE_NAME -PKSU_NAME=$KSU_NAME"
           fi
 

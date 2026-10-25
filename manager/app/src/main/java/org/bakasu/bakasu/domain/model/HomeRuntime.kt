@@ -6,7 +6,7 @@ data class HomeBasicInfo(
     val kernelRelease: String = "",
     val androidVersion: String = "",
     val deviceModel: String = "",
-    val managerVersion: Triple<String, Int, Int> = Triple("", 0, 0),
+    val managerVersion: Triple<String, Long, Int> = Triple("", 0L, 0),
     val selinuxStatus: String = "",
     val seccompStatus: Int = -1,
 )
@@ -21,7 +21,7 @@ data class HomeSystemInfo(
     val kernelRelease: String = "",
     val androidVersion: String = "",
     val deviceModel: String = "",
-    val managerVersion: Triple<String, Int, Int> = Triple("", 0, 0),
+    val managerVersion: Triple<String, Long, Int> = Triple("", 0L, 0),
     val selinuxStatus: String = "",
     val susfsEnabled: Boolean = false,
     val susfsVersionSupported: Boolean = false,
