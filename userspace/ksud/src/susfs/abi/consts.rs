@@ -22,6 +22,7 @@ pub const SUSFS_MAX_VARIANT_BUFSIZE: usize = 16;
 pub const NEW_UTS_LEN: usize = 64;
 pub const SUSFS_MAX_PATHNAME: usize = 256;
 pub const SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE: usize = 8192;
+pub const SUSFS_PRIORITY_UID_FILTER_APP_STR_SIZE: usize = 65_535;
 
 // ── command IDs (internal — only the syscall dispatcher cares) ───────────────
 
@@ -40,6 +41,7 @@ pub const CMD_SUSFS_SHOW_ENABLED_FEATURES: u32 = 0x0005_55E2;
 pub const CMD_SUSFS_SHOW_VARIANT: u32 = 0x0005_55E3;
 pub const CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING: u32 = 0x0006_0010;
 pub const CMD_SUSFS_ADD_SUS_MAP: u32 = 0x0006_0020;
+pub const CMD_SUSFS_SET_PRIORITY_UID_FILTER: u32 = 0x0006_0030;
 
 /// Mask of every stat member that is spoofed automatically when the kernel
 /// re-stats the target path.

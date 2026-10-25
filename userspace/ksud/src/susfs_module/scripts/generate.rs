@@ -299,6 +299,7 @@ pub fn boot_completed(
     sus_paths: &[String],
     sus_loop_paths: &[String],
     sus_maps: &[String],
+    priority_uid_filter: &str,
 ) -> String {
     let mut s = String::new();
 
@@ -356,6 +357,15 @@ pub fn boot_completed(
                 path.replace('\'', "'\\''")
             );
         }
+        s.push('\n');
+    }
+
+    if !priority_uid_filter.trim().is_empty() {
+        let quoted = shell_quote(priority_uid_filter);
+        let _ = writeln!(
+            s,
+            "# Restore priority UID filter\nif /data/adb/ksud susfs set-priority-uid-filter {quoted} >> \"$LOG_FILE\" 2>&1; then\n  echo \"$(get_current_time): Priority UID filter restored\" >> \"$LOG_FILE\"\nelse\n  echo \"$(get_current_time): Failed to restore priority UID filter\" >> \"$LOG_FILE\"\nfi"
+        );
         s.push('\n');
     }
 

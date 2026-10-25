@@ -812,4 +812,11 @@
     <string name="settings_avc_spoof">AVC 日志伪装</string>
     <string name="settings_avc_spoof_summary">防止 AVC 拒绝日志泄漏 SELinux 上下文</string>
     <string name="settings_avc_spoof_failed">应用 AVC 日志伪装失败</string>
+    <string name="susfs_priority_uid_filter">优先级 UID 过滤</string>
+    <string name="susfs_priority_uid_filter_description">在其他应用调用 getpriority/setpriority 和 ioprio_get/ioprio_set 时隐藏所选应用的 UID。每次应用都会替换整个列表；内核会在应用安装或卸载后重新解析包名对应的 UID。</string>
+    <string name="susfs_priority_uid_filter_warning">需要支持优先级 UID 过滤的 SuSFS 内核。仅支持应用 ID 10000-19999；无法解析的包名会导致执行失败。保存的配置不代表内核实时状态。开启自动启动可在重启后恢复。</string>
+    <string name="susfs_priority_uid_filter_apps">已选择的包名</string>
+    <string name="susfs_priority_uid_filter_empty">尚未选择应用</string>
+    <string name="susfs_priority_uid_filter_select">选择应用</string>
+    <string name="susfs_priority_uid_filter_clear">清空过滤列表</string>
 </resources>

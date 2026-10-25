@@ -754,6 +754,8 @@ enum Susfs {
         /// uid scheme
         uid_scheme: u32,
     },
+    /// Replace the priority UID filter with a comma-separated package list
+    SetPriorityUidFilter { packages: String },
     /// Add SUS map
     AddSusMap {
         /// library path
@@ -1392,6 +1394,9 @@ pub fn run() -> Result<()> {
                     redirected,
                     uid_scheme,
                 } => susfs::add_open_redirect(&target, &redirected, uid_scheme),
+                Susfs::SetPriorityUidFilter { packages } => {
+                    susfs::set_priority_uid_filter(&packages)
+                }
                 Susfs::AddSusMap { path } => susfs::add_sus_map(&path),
                 Susfs::AddSusPath { path } => susfs::add_sus_path(&path),
                 Susfs::AddSusPathLoop { path } => susfs::add_sus_path_loop(&path),

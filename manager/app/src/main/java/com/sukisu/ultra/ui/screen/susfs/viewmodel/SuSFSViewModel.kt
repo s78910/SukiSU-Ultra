@@ -61,6 +61,7 @@ class SuSFSViewModel(
                         susPaths = config.susPaths,
                         susLoopPaths = config.susLoopPaths,
                         susMaps = config.susMaps,
+                        priorityUidFilter = config.priorityUidFilter,
                         kstatConfigs = config.kstatConfigs,
                         addKstatPaths = config.addKstatPaths,
                         hideSusMountsForAllProcs = config.hideSusMountsForAllProcs,
@@ -141,6 +142,57 @@ class SuSFSViewModel(
             loadingApps = false
             _uiState.update { it.copy(isLoadingApps = false) }
         }
+    }
+
+    fun showPriorityAppsDialog(show: Boolean) {
+        _uiState.update { it.copy(showPriorityAppsDialog = show) }
+        if (show) loadPriorityApps()
+    }
+
+    private fun loadPriorityApps() {
+        if (_uiState.value.isLoadingPriorityApps) return
+        _uiState.update { it.copy(isLoadingPriorityApps = true) }
+        viewModelScope.launch {
+            try {
+                val apps = withContext(Dispatchers.IO) {
+                    com.sukisu.ultra.data.repository.SuperUserRepositoryImpl().getAppList().getOrThrow().first.mapNotNull { app ->
+                        val info = app.packageInfo.applicationInfo ?: return@mapNotNull null
+                        if (info.uid !in 10000..19999) return@mapNotNull null
+                        com.sukisu.ultra.ui.screen.susfs.util.AppInfo(app.packageName, app.label, app.packageInfo,
+                            info.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0)
+                    }.distinctBy { it.packageName }.sortedBy { it.appName.lowercase() }
+                }
+                _uiState.update { it.copy(priorityApps = apps) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e) }
+            } finally {
+                _uiState.update { it.copy(isLoadingPriorityApps = false) }
+            }
+        }
+    }
+
+    fun applyPriorityUidFilter(context: Context, packages: Set<String>) = performOperation {
+        beginResults()
+        val value = packages.sorted().joinToString(",")
+        val result = SuSFSCommands.executeSusfsCommandWithOutput(
+            "set-priority-uid-filter ${com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.shellQuote(value.ifEmpty { "," })}")
+        check(result.isSuccess) { result.errorOutput.ifBlank { result.output }.ifBlank {
+            context.getString(R.string.config_command_rejected)
+        } }
+        check(com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.set(
+            com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.KEY_PRIORITY_UID_FILTER, value)) {
+            "Filter applied, but failed to save the configuration"
+        }
+        report(context, context.getString(R.string.susfs_priority_uid_filter)) { true }
+        if (SuSFSManager.isAutoStartEnabled()) {
+            report(context, context.getString(R.string.susfs_autostart_title)) {
+                SuSFSManager.configureAutoStart(context, true)
+            }
+        }
+        refreshConfig()
+        _uiState.update { it.copy(showPriorityAppsDialog = false) }
     }
 
     fun loadSlotInfo(context: Context) {
@@ -457,6 +509,7 @@ class SuSFSViewModel(
                 susPaths = config.susPaths,
                 susLoopPaths = config.susLoopPaths,
                 susMaps = config.susMaps,
+                priorityUidFilter = config.priorityUidFilter,
                 kstatConfigs = config.kstatConfigs,
                 addKstatPaths = config.addKstatPaths,
                 hideSusMountsForAllProcs = config.hideSusMountsForAllProcs,

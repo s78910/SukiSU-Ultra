@@ -819,4 +819,11 @@
     <string name="settings_avc_spoof">AVC log spoofing</string>
     <string name="settings_avc_spoof_summary">Prevent SELinux context leaks in AVC denial logs</string>
     <string name="settings_avc_spoof_failed">Failed to apply AVC log spoofing</string>
+    <string name="susfs_priority_uid_filter">Priority UID filter</string>
+    <string name="susfs_priority_uid_filter_description">Hide selected app UIDs from getpriority/setpriority and ioprio_get/ioprio_set queries made by other apps. Each apply replaces the entire list. The kernel re-resolves package UIDs when apps are installed or removed.</string>
+    <string name="susfs_priority_uid_filter_warning">Requires a SuSFS kernel with priority UID filter support. Only app IDs 10000-19999 are supported; unresolved packages cause the operation to fail. Saved settings are not a runtime status query. Enable auto-start to restore them after reboot.</string>
+    <string name="susfs_priority_uid_filter_apps">Selected packages</string>
+    <string name="susfs_priority_uid_filter_empty">No packages selected</string>
+    <string name="susfs_priority_uid_filter_select">Select apps</string>
+    <string name="susfs_priority_uid_filter_clear">Clear filter</string>
 </resources>
