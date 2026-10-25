@@ -849,4 +849,11 @@
     <string name="version_spoof_recovery">Restore kernel versions: delete /data/adb/ksu/.version_spoof_config as root, then reboot the device.\n\nShow warnings again: delete /data/adb/ksu/.version_spoof_warning_hidden as root, then restart Manager or reboot. Removing this file does not reset version overrides. If Manager cannot open, use another available root or recovery environment.</string>
     <string name="settings_hide_home_warnings">Hide Home Warnings</string>
     <string name="settings_hide_home_warnings_summary">Hide warning cards on the home page (PR build, kernel/manager update, LKM update, preview mode)</string>
+    <string name="install_kpm_enable">Additional KPM patch</string>
+    <string name="install_kpm_linked_summary">Apply or undo KPM with LKM when continuing. Direct installation uses the current boot slot. A manually selected boot is exported only. Keep a backup: incompatible patches may prevent booting.</string>
+    <string name="install_kpm_manual">Manually select boot.img (optional)</string>
+    <string name="install_kpm_auto">Automatic: follow the installation method</string>
+    <string name="install_kpm_clear">Clear selection and use automatic boot</string>
+    <string name="install_kpm_operation">KPM operation</string>
+    <string name="install_kpm_inactive_unsupported">Additional KPM operations currently support direct installation to the current slot only. Disable KPM before installing to the inactive slot.</string>
 </resources>

@@ -146,6 +146,12 @@ enum Commands {
     /// Always operates on a boot image; never selects init_boot or vendor_boot.
     BootPatchV2(BootPatchV2Args),
 
+    /// Extract or replace the kernel block without modifying the ramdisk.
+    BootKernel {
+        #[command(subcommand)]
+        command: crate::boot_patch::BootKernelCommand,
+    },
+
     /// Show boot information
     BootInfo {
         #[command(subcommand)]
@@ -1343,6 +1349,7 @@ pub fn run() -> Result<()> {
         },
         Commands::BootRestore(boot_restore) => crate::boot_patch::restore(boot_restore),
         Commands::BootPatchV2(patch) => crate::lkm_image::patch_boot(&patch),
+        Commands::BootKernel { command } => crate::boot_patch::boot_kernel(command),
         Commands::Resetprop { args } => {
             let mut full_args = vec!["resetprop".to_string()];
             full_args.extend(args);
