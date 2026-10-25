@@ -7,6 +7,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.twotone.Visibility
 import androidx.compose.material.icons.twotone.VisibilityOff
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.input.KeyboardType
 import org.bakasu.bakasu.ui.component.rememberCustomDialog
 
 import android.annotation.SuppressLint
@@ -211,6 +215,8 @@ fun ModulePage(bottomPadding: Dp) {
     var hiddenPassword by remember { mutableStateOf("") }
     var hiddenConfirmation by remember { mutableStateOf("") }
     val hiddenDialog = rememberCustomDialog { dismiss ->
+        val passwordFocusRequester = remember { FocusRequester() }
+        val confirmationFocusRequester = remember { FocusRequester() }
         AlertDialog(
             onDismissRequest = {
                 hiddenPassword = ""
@@ -220,21 +226,28 @@ fun ModulePage(bottomPadding: Dp) {
             },
             title = { Text(stringResource(if (uiState.hidden.hasPassword) R.string.module_hidden_password_verify_title else R.string.module_hidden_password_setup_title)) },
             text = {
+                LaunchedEffect(Unit) {
+                    passwordFocusRequester.requestFocus()
+                }
                 Column {
                     OutlinedTextField(
+                        modifier = Modifier.focusRequester(passwordFocusRequester),
                         value = hiddenPassword,
                         onValueChange = { hiddenPassword = it },
                         label = { Text(stringResource(R.string.module_hidden_password)) },
                         visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
                         enabled = !uiState.hidden.busy,
                     )
                     if (!uiState.hidden.hasPassword) {
                         OutlinedTextField(
+                            modifier = Modifier.focusRequester(confirmationFocusRequester),
                             value = hiddenConfirmation,
                             onValueChange = { hiddenConfirmation = it },
                             label = { Text(stringResource(R.string.module_hidden_password_confirm)) },
                             visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             singleLine = true,
                             enabled = !uiState.hidden.busy,
                         )
@@ -416,11 +429,11 @@ fun ModulePage(bottomPadding: Dp) {
                         )
                     }
                     if (uiState.hidden.management) {
-                        TextButton(enabled = !uiState.hidden.busy && uiState.hidden.selected.isNotEmpty(), onClick = { viewModel.dispatchHidden(HiddenModuleAction.ToggleSelectedVisibility) }) {
-                            Text(stringResource(R.string.module_hidden_toggle))
+                        IconButton(enabled = !uiState.hidden.busy && uiState.hidden.selected.isNotEmpty(), onClick = { viewModel.dispatchHidden(HiddenModuleAction.ToggleSelectedVisibility) }) {
+                            Icon(imageVector = Icons.TwoTone.VisibilityOff, contentDescription = stringResource(R.string.module_hidden_toggle))
                         }
-                        TextButton(onClick = { viewModel.dispatchHidden(HiddenModuleAction.ClearSelection) }) {
-                            Text(stringResource(R.string.module_hidden_clear_selection))
+                        IconButton(onClick = { viewModel.dispatchHidden(HiddenModuleAction.ClearSelection) }) {
+                            Icon(imageVector = Icons.TwoTone.Close, contentDescription = stringResource(R.string.module_hidden_clear_selection))
                         }
                     }
                     IconButton(
