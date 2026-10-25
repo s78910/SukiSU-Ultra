@@ -35,7 +35,12 @@ class SuSFSViewModel(
     val uiState: StateFlow<SuSFSUiState> = _uiState.asStateFlow()
 
     fun setSelectedTab(tab: SuSFSTab) {
-        _uiState.update { it.copy(selectedTab = tab) }
+        _uiState.update {
+            it.copy(
+                selectedTab = tab,
+                showPriorityAppsDialog = it.showPriorityAppsDialog && tab == SuSFSTab.PRIORITY_UID_FILTER,
+            )
+        }
     }
 
     private var loaded = false
@@ -174,25 +179,38 @@ class SuSFSViewModel(
     }
 
     fun applyPriorityUidFilter(context: Context, packages: Set<String>) = performOperation {
-        beginResults()
-        val value = packages.sorted().joinToString(",")
-        val result = SuSFSCommands.executeSusfsCommandWithOutput(
-            "set-priority-uid-filter ${com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.shellQuote(value.ifEmpty { "," })}")
-        check(result.isSuccess) { result.errorOutput.ifBlank { result.output }.ifBlank {
-            context.getString(R.string.config_command_rejected)
-        } }
-        check(com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.set(
-            com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.KEY_PRIORITY_UID_FILTER, value)) {
-            "Filter applied, but failed to save the configuration"
-        }
-        report(context, context.getString(R.string.susfs_priority_uid_filter)) { true }
-        if (SuSFSManager.isAutoStartEnabled()) {
-            report(context, context.getString(R.string.susfs_autostart_title)) {
-                SuSFSManager.configureAutoStart(context, true)
+        _uiState.update { it.copy(priorityUidFilterResults = emptyList()) }
+        val name = context.getString(R.string.susfs_priority_uid_filter)
+        try {
+            val value = packages.sorted().joinToString(",")
+            val result = SuSFSCommands.executeSusfsCommandWithOutput(
+                "set-priority-uid-filter ${com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.shellQuote(value.ifEmpty { "," })}")
+            check(result.isSuccess) { result.errorOutput.ifBlank { result.output }.ifBlank {
+                context.getString(R.string.config_command_rejected)
+            } }
+            check(com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.set(
+                com.sukisu.ultra.ui.screen.susfs.util.SuSFSConfig.KEY_PRIORITY_UID_FILTER, value)) {
+                "Filter applied, but failed to save the configuration"
             }
+            _uiState.update { it.copy(priorityUidFilterResults = listOf(
+                ConfigResult(name, true, ConfigRuntimeStatus.UNVERIFIED)
+            )) }
+            if (SuSFSManager.isAutoStartEnabled()) {
+                val updated = SuSFSManager.configureAutoStart(context, true)
+                _uiState.update { it.copy(priorityUidFilterResults = it.priorityUidFilterResults + ConfigResult(
+                    context.getString(R.string.susfs_autostart_title), updated,
+                    if (updated) ConfigRuntimeStatus.UNVERIFIED else ConfigRuntimeStatus.FAILED,
+                )) }
+            }
+            refreshConfig()
+            _uiState.update { it.copy(showPriorityAppsDialog = false) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _uiState.update { it.copy(priorityUidFilterResults = it.priorityUidFilterResults + ConfigResult(
+                name, null, ConfigRuntimeStatus.FAILED, e.localizedMessage
+            )) }
         }
-        refreshConfig()
-        _uiState.update { it.copy(showPriorityAppsDialog = false) }
     }
 
     fun loadSlotInfo(context: Context) {
@@ -381,7 +399,13 @@ class SuSFSViewModel(
 
     fun performOperation(operation: suspend () -> Unit) {
         if (_uiState.value.isLoading) return
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update {
+            it.copy(
+                isLoading = true,
+                error = null,
+                operationResults = emptyList(),
+            )
+        }
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) { operation() }

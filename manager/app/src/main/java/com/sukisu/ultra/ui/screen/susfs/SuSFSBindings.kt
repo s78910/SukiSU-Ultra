@@ -12,7 +12,7 @@ import com.sukisu.ultra.ui.screen.susfs.viewmodel.SuSFSViewModel
 internal fun SuSFSDialogs(uiState: SuSFSUiState, viewModel: SuSFSViewModel) {
     val context = LocalContext.current
     PriorityUidFilterDialog(
-        showDialog = uiState.showPriorityAppsDialog,
+        showDialog = uiState.showPriorityAppsDialog && uiState.selectedTab == SuSFSTab.PRIORITY_UID_FILTER,
         onDismiss = { viewModel.showPriorityAppsDialog(false) },
         onConfirm = { viewModel.applyPriorityUidFilter(context, it.toSet()) },
         isLoading = uiState.isLoading,
@@ -352,6 +352,7 @@ internal fun SuSFSTabContent(uiState: SuSFSUiState, viewModel: SuSFSViewModel) {
             )
         }
         SuSFSTab.PRIORITY_UID_FILTER -> {
+            com.sukisu.ultra.ui.component.ConfigResults(uiState.priorityUidFilterResults)
             PriorityUidFilterContent(
                 packages = uiState.priorityUidFilter,
                 isLoading = uiState.isLoading,

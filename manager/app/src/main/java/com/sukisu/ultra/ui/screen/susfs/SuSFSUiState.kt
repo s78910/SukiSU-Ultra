@@ -10,6 +10,7 @@ import com.sukisu.ultra.ui.screen.susfs.util.SlotInfo
 @Immutable
 data class SuSFSUiState(
     val operationResults: List<com.sukisu.ultra.ui.component.ConfigResult> = emptyList(),
+    val priorityUidFilterResults: List<com.sukisu.ultra.ui.component.ConfigResult> = emptyList(),
     val isLoading: Boolean = false,
     val runtimeInfo: SuSFSRuntimeInfo? = null,
     val isNavigatingBack: Boolean = false,
