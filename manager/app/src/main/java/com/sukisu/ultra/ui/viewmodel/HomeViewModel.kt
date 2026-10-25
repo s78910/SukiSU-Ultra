@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.sukisu.ultra.BuildConfig
+import com.sukisu.ultra.ui.screen.extensions.VersionSpoofProbe
 import com.sukisu.ultra.ui.screen.extensions.VersionSpoofRepository
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
@@ -177,20 +178,16 @@ class HomeViewModel(
             )
         } else null
 
-        val isVersionSpoofSupported: Boolean
-        val hideVersionMismatchWarning: Boolean
-        if (isManager && isRootAvailable) {
-            val (supported, hidden) = VersionSpoofRepository.probeWarning()
-            isVersionSpoofSupported = supported
-            hideVersionMismatchWarning = hidden
+        val versionSpoofProbe = if (isManager && isRootAvailable) {
+            VersionSpoofRepository.probeWarning()
         } else {
-            isVersionSpoofSupported = false
-            hideVersionMismatchWarning = false
+            VersionSpoofProbe(supported = false, warningHidden = false, isSpoofed = false)
         }
 
         return HomeUiState(
-            hideVersionMismatchWarning = hideVersionMismatchWarning,
-            isVersionSpoofSupported = isVersionSpoofSupported,
+            hideVersionMismatchWarning = versionSpoofProbe.warningHidden,
+            isVersionSpoofSupported = versionSpoofProbe.supported,
+            isVersionSpoofed = versionSpoofProbe.isSpoofed,
             kernelVersion = kernelVersion,
             ksuVersion = ksuVersion,
             lkmMode = lkmMode,

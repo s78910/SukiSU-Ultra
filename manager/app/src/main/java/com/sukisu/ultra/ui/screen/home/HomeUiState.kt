@@ -42,6 +42,10 @@ data class HomeUiState(
     // Whether the kernel supports the version-spoof extension. When false the
     // home warning card is meaningless (the user cannot spoof to resolve the mismatch).
     val isVersionSpoofSupported: Boolean = true,
+    // Whether the user has actually set a spoofed version value. The home warning is only
+    // meaningful when this is true; without a spoof the version mismatch simply means an
+    // update is needed, not that the spoof is broken.
+    val isVersionSpoofed: Boolean = false,
     // Null until loaded through the root shell; kpmCount stays null when KPM is unavailable.
     val superuserCount: Int? = null,
     val moduleCount: Int? = null,
@@ -72,7 +76,8 @@ data class HomeUiState(
         get() = isManager && (kernelUAPIVersion != managerUAPIVersion || ksuVersion?.toUInt()?.toLong() != currentManagerVersionCode)
 
     val showVersionMismatchWarning: Boolean
-        get() = isVersionMismatch && isVersionSpoofSupported && !hideVersionMismatchWarning
+        get() = isVersionMismatch && isVersionSpoofSupported && isVersionSpoofed &&
+            !hideVersionMismatchWarning && !requiresNewKernel && !requiresNewManager && !showLkmUpdate
 
     val showRootWarning: Boolean
         get() = ksuVersion != null && !isRootAvailable
