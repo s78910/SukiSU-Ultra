@@ -77,7 +77,7 @@ data class HomeUiState(
 
     val showVersionMismatchWarning: Boolean
         get() = isVersionMismatch && isVersionSpoofSupported && isVersionSpoofed &&
-            !hideVersionMismatchWarning && !requiresNewKernel && !requiresNewManager && !showLkmUpdate
+            !hideVersionMismatchWarning
 
     val showRootWarning: Boolean
         get() = ksuVersion != null && !isRootAvailable
