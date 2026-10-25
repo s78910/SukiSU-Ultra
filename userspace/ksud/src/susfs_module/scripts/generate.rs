@@ -146,16 +146,6 @@ pub fn service(
                         "echo \"$(get_current_time): 添加Kstat静态配置: {}\" >> \"$LOG_FILE\"",
                         path.replace('\'', "'\\''")
                     );
-                    let _ = writeln!(
-                        s,
-                        "/data/adb/ksud susfs update-sus-kstat {}",
-                        shell_quote(path)
-                    );
-                    let _ = writeln!(
-                        s,
-                        "echo \"$(get_current_time): 更新Kstat配置: {}\" >> \"$LOG_FILE\"",
-                        path.replace('\'', "'\\''")
-                    );
                 }
             }
             s.push('\n');

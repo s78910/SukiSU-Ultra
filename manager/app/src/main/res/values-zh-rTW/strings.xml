@@ -487,6 +487,9 @@
     <string name="add_kstat_statically_title">添加 Kstat 靜態配置</string>
     <string name="file_or_directory_path_label">文件/目錄路徑</string>
     <string name="hint_use_default_value">提示：可以使用 \"default\" 來使用原始值</string>
+    <string name="kstat_section_identity">識別資訊</string>
+    <string name="kstat_section_timestamps">時間戳記</string>
+    <string name="kstat_section_storage">儲存資訊</string>
     <string name="add_kstat_path_title">添加 Kstat 路徑</string>
     <string name="add">添加</string>
     <string name="reset_kstat_config_title">重置 Kstat 配置</string>

@@ -57,3 +57,17 @@ pub const KSTAT_AUTO_SPOOF: u32 = (1 << 0)   // ino
 /// Same as [`KSTAT_AUTO_SPOOF`] but also spoofs `nlink` and `size` — used by
 /// `update_sus_kstat_full_clone`.
 pub const KSTAT_AUTO_SPOOF_FULL_CLONE: u32 = KSTAT_AUTO_SPOOF | (1 << 2) | (1 << 3);
+
+/// Bit positions identifying explicitly spoofed stat fields in a kstat request.
+pub const KSTAT_SPOOF_INO: u32 = 1 << 0;
+pub const KSTAT_SPOOF_DEV: u32 = 1 << 1;
+pub const KSTAT_SPOOF_NLINK: u32 = 1 << 2;
+pub const KSTAT_SPOOF_SIZE: u32 = 1 << 3;
+pub const KSTAT_SPOOF_ATIME_TV_SEC: u32 = 1 << 4;
+pub const KSTAT_SPOOF_ATIME_TV_NSEC: u32 = 1 << 5;
+pub const KSTAT_SPOOF_MTIME_TV_SEC: u32 = 1 << 6;
+pub const KSTAT_SPOOF_MTIME_TV_NSEC: u32 = 1 << 7;
+pub const KSTAT_SPOOF_CTIME_TV_SEC: u32 = 1 << 8;
+pub const KSTAT_SPOOF_CTIME_TV_NSEC: u32 = 1 << 9;
+pub const KSTAT_SPOOF_BLOCKS: u32 = 1 << 10;
+pub const KSTAT_SPOOF_BLKSIZE: u32 = 1 << 11;

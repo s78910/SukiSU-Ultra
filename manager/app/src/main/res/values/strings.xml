@@ -611,6 +611,9 @@
     <string name="add_kstat_statically_title">Add Kstat Static Configuration</string>
     <string name="file_or_directory_path_label">File/Directory path</string>
     <string name="hint_use_default_value">Hint: You can use "default" to use the original value</string>
+    <string name="kstat_section_identity">Identity</string>
+    <string name="kstat_section_timestamps">Timestamps</string>
+    <string name="kstat_section_storage">Storage</string>
     <string name="add_kstat_path_title">Add Kstat Path</string>
     <string name="add">Add</string>
     <string name="reset_kstat_config_title">Reset Kstat Configuration</string>
