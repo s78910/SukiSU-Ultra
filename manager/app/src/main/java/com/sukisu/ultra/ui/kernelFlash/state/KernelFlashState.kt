@@ -202,11 +202,24 @@ class HorizonKernelWorker(
 
             // Keep tools outside the ZIP tree so package files cannot be overwritten.
             val patched = File(workDir, "kernel.patched")
-            tools.patch(File(imageFile), patched, kpmUndoPatch) { requireCommand(true, it) }
+            var undoSkipped = false
+            try {
+                tools.patch(File(imageFile), patched, kpmUndoPatch) { requireCommand(true, it) }
+            } catch (e: Exception) {
+                // An unpatched AnyKernel3 package has nothing to undo. Keep its
+                // original kernel and continue flashing instead of treating the
+                // expected no-op as a fatal KPM failure.
+                if (!kpmUndoPatch) throw e
+                undoSkipped = true
+                state.addLog(context.getString(R.string.kpm_undo_patch_not_found))
+                requireCommand(true, "rm -f ${shellQuote(patched.absolutePath)} && cp ${shellQuote(imageFile)} ${shellQuote(patched.absolutePath)}")
+            }
             requireCommand(true, "mv ${shellQuote(patched.absolutePath)} ${shellQuote(imageFile)}")
-            state.addLog(context.getString(
-                if (kpmUndoPatch) R.string.kpm_undo_patch_success else R.string.kpm_patch_success
-            ))
+            if (!undoSkipped) {
+                state.addLog(context.getString(
+                    if (kpmUndoPatch) R.string.kpm_undo_patch_success else R.string.kpm_patch_success
+                ))
+            }
 
             // 重新打包ZIP文件
             val originalFileName = File(filePath).name

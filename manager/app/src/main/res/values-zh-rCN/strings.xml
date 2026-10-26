@@ -466,6 +466,7 @@
     <string name="kpm_found_image_file">找到镜像文件: %s</string>
     <string name="kpm_patch_success">KPM 补丁应用成功</string>
     <string name="kpm_undo_patch_success">KPM 补丁撤销成功</string>
+    <string name="kpm_undo_patch_not_found">未发现 KPM 补丁，保留原始内核</string>
     <string name="kpm_file_repacked">文件重新打包成功</string>
     <string name="kpm_extract_zip_failed">解压zip文件失败</string>
     <string name="kpm_image_file_not_found">未找到镜像文件</string>

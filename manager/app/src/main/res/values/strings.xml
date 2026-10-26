@@ -469,6 +469,7 @@
     <string name="kpm_found_image_file">Found Image file: %s</string>
     <string name="kpm_patch_success">KPM patch applied successfully</string>
     <string name="kpm_undo_patch_success">KPM patch undone successfully</string>
+    <string name="kpm_undo_patch_not_found">No KPM patch found; keeping the original kernel</string>
     <string name="kpm_file_repacked">File repacked successfully</string>
     <string name="kpm_extract_zip_failed">Failed to extract zip file</string>
     <string name="kpm_image_file_not_found">Image file not found</string>
