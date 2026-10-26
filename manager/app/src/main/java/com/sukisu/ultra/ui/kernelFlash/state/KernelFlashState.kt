@@ -109,9 +109,7 @@ class HorizonKernelWorker(
             if (kpmPatchEnabled || kpmUndoPatch) {
                 state.updateStep(context.getString(R.string.kpm_preparing_tools))
                 state.updateProgress(0.5f)
-                val tools = KpmTools.prepare(context, File(workDir), state::addLog) {
-                    requireCommand(true, it)
-                }
+                val tools = KpmTools.prepare(context, File(workDir))
 
                 state.updateStep(
                     if (kpmUndoPatch) context.getString(R.string.kpm_undoing_patch)

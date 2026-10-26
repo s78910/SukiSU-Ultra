@@ -476,6 +476,7 @@
     <string name="kpm_follow_kernel_file">Follow Kernel</string>
     <string name="install_kpm_manual">Manually select boot.img (optional)</string>
     <string name="install_kpm_auto">Automatic: follow the installation method</string>
+    <string name="install_kpm_auto_current_boot">Automatically extract boot from the current slot</string>
     <string name="install_kpm_clear">Clear selection and use automatic boot</string>
     <string name="install_kpm_operation">KPM operation</string>
     <string name="install_kpm_summary">Keep, apply, or undo the kernel KPM patch.</string>

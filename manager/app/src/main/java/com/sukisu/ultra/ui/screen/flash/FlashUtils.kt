@@ -105,7 +105,7 @@ sealed class FlashIt : Parcelable {
     ) : FlashIt()
 
     @Parcelize
-    data class PatchKpmBoot(val boot: Uri? = null) : FlashIt()
+    data class PatchKpmBoot(val boot: Uri? = null, val undo: Boolean = false) : FlashIt()
 
     @Parcelize
     data class FlashModules(val uris: List<Uri>) : FlashIt()
@@ -185,7 +185,7 @@ fun flashIt(
             )
         }
 
-        is FlashIt.PatchKpmBoot -> patchKpmBoot(flashIt.boot, onStdout, onStderr)
+        is FlashIt.PatchKpmBoot -> patchKpmBoot(flashIt.boot, onStdout, onStderr, undo = flashIt.undo)
         FlashIt.FlashRestore -> restoreBoot(onStdout, onStderr)
         FlashIt.FlashUninstall -> uninstallPermanently(onStdout, onStderr)
     }
