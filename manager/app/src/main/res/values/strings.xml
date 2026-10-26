@@ -457,8 +457,6 @@
     <string name="kpm_patch_description">For adding additional KPM features</string>
     <string name="enable_kpm_patch">KPM Patch</string>
     <string name="enable_kpm_undo_patch">KPM Undo Patch</string>
-    <string name="kpm_patch_enabled">KPM patch enabled</string>
-    <string name="kpm_undo_patch_enabled">KPM undo patch enabled</string>
     <string name="kpm_patch_mode">KPM Patch Mode</string>
     <string name="kpm_undo_patch_mode">KPM Undo Patch Mode</string>
     <string name="kpm_preparing_tools">Preparing KPM tools</string>
@@ -470,8 +468,6 @@
     <string name="kpm_file_repacked">File repacked successfully</string>
     <string name="kpm_extract_zip_failed">Failed to extract zip file</string>
     <string name="kpm_image_file_not_found">Image file not found</string>
-    <string name="kpm_patch_failed">KPM patch failed</string>
-    <string name="kpm_undo_patch_failed">KPM undo patch failed</string>
     <string name="kpm_patch_operation_failed">KPM patch operation failed: %s</string>
     <string name="kpm_follow_kernel_file">Follow Kernel</string>
     <string name="kernel_flashing">Kernel Flashing</string>
@@ -481,16 +477,12 @@
     <string name="kpm_title">KPM</string>
     <string name="kpm_empty">No installed kernel modules at this time</string>
     <string name="kpm_uninstall">Uninstall</string>
-    <string name="kpm_uninstall_success">Uninstalled successfully</string>
-    <string name="kpm_uninstall_failed">Failed to uninstall</string>
-    <string name="kpm_install_success">Load of KPM module successful</string>
     <string name="kpm_install_failed">Load of KPM module failed</string>
     <string name="kpm_args">Parameters</string>
     <string name="kpm_control">Execute</string>
     <string name="close_notice">Close</string>
     <string name="kernel_module_notice">The following kernel module functions were developed by KernelPatch and modified to include the kernel module functions of SukiSU</string>
     <string name="kpm_control_success">Success</string>
-    <string name="kpm_control_failed">Failed</string>
     <string name="not_supported">Unsupported</string>
     <string name="kpm_install_mode">KPM Install</string>
     <string name="kpm_install_mode_load">Load</string>
@@ -499,7 +491,6 @@
     <string name="invalid_file_type">Incorrect file type! Please select .kpm file</string>
     <string name="confirm_uninstall_title_with_filename">Uninstall</string>
     <string name="confirm_uninstall_content">The following KPM will be uninstalled: %s</string>
-    <string name="snackbar_failed_to_check_module_file">Unable to check if module file exists</string>
     <string name="cancel">Cancel</string>
     <!-- Tools -->
     <string name="settings_tools">Tools</string>
@@ -545,13 +536,10 @@
     <!-- Zip Install Prompts -->
     <!-- SuSFS Configuration -->
     <string name="susfs_config_title">SuSFS Configuration</string>
-    <string name="susfs_config_summary">Configure SuSFS module settings</string>
     <string name="susfs_config_description">Configuration Description</string>
     <string name="susfs_config_description_text">This feature allows you to customize the SuSFS uname value and build time spoofing. Enter the values you want to set and click Apply to take effect</string>
     <string name="susfs_uname_label">Kernel Release</string>
     <string name="susfs_build_time_label">Kernel Version</string>
-    <string name="susfs_current_value">Current release: %s</string>
-    <string name="susfs_current_build_time">Current version: %s</string>
     <string name="susfs_apply">Apply</string>
     <!-- SuSFS Reset Confirmation -->
     <string name="susfs_reset_confirm_title">Confirm Reset</string>
@@ -594,14 +582,10 @@
     <string name="susfs_log_config_description">Enable or disable logging for SuSFS</string>
     <string name="susfs_log_config_title">SuSFS Logging Configuration</string>
     <string name="susfs_execution_location_label">Execution Location</string>
-    <string name="susfs_current_execution_location">Current execution location: %s</string>
     <string name="susfs_execution_location_service">Service</string>
     <string name="susfs_execution_location_post_fs_data">Post-FS-Data</string>
     <string name="susfs_slot_info_title">Slot Information</string>
     <string name="susfs_slot_info_description">View current boot slot information and copy values</string>
-    <string name="susfs_current_active_slot">Current Active Slot: %s</string>
-    <string name="susfs_slot_uname">Uname: %s</string>
-    <string name="susfs_slot_build_time">Build Time: %s</string>
     <string name="susfs_slot_current_badge">Current</string>
     <string name="susfs_slot_use_uname">Use Uname</string>
     <string name="susfs_slot_use_build_time">Use Build Time</string>
@@ -670,9 +654,6 @@
     <string name="add_custom_path">Other</string>
     <string name="susfs_add_app_path">Add App Path</string>
     <string name="search_apps">Search Apps</string>
-    <string name="selected_apps_count">%1$d apps selected</string>
-    <string name="already_added_apps_count">%1$d apps already added</string>
-    <string name="all_apps_already_added">All apps have been added</string>
     <string name="no_apps_found">No apps found</string>
     <!-- SuSFS Loop Path Related Strings -->
     <string name="susfs_tab_sus_loop_paths">SUS Loop Paths</string>
@@ -728,7 +709,6 @@
     <string name="dynamic_manager_enabled">Dynamic managers enabled</string>
     <string name="dynamic_manager_add">Add manager</string>
     <string name="dynamic_manager_remove">Remove manager</string>
-    <string name="dynamic_manager_select_app">Installed apps</string>
     <string name="dynamic_manager_authorize">Authorize %1$s</string>
     <string name="dynamic_manager_current">Current manager</string>
     <string name="dynamic_manager_default">Default manager</string>
@@ -737,10 +717,8 @@
     <string name="extension_section_title">Extension features</string>
     <string name="extension_section_summary">Kernel extension features</string>
     <string name="extension_status_supported">Supported</string>
-    <string name="extension_status_unsupported">@string/config_status_unsupported</string>
     <string name="extension_status_forced">Forced</string>
     <string name="extension_status_managed">Module-managed</string>
-    <string name="extension_status_enabled">@string/config_status_applied</string>
     <string name="extension_status_disabled">Disabled</string>
     <string name="extension_kpm_title">KPM (Kernel Patch Module)</string>
     <string name="extension_kpm_summary">Load third-party .kpm modules at runtime. Requires a KPM-capable kernel build.</string>
@@ -765,9 +743,6 @@
     <string name="susfs_slot_value_filled">Filled into editor</string>
     <string name="susfs_features_summary">%1$d of %2$d features enabled</string>
     <string name="susfs_runtime_unknown">Unknown</string>
-    <string name="susfs_runtime_available">Available</string>
-    <string name="susfs_runtime_unavailable">Unavailable</string>
-    <string name="susfs_runtime_status">Status</string>
     <string name="susfs_runtime_version">Version</string>
     <string name="susfs_runtime_variant">Kernel variant</string>
     <string name="susfs_runtime_implementation">Implementation</string>
@@ -837,7 +812,6 @@
     <string name="version_spoof_reset">Restore build values</string>
     <string name="version_spoof_success">Applied. Restart Manager to refresh cached versions.</string>
     <string name="version_spoof_compiled_target">Compiled Manager reference: version %1$s, UAPI %2$s. Custom values may differ; confirm the compatibility warning before saving.</string>
-    <string name="version_spoof_must_match">The entered value is outside the supported numeric range. Check the version and UAPI fields.</string>
     <string name="version_spoof_original_value">Original: %1$s</string>
     <string name="version_spoof_back">Back</string>
     <string name="version_spoof_home_warning">SukiSU version or UAPI differs from this Manager build. Tap to review version settings and recovery instructions.</string>
@@ -849,11 +823,10 @@
     <string name="version_spoof_recovery">Restore kernel versions: delete /data/adb/ksu/.version_spoof_config as root, then reboot the device.\n\nShow warnings again: delete /data/adb/ksu/.version_spoof_warning_hidden as root, then restart Manager or reboot. Removing this file does not reset version overrides. If Manager cannot open, use another available root or recovery environment.</string>
     <string name="settings_hide_home_warnings">Hide Home Warnings</string>
     <string name="settings_hide_home_warnings_summary">Hide warning cards on the home page (PR build, kernel/manager update, LKM update, preview mode)</string>
-    <string name="install_kpm_enable">Additional KPM patch</string>
-    <string name="install_kpm_linked_summary">Apply or undo KPM with LKM when continuing. Direct installation uses the current boot slot. A manually selected boot is exported only. Keep a backup: incompatible patches may prevent booting.</string>
     <string name="install_kpm_manual">Manually select boot.img (optional)</string>
     <string name="install_kpm_auto">Automatic: follow the installation method</string>
     <string name="install_kpm_clear">Clear selection and use automatic boot</string>
     <string name="install_kpm_operation">KPM operation</string>
+    <string name="install_kpm_summary">Keep, apply, or undo the kernel KPM patch.</string>
     <string name="install_kpm_inactive_unsupported">Additional KPM operations currently support direct installation to the current slot only. Disable KPM before installing to the inactive slot.</string>
 </resources>

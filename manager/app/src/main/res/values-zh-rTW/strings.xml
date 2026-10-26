@@ -340,8 +340,6 @@
     <string name="kpm_patch_description">用於添加額外的KPM功能</string>
     <string name="enable_kpm_patch">KPM 補丁</string>
     <string name="enable_kpm_undo_patch">KPM 撤銷補丁</string>
-    <string name="kpm_patch_enabled">KPM 補丁已啟用</string>
-    <string name="kpm_undo_patch_enabled">KPM 撤銷補丁已啟用</string>
     <string name="kpm_patch_mode">KPM 補丁模式</string>
     <string name="kpm_undo_patch_mode">KPM 撤銷補丁模式</string>
     <string name="kpm_preparing_tools">準備KPM工具</string>
@@ -353,8 +351,6 @@
     <string name="kpm_file_repacked">文件重新打包成功</string>
     <string name="kpm_extract_zip_failed">解壓zip文件失敗</string>
     <string name="kpm_image_file_not_found">未找到鏡像文件</string>
-    <string name="kpm_patch_failed">KPM 補丁失敗</string>
-    <string name="kpm_undo_patch_failed">KPM 撤銷補丁失敗</string>
     <string name="kpm_patch_operation_failed">KPM 補丁操作失敗: %s</string>
     <string name="kpm_follow_kernel_file">跟隨內核</string>
     <string name="kernel_flashing">內核刷入</string>
@@ -364,16 +360,12 @@
     <string name="kpm_title">KPM</string>
     <string name="kpm_empty">當前沒有安裝內核模塊</string>
     <string name="kpm_uninstall">卸載</string>
-    <string name="kpm_uninstall_success">卸載成功</string>
-    <string name="kpm_uninstall_failed">卸載失敗</string>
-    <string name="kpm_install_success">kpm 模塊加載成功</string>
     <string name="kpm_install_failed">kpm 模塊加載失敗</string>
     <string name="kpm_args">參數</string>
     <string name="kpm_control">執行</string>
     <string name="close_notice">關閉</string>
     <string name="kernel_module_notice">以下內核模塊功能由 KernelPatch 開發，並經過修改後加入了 SukiSU 的內核模塊功能</string>
     <string name="kpm_control_success">成功</string>
-    <string name="kpm_control_failed">失敗</string>
     <string name="not_supported">不支持</string>
     <string name="kpm_install_mode">KPM 安裝</string>
     <string name="kpm_install_mode_load">加載</string>
@@ -382,7 +374,6 @@
     <string name="invalid_file_type">文件類型不正確！請選擇 .kpm 文件</string>
     <string name="confirm_uninstall_title_with_filename">卸載</string>
     <string name="confirm_uninstall_content">以下 KPM 將被卸載：%s</string>
-    <string name="snackbar_failed_to_check_module_file">無法檢查模塊文件是否存在</string>
     <string name="cancel">取消</string>
     <!-- Tools -->
     <string name="settings_tools">工具</string>
@@ -421,13 +412,10 @@
     <!-- Zip Install Prompts -->
     <!-- SuSFS Configuration -->
     <string name="susfs_config_title">SuSFS 配置</string>
-    <string name="susfs_config_summary">配置SuSFS模塊設置</string>
     <string name="susfs_config_description">配置說明</string>
     <string name="susfs_config_description_text">此功能允許您自定義 SuSFS 的 uname 值和構建時間偽裝。輸入您想要設置的值，點擊應用即可生效</string>
     <string name="susfs_uname_label">Kernel Release</string>
     <string name="susfs_build_time_label">Kernel Version</string>
-    <string name="susfs_current_value">目前 Release: %s</string>
-    <string name="susfs_current_build_time">目前 Version: %s</string>
     <string name="susfs_apply">應用</string>
     <!-- SuSFS Reset Confirmation -->
     <string name="susfs_reset_confirm_title">確認重置</string>
@@ -470,14 +458,10 @@
     <string name="susfs_log_config_description">啟用或者關閉 SuSFS 的日誌</string>
     <string name="susfs_log_config_title">SuSFS 日誌配置</string>
     <string name="susfs_execution_location_label">執行位置</string>
-    <string name="susfs_current_execution_location">當前執行位置：%s</string>
     <string name="susfs_execution_location_service">Service</string>
     <string name="susfs_execution_location_post_fs_data">Post-FS-Data</string>
     <string name="susfs_slot_info_title">槽位信息</string>
     <string name="susfs_slot_info_description">查看當前啟動槽位信息並複製數值</string>
-    <string name="susfs_current_active_slot">當前活動槽位：%s</string>
-    <string name="susfs_slot_uname">Uname：%s</string>
-    <string name="susfs_slot_build_time">構建時間：%s</string>
     <string name="susfs_slot_current_badge">當前</string>
     <string name="susfs_slot_use_uname">使用 Uname</string>
     <string name="susfs_slot_use_build_time">使用構建時間</string>
@@ -541,9 +525,6 @@
     <string name="add_custom_path">其他</string>
     <string name="susfs_add_app_path">添加應用路徑</string>
     <string name="search_apps">搜索應用</string>
-    <string name="selected_apps_count">%1$d 個已選應用</string>
-    <string name="already_added_apps_count">%1$d 個已添加應用</string>
-    <string name="all_apps_already_added">所有應用均已添加</string>
     <string name="no_apps_found">未找到應用</string>
     <!-- SuSFS Loop Path Related Strings -->
     <string name="susfs_tab_sus_loop_paths">SuS 循環路徑</string>
@@ -643,16 +624,13 @@
     <string name="dynamic_manager_enabled">啟用動態管理器</string>
     <string name="dynamic_manager_add">新增管理器</string>
     <string name="dynamic_manager_remove">移除管理器</string>
-    <string name="dynamic_manager_select_app">已安裝的應用程式</string>
     <string name="dynamic_manager_authorize">授權 %1$s</string>
     <!-- Extension subsystem -->
     <string name="extension_section_title">擴充功能</string>
     <string name="extension_section_summary">核心拓展功能</string>
     <string name="extension_status_supported">支援</string>
-    <string name="extension_status_unsupported">核心不支援此擴充功能</string>
     <string name="extension_status_forced">已強制</string>
     <string name="extension_status_managed">模組託管</string>
-    <string name="extension_status_enabled">已啟用</string>
     <string name="extension_status_disabled">已停用</string>
     <string name="extension_kpm_title">KPM (核心補丁模組)</string>
     <string name="extension_kpm_summary">執行階段載入第三方 .kpm 模組。需要核心支援 KPM。</string>
@@ -674,9 +652,6 @@
     <string name="susfs_slot_value_filled">已填入編輯框</string>
     <string name="susfs_features_summary">已啟用 %1$d / %2$d 項功能</string>
     <string name="susfs_runtime_unknown">未知</string>
-    <string name="susfs_runtime_available">可用</string>
-    <string name="susfs_runtime_unavailable">不可用</string>
-    <string name="susfs_runtime_status">狀態</string>
     <string name="susfs_runtime_version">版本</string>
     <string name="susfs_runtime_variant">核心類型</string>
     <string name="susfs_runtime_implementation">實作方式</string>
@@ -716,7 +691,6 @@
     <string name="version_spoof_reset">還原核心編譯值</string>
     <string name="version_spoof_success">版本資訊已更新。若其他應用程式仍顯示舊值，請重新啟動該應用程式。</string>
     <string name="version_spoof_compiled_target">目前 Manager 編譯參考值：版本號 %1$s，UAPI %2$s。自訂值可以不同；儲存前請確認已了解相容性影響。</string>
-    <string name="version_spoof_must_match">輸入值超出支援的數值範圍，請檢查版本號和 UAPI。</string>
     <string name="version_spoof_original_value">核心編譯時的原始值：%1$s</string>
     <string name="version_spoof_back">返回</string>
     <string name="version_spoof_home_warning">SukiSU 版本號或 UAPI 與目前管理器不一致。點選查看版本設定與還原方法。</string>
