@@ -1071,14 +1071,19 @@ suspend fun streamFile(path: String): List<String> = withContext(Dispatchers.IO)
 }
 
 fun listKpmModules(): String {
-    val shell = getRootShell()
-    val cmd = "${getKsuDaemonPath()} kpm list"
-    return try {
-        runCmd(shell, cmd).trim()
-    } catch (e: Exception) {
-        Log.e(TAG, "Failed to list KPM modules", e)
-        ""
+    return listKpmModules(getRootShell().newJob().add("${getKsuDaemonPath()} kpm list"))
+}
+
+internal fun listKpmModules(job: Shell.Job): String {
+    val result = job.to(ArrayList(), ArrayList()).exec()
+    check(result.isSuccess) {
+        result.err.joinToString("\n").ifBlank { "KPM list failed (${result.code})" }
     }
+    // ksud can report a kernel error on stdout while exiting successfully.
+    check(result.out.none { it.trimStart().startsWith("Failed to get kpm list:") }) {
+        result.out.joinToString("\n")
+    }
+    return result.out.joinToString("\n").trim()
 }
 
 fun getKpmModuleInfo(name: String): String {
