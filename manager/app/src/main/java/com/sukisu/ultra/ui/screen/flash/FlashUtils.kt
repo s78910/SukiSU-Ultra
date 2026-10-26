@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import com.sukisu.ultra.R
+import com.sukisu.ultra.data.repository.isAutoDeleteModuleZipEnabled
 import com.sukisu.ultra.ui.util.FlashResult
 import com.sukisu.ultra.ui.util.LkmSelection
 import com.sukisu.ultra.ui.util.downloadBoot
@@ -119,11 +120,12 @@ sealed class FlashIt : Parcelable {
 fun flashModulesSequentially(
     uris: List<Uri>,
     onStdout: (String) -> Unit,
-    onStderr: (String) -> Unit
+    onStderr: (String) -> Unit,
+    deleteInstalledZips: Boolean = false,
 ): FlashResult {
     var needsReboot = false
     for (uri in uris) {
-        flashModule(uri, onStdout, onStderr).apply {
+        flashModule(uri, onStdout, onStderr, deleteSourceOnSuccess = deleteInstalledZips).apply {
             needsReboot = needsReboot || showReboot
             if (code != 0) {
                 return FlashResult(code, err, needsReboot)
@@ -175,7 +177,12 @@ fun flashIt(
         )
 
         is FlashIt.FlashModules -> {
-            flashModulesSequentially(flashIt.uris, onStdout, onStderr)
+            flashModulesSequentially(
+                uris = flashIt.uris,
+                onStdout = onStdout,
+                onStderr = onStderr,
+                deleteInstalledZips = isAutoDeleteModuleZipEnabled(),
+            )
         }
 
         is FlashIt.PatchKpmBoot -> patchKpmBoot(flashIt.boot, onStdout, onStderr)
