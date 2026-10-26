@@ -20,7 +20,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -47,7 +46,6 @@ import org.bakasu.bakasu.ui.util.LocalPortraitState
 import org.bakasu.bakasu.ui.util.LocalSelectedPage
 import org.bakasu.bakasu.ui.util.LocalSnackbarHost
 import org.bakasu.bakasu.ui.viewmodel.HomeViewModel
-import org.bakasu.bakasu.ui.viewmodel.ModuleViewModel
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.utils.PagerGestureNestedScrollConnection
@@ -62,10 +60,6 @@ fun MainScreen(
     val themeConfig: ThemeConfig = koinInject()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
-    val moduleViewModel = koinViewModel<ModuleViewModel>()
-    val moduleState by moduleViewModel.uiState.collectAsStateWithLifecycle()
-    val passwordDialogOpen = moduleState.hidden.requestPassword
-    val latestPasswordDialogOpen by rememberUpdatedState(passwordDialogOpen)
     val pages = remember(homeState.systemStatus.isFullFeatured) {
         BottomBarDestination.getPages(homeState.systemStatus.isFullFeatured)
     }
@@ -88,7 +82,7 @@ fun MainScreen(
 
     val handlePageChange: (Int) -> Unit = remember(pagerState, coroutineScope, pages) {
         { page ->
-            if (latestPasswordDialogOpen || page !in pages.indices) return@remember
+            if (page !in pages.indices) return@remember
             uiSelectedPage = page
 
             if (page == pagerState.currentPage) {
@@ -123,26 +117,13 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(passwordDialogOpen) {
-        if (passwordDialogOpen) {
-            animateJob?.cancel()
-            animateJob = null
-            animating = false
-            userScrollEnabled = true
-            // Cancel the current scroll without requesting a different page.
-            pagerState.scroll(MutatePriority.PreventUserInput) { }
-            uiSelectedPage = pagerState.currentPage
-            lastRequestedPage = pagerState.currentPage
-        }
-    }
-
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect { page ->
             if (!animating) uiSelectedPage = page
         }
     }
 
-    BackHandler(!passwordDialogOpen && pagerState.currentPage != 0) {
+    BackHandler(pagerState.currentPage != 0) {
         handlePageChange(0)
     }
 
@@ -159,10 +140,10 @@ fun MainScreen(
                     .pagerGestureOverride(
                         pagerState = pagerState,
                         mode = pagerMode,
-                        enabled = userScrollEnabled && !passwordDialogOpen,
+                        enabled = userScrollEnabled,
                     ),
                 state = pagerState,
-                userScrollEnabled = userScrollEnabled && !passwordDialogOpen && !interceptPagerGestures,
+                userScrollEnabled = userScrollEnabled && !interceptPagerGestures,
                 pageNestedScrollConnection = if (interceptPagerGestures) {
                     PagerGestureNestedScrollConnection
                 } else {
