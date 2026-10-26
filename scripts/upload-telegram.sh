@@ -72,6 +72,7 @@ common_args=(
   --silent --show-error --fail-with-body
   --retry 2 --retry-delay 2 --retry-connrefused
   --connect-timeout 30 --max-time 1800
+  -H "Expect:"
   -o "$response"
   -F "chat_id=${CHAT_ID}"
 )
@@ -97,32 +98,31 @@ if (( $# == 1 )); then
     -F "parse_mode=HTML" \
     "${api}/sendDocument"
 else
-  media='[]'
   upload_args=()
+  json_items=()
   index=0
   last_index=$(($# - 1))
 
   for file in "$@"; do
     field="file${index}"
     upload_args+=(-F "${field}=@${file};type=application/vnd.android.package-archive")
+    
+    # 构建单个 JSON 对象项
     if (( index == last_index )); then
-      media="$(jq -cn \
-        --argjson current "$media" \
-        --arg attachment "attach://${field}" \
-        --arg caption "$caption" \
-        '$current + [{type: "document", media: $attachment, caption: $caption, parse_mode: "HTML"}]')"
+      json_items+=("$(jq -cn --arg attachment "attach://${field}" --arg caption "$caption" \
+        '{type: "document", media: $attachment, caption: $caption, parse_mode: "HTML"}')")
     else
-      media="$(jq -cn \
-        --argjson current "$media" \
-        --arg attachment "attach://${field}" \
-        '$current + [{type: "document", media: $attachment}]')"
+      json_items+=("$(jq -cn --arg attachment "attach://${field}" \
+        '{type: "document", media: $attachment}')")
     fi
     ((index += 1))
   done
 
+  media="$(printf '%s\n' "${json_items[@]}" | jq -cs '.')"
+
   echo "[+] Uploading $# APKs in one Telegram media group"
   run_curl \
-    -F "media=${media}" \
+    -F "media=${media};type=application/json" \
     "${upload_args[@]}" \
     "${api}/sendMediaGroup"
 fi
