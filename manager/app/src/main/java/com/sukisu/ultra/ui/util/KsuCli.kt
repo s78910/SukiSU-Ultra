@@ -198,9 +198,14 @@ suspend fun getExtensionOverview(): Map<String, ExtensionOverviewEntry> = withCo
 }
 
 /**
- * One row of the `ksud extension list` machine block. Field names
- * match the on-wire format exactly so a future `EXTENSION_LIST_V2`
- * migration can introduce a parallel parser without renaming these.
+ * One row of the `ksud extension list` machine block. Field names match the
+ * on-wire format exactly.
+ *
+ * The kernel decides what each extension can do and ksud forwards it, so the
+ * capability fields ([sticky], [persistent], [perUid], [needsReboot]) are
+ * read from the output instead of being derived from [ExtensionId]. They stay
+ * at their defaults when the kernel predates extension ABI 1 and only the V1
+ * row is available.
  */
 data class ExtensionOverviewEntry(
     val name: String,
@@ -210,15 +215,30 @@ data class ExtensionOverviewEntry(
     val value: Long,
     val managed: Boolean,
     val sticky: Boolean,
+    /** Extension ABI the kernel speaks; 0 when it predates the probe. */
+    val apiVersion: Int = 0,
+    /** Whether the sticky value is replayed from `.extension_config` at boot. */
+    val persistent: Boolean = false,
+    /** Whether the extension's state is scoped per uid. */
+    val perUid: Boolean = false,
+    /** Whether changes only land after a reboot. */
+    val needsReboot: Boolean = false,
 )
 
 private val EXT_V1_LINE = Regex(
     """^EXTENSION_LIST_V1\s+name=(\S+)\s+id=(\d+)\s+supported=(\d+)\s+forced=(\d+)\s+value=(\d+)\s+managed=(\d+)\s+sticky=(\d+)\s*$"""
 )
 
+private val EXT_V2_LINE = Regex(
+    """^EXTENSION_LIST_V2\s+name=(\S+)\s+id=(\d+)\s+caps=0x([0-9a-fA-F]+)\s+api=(\d+)\s+sticky=(\d+)\s+persist=(\d+)\s+per_uid=(\d+)\s+reboot=(\d+)\s*$"""
+)
+
 internal fun parseExtensionOverview(lines: List<String>): Map<String, ExtensionOverviewEntry> {
     val parsed = LinkedHashMap<String, ExtensionOverviewEntry>()
-    var inBlock = false
+    // V2 rows travel separately so V1 keeps its frozen layout for older
+    // consumers. They are merged by wire name once the block is read,
+    // which also makes the parser order-independent.
+    val caps = HashMap<String, ExtensionOverviewEntry>()
     for (line in lines) {
         if (line.startsWith("EXTENSION_LIST_END")) break
         // A `EXTENSION_LIST_V1 ...` line is the first line of an
@@ -226,7 +246,6 @@ internal fun parseExtensionOverview(lines: List<String>): Map<String, ExtensionO
         // separate "entered the block" flag because the very first
         // V1 line is the one that starts the block.
         if (line.startsWith("EXTENSION_LIST_V1")) {
-            inBlock = true
             val m = EXT_V1_LINE.matchEntire(line) ?: continue
             val entry = ExtensionOverviewEntry(
                 name = m.groupValues[1],
@@ -240,11 +259,36 @@ internal fun parseExtensionOverview(lines: List<String>): Map<String, ExtensionO
             parsed[entry.name] = entry
             continue
         }
-        if (!inBlock) continue
-        // Reserved: future per-line metadata inside the block. We
-        // currently emit only V1 rows, so anything else is ignored.
+        if (line.startsWith("EXTENSION_LIST_V2")) {
+            val m = EXT_V2_LINE.matchEntire(line) ?: continue
+            val name = m.groupValues[1]
+            caps[name] = ExtensionOverviewEntry(
+                name = name,
+                id = m.groupValues[2].toIntOrNull() ?: continue,
+                supported = false, // V1 owns these; only the caps fields are read
+                forced = false,
+                value = 0L,
+                managed = false,
+                sticky = m.groupValues[5] == "1",
+                apiVersion = m.groupValues[4].toIntOrNull() ?: 0,
+                persistent = m.groupValues[6] == "1",
+                perUid = m.groupValues[7] == "1",
+                needsReboot = m.groupValues[8] == "1",
+            )
+            continue
+        }
     }
-    return parsed
+    if (caps.isEmpty()) return parsed
+    return parsed.mapValues { (name, entry) ->
+        val v2 = caps[name] ?: return@mapValues entry
+        entry.copy(
+            sticky = v2.sticky,
+            apiVersion = v2.apiVersion,
+            persistent = v2.persistent,
+            perUid = v2.perUid,
+            needsReboot = v2.needsReboot,
+        )
+    }
 }
 
 fun install() {

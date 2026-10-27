@@ -38,7 +38,7 @@ internal fun pillFor(state: ExtensionState): ExtensionPillSpec = when {
         labelRes = R.string.extension_status_managed,
         isOnTertiary = true,
     )
-    !state.id.hasStickyBit -> ExtensionPillSpec(
+    !state.sticky -> ExtensionPillSpec(
         pill = ExtensionPill.Supported,
         labelRes = R.string.extension_status_supported,
         isOnPrimary = true,

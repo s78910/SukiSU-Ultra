@@ -21,6 +21,8 @@ use std::path::Path;
 use crate::defs;
 #[cfg(target_os = "android")]
 use crate::extension_id::{ExtensionId, parse_extension_id};
+#[cfg(target_os = "android")]
+use crate::ksu_uapi;
 
 const EXTENSION_CONFIG_PATH: &str = concatcp!(defs::WORKING_DIR, ".extension_config");
 #[allow(clippy::unreadable_literal)]
@@ -35,11 +37,6 @@ fn set_kernel_extension(extension_id: ExtensionId, value: u64) -> Result<()> {
         .with_context(|| format!("Failed to set extension {} to {value}", extension_id.name()))?;
     on_extension_applied(extension_id, value);
     Ok(())
-}
-
-#[cfg(target_os = "android")]
-fn is_forced(id: u32) -> bool {
-    crate::ksucalls::get_extension(id).is_ok_and(|state| state.forced)
 }
 
 /// Read a single extension's current sticky state from the kernel.
@@ -190,17 +187,22 @@ fn apply_config(extensions: &HashMap<u32, u64>) {
             log::debug!("Version overrides are restored by version_spoof::apply_saved");
             continue;
         }
-        if is_forced(id) {
-            log::info!("Skip extension {id}: forced by boot config");
-            continue;
-        }
         let Some(ext_id) = ExtensionId::from_u32(id) else {
             log::info!("Skip extension {id}: unknown id");
             continue;
         };
-        // KPM, CPU spoof and umount paths have no runtime sticky bit
-        // to apply; ignore any persisted entry.
-        if !ext_id.has_sticky_bit() {
+        // A failed probe is not evidence about the extension, so fall
+        // through and let the kernel decide at SET time; only skip when the
+        // kernel positively reports it cannot use the value.
+        let state = crate::ksucalls::get_extension(id).ok();
+        if state.is_some_and(|state| state.forced) {
+            log::info!("Skip extension {id}: forced by boot config");
+            continue;
+        }
+        // The kernel decides whether a sticky bit exists at all; the
+        // static table only covers kernels that predate capability
+        // negotiation. See ExtensionId::is_sticky.
+        if state.is_some_and(|state| !ext_id.is_sticky(&state)) {
             log::info!("Skip extension {id}: no runtime sticky bit");
             continue;
         }
@@ -238,14 +240,33 @@ pub fn get_extension_cli(id: &str) -> Result<()> {
     println!("Value: {}", state.value);
     println!(
         "Status: {}",
-        if state.value != 0 {
-            "enabled"
+        if extension_id.is_sticky(&state) {
+            if state.value != 0 {
+                "enabled"
+            } else {
+                "disabled"
+            }
         } else {
-            "disabled"
+            "available (no runtime switch)"
         }
     );
     if state.forced {
         println!("Forced: by boot config");
+    }
+    // Capability bits are only present from extension ABI 1 onwards; on an
+    // older kernel every bit below would be a guess, so say so instead of
+    // printing a table of "no".
+    if state.caps_known() {
+        println!(
+            "Capabilities: sticky={} persist={} per_uid={} reboot={}",
+            u32::from(extension_id.is_sticky(&state)),
+            u32::from(extension_id.is_persistent(&state)),
+            u32::from(state.has_cap(ksu_uapi::KSU_EXTENSION_FLAG_PER_UID)),
+            u32::from(state.has_cap(ksu_uapi::KSU_EXTENSION_FLAG_REBOOT)),
+        );
+        println!("Extension ABI: {}", state.api_version);
+    } else {
+        println!("Capabilities: unavailable (kernel predates extension ABI)");
     }
 
     Ok(())
@@ -277,8 +298,17 @@ pub fn get_extension_config_cli(id: &str) -> Result<()> {
 #[cfg(target_os = "android")]
 pub fn set_extension_cli(id: &str, value: u64) -> Result<()> {
     let extension_id = parse_extension_id(id)?;
+    let state = crate::ksucalls::get_extension(extension_id as u32)
+        .unwrap_or_else(|_| crate::ksucalls::unknown_extension_state());
 
-    if !extension_id.has_sticky_bit() {
+    if !state.supported {
+        bail!(
+            "Extension '{}' is not supported by this kernel.",
+            extension_id.name()
+        );
+    }
+
+    if !extension_id.is_sticky(&state) {
         bail!(
             "Extension '{}' does not have a runtime enable/disable switch (value={value}).",
             extension_id.name()
@@ -298,9 +328,7 @@ pub fn set_extension_cli(id: &str, value: u64) -> Result<()> {
         );
     }
 
-    if let Ok(state) = crate::ksucalls::get_extension(extension_id as u32)
-        && state.forced
-    {
+    if state.forced {
         bail!(
             "Extension '{}' is forced to {} by boot config. Direct modification is not allowed.",
             extension_id.name(),
@@ -364,7 +392,11 @@ pub fn list_extensions() {
         HashMap::with_capacity(ExtensionId::ALL.len());
     for extension_id in ExtensionId::ALL {
         let id = extension_id as u32;
-        let state = crate::ksucalls::get_extension(id).unwrap_or_default();
+        // `unknown_extension_state` keeps the negotiated ABI version even
+        // when the kernel refuses the probe, so a missing handler is not
+        // mistaken for a legacy kernel that cannot publish capabilities.
+        let state = crate::ksucalls::get_extension(id)
+            .unwrap_or_else(|_| crate::ksucalls::unknown_extension_state());
         states.insert(extension_id, state);
     }
 
@@ -402,7 +434,7 @@ pub fn list_extensions() {
 
         let label = if !really_supported {
             "NOT_SUPPORTED".to_string()
-        } else if !extension_id.has_sticky_bit() {
+        } else if !extension_id.is_sticky(&state) {
             "AVAILABLE".to_string()
         } else if state.value != 0 {
             format!("ENABLED ({})", state.value)
@@ -439,20 +471,28 @@ pub fn list_extensions() {
     }
 
     // Machine-readable block for `extension list --json`-style
-    // consumers (the manager UI pulls the four states in one shell
-    // call to avoid paying 4× the libksud.so startup cost). Lines
-    // starting with "EXTENSION_LIST_V1" are guaranteed stable: the
-    // manager-side parser keys on this exact prefix.
+    // consumers (the manager UI pulls every state in one shell call
+    // to avoid paying N× the libksud.so startup cost). Lines starting
+    // with "EXTENSION_LIST_V1" are guaranteed stable: the manager-side
+    // parser keys on this exact prefix.
     //
-    // Format (one line per extension):
+    // V1 is emitted unconditionally for consumers built before the
+    // capability bits existed. It has no room for them, and appending a
+    // field would break the managers' `matchEntire` regex, so the new
+    // bits travel in a second row per extension instead:
+    //
     //   EXTENSION_LIST_V1 name=<wire-name> id=<u32> supported=<0|1> \
-    //                       forced=<0|1> value=<u64> managed=<0|1> \
-    //                       sticky=<0|1>
+    //                     forced=<0|1> value=<u64> managed=<0|1> \
+    //                     sticky=<0|1>
+    //   EXTENSION_LIST_V2 name=<wire-name> id=<u32> caps=<0x%08x> api=<u32> \
+    //                     sticky=<0|1> persist=<0|1> per_uid=<0|1> reboot=<0|1>
     //   EXTENSION_LIST_END
     //
-    // `sticky` mirrors ExtensionId::has_sticky_bit() — a static
-    // property of the id, included for callers that don't have a
-    // mirror of the canonical extension_id list.
+    // In both rows `sticky` is the kernel's answer when it publishes
+    // capabilities, and the static table only as a fallback for ABI-0
+    // kernels. `api=0` in a V2 row means the kernel predates the probe,
+    // so `caps` carries nothing beyond SUPPORTED/FORCED and the sticky
+    // bit is the fallback value.
     for extension_id in &ExtensionId::ALL {
         let id = *extension_id as u32;
         let state = states.get(extension_id).copied().unwrap_or_default();
@@ -462,6 +502,7 @@ pub fn list_extensions() {
         let managed = extension_to_modules
             .get(extension_id.name())
             .is_some_and(|v| !v.is_empty());
+        let sticky = extension_id.is_sticky(&state);
         println!(
             "EXTENSION_LIST_V1 name={} id={} supported={} forced={} value={} managed={} sticky={}",
             extension_id.name(),
@@ -470,7 +511,22 @@ pub fn list_extensions() {
             u32::from(state.forced),
             state.value,
             u32::from(managed),
-            u32::from(extension_id.has_sticky_bit()),
+            u32::from(sticky),
+        );
+    }
+    for extension_id in &ExtensionId::ALL {
+        let id = *extension_id as u32;
+        let state = states.get(extension_id).copied().unwrap_or_default();
+        println!(
+            "EXTENSION_LIST_V2 name={} id={} caps=0x{:08x} api={} sticky={} persist={} per_uid={} reboot={}",
+            extension_id.name(),
+            id,
+            state.caps,
+            state.api_version,
+            u32::from(extension_id.is_sticky(&state)),
+            u32::from(extension_id.is_persistent(&state)),
+            u32::from(state.has_cap(ksu_uapi::KSU_EXTENSION_FLAG_PER_UID)),
+            u32::from(state.has_cap(ksu_uapi::KSU_EXTENSION_FLAG_REBOOT)),
         );
     }
     println!("EXTENSION_LIST_END");
@@ -495,17 +551,24 @@ pub fn save_config() -> Result<()> {
     let mut extensions = load_binary_config().unwrap_or_default();
 
     for extension_id in &ExtensionId::ALL {
-        // Extensions without a runtime sticky bit cannot be toggled,
-        // and persisting their (always-0) value would be noise.
-        if !extension_id.has_sticky_bit() {
-            extensions.remove(&(*extension_id as u32));
+        let id = *extension_id as u32;
+        // Leave the on-disk value alone when the probe fails: an
+        // unreadable extension has not told us anything about its
+        // persistence, and dropping the entry would lose the setting.
+        let Ok(state) = crate::ksucalls::get_extension(id) else {
+            continue;
+        };
+        if !state.supported {
             continue;
         }
-        let id = *extension_id as u32;
-        if let Ok(state) = crate::ksucalls::get_extension(id)
-            && state.supported
-            && !state.forced
-        {
+        // A sticky-but-not-persistent extension offers a switch for the
+        // current boot only, so writing it here would replay a state the
+        // extension explicitly does not carry across boots.
+        if !extension_id.is_persistent(&state) {
+            extensions.remove(&id);
+            continue;
+        }
+        if !state.forced {
             extensions.insert(id, state.value);
             log::info!("Saved extension {} = {}", extension_id.name(), state.value);
         }

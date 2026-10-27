@@ -157,7 +157,13 @@ private fun ExtensionCardMaterial(
             ExtensionPill.Disabled -> stringResource(R.string.extension_status_disabled)
         }
     }
-    val supportingText = statusSummary ?: featureSummary
+    val supportingText = listOfNotNull(
+        statusSummary ?: featureSummary,
+        // Only the extension knows whether its settings land immediately;
+        // SuSFS reads them while mounting, so staying silent would leave
+        // the user expecting an effect that cannot happen yet.
+        stringResource(R.string.extension_status_needs_reboot).takeIf { state?.needsReboot == true },
+    ).joinToString("\n")
     val canOpen = onOpenDetails != null
 
     SegmentedListItem(

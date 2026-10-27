@@ -166,6 +166,14 @@ private fun ExtensionCardMiuix(
         featureSummary
     } else labels.forPill(pillFor(state).pill)
 
+    val summary = listOfNotNull(
+        statusLabel,
+        // Only the extension knows whether its settings land immediately;
+        // SuSFS reads them while mounting, so staying silent would leave
+        // the user expecting an effect that cannot happen yet.
+        stringResource(R.string.extension_status_needs_reboot).takeIf { state?.needsReboot == true },
+    ).joinToString("\n")
+
     Card(
         modifier = modifier
             .padding(top = 12.dp)
@@ -174,7 +182,7 @@ private fun ExtensionCardMiuix(
         if (supported) {
             ArrowPreference(
                 title = title,
-                summary = statusLabel,
+                summary = summary,
                 startAction = {
                     Icon(
                         imageVector = Icons.Rounded.Memory,
@@ -188,7 +196,7 @@ private fun ExtensionCardMiuix(
         } else {
             BasicComponent(
                 title = title,
-                summary = statusLabel,
+                summary = summary,
                 enabled = false,
                 startAction = {
                     Icon(

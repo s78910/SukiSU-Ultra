@@ -764,6 +764,7 @@
     <string name="extension_status_forced">Forced</string>
     <string name="extension_status_managed">Module-managed</string>
     <string name="extension_status_disabled">Disabled</string>
+    <string name="extension_status_needs_reboot">Changes take effect after reboot</string>
     <string name="extension_kpm_title">KPM (Kernel Patch Module)</string>
     <string name="extension_kpm_summary">Load third-party .kpm modules at runtime. Requires a KPM-capable kernel build.</string>
     <string name="extension_cpu_spoof_title">CPU identity spoofing</string>

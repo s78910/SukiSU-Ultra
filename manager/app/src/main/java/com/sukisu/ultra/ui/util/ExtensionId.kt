@@ -24,22 +24,22 @@ enum class ExtensionId(val id: Int, val wireName: String, @StringRes val display
     }
 
     /**
-     * Whether this extension exposes a runtime sticky bit at all.
+     * Static fallback for kernels that predate extension ABI 1.
      *
-     * `true`  → kernel has a get/set handler; UI may show a toggle.
-     * `false` → the subsystem is either compile-time-only (KPM), purely
-     *           io-driven (CPU spoof, umount paths). 
-     *           The status line in the overview shows "Supported" and
-     *           the card has no on/off control; opening the sub-screen
-     *           reveals whatever real controls exist.
+     * Those kernels publish no capability bits, so "does this extension have
+     * a toggle" cannot be asked. This table is the last hand-maintained
+     * mirror of the kernel's handler table and only ever runs against such a
+     * kernel, which by definition has exactly this table — it can never
+     * disagree with a kernel that answers the ABI probe.
      *
-     * Mirrors `ExtensionId::has_sticky_bit` in
-     * `userspace/ksud/src/extension_id.rs`. SuSFS is intentionally not
-     * on the Rust side: it has no kernel extension handler, so adding
-     * `KSU_EXTENSION_SUSFS` would require a UAPI bump and a kernel
-     * patch that we cannot assume is present.
+     * Prefer [ExtensionState.sticky], which carries the kernel's answer.
+     *
+     *   - KPM reports `CONFIG_KPM` via GET, but the bit is compile-time and
+     *     there is no runtime setter.
+     *   - CPU spoof, umount paths and version spoof are purely io-driven:
+     *     their state lives in each ioctl payload, never in a sticky u64.
      */
-    val hasStickyBit: Boolean
+    val legacyHasStickyBit: Boolean
         get() = this == DynamicManager
 }
 
@@ -51,9 +51,11 @@ enum class ExtensionId(val id: Int, val wireName: String, @StringRes val display
  *    card is read-only and labelled "Forced by boot config".
  *  - `managed`: a module owns the extension; the card is read-only
  *    and labelled "Managed by module".
- *  - `value`: the sticky bit. Only meaningful when
- *    [id.hasStickyBit] is true; for KPM / CPU spoof / umount paths
- *    the kernel always reports 0 and the UI ignores it.
+ *  - `value`: the sticky bit. Only meaningful when [sticky] is true; for
+ *    KPM / CPU spoof / umount paths the kernel always reports 0.
+ *  - `sticky` / `persistent` / `perUid` / `needsReboot`: capability bits
+ *    from the kernel. `capsKnown` is false on kernels older than extension
+ *    ABI 1, where ksud substitutes [ExtensionId.legacyHasStickyBit].
  */
 data class ExtensionState(
     val id: ExtensionId,
@@ -61,8 +63,13 @@ data class ExtensionState(
     val supported: Boolean,
     val forced: Boolean,
     val managed: Boolean,
+    val capsKnown: Boolean = false,
+    val sticky: Boolean = id.legacyHasStickyBit,
+    val persistent: Boolean = id.legacyHasStickyBit,
+    val perUid: Boolean = false,
+    val needsReboot: Boolean = false,
 ) {
     val userToggleable: Boolean
-        get() = id.hasStickyBit && supported && !forced && !managed
+        get() = sticky && supported && !forced && !managed
     val enabled: Boolean get() = userToggleable && value != 0L
 }

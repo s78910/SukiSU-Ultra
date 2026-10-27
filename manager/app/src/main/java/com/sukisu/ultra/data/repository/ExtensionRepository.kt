@@ -43,6 +43,14 @@ class ExtensionRepositoryImpl : ExtensionRepository {
                 supported = entry?.supported == true,
                 forced = entry?.forced == true,
                 managed = entry?.managed == true,
+                // ksud already applied the legacy fallback when the kernel
+                // reports ABI 0, so a missing entry (older ksud, or an id it
+                // never asked about) is the only case left to fill in here.
+                capsKnown = (entry?.apiVersion ?: 0) > 0,
+                sticky = entry?.sticky ?: id.legacyHasStickyBit,
+                persistent = entry?.persistent ?: id.legacyHasStickyBit,
+                perUid = entry?.perUid ?: false,
+                needsReboot = entry?.needsReboot ?: false,
             )
         }
         return out
