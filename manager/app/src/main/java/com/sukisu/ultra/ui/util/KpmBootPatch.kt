@@ -103,7 +103,7 @@ fun patchKpmBoot(
         onStdout("- Running kernel: $version; boot image tool: ${if (useKptoolsBoot) "kptools" else "ksud"}")
         onStdout("- Unpacking boot.img and decompressing kernel")
         if (useKptoolsBoot) {
-            // kptools uses fixed names relative to cwd: boot.img -> kernel.
+            // kptools-android uses fixed names relative to cwd: boot.img -> kernel.
             command(inSession + "$toolCommand unpack boot.img")
         } else {
             command("$daemon boot-kernel extract --boot ${q(source.absolutePath)} --output ${q(kernel.absolutePath)}")

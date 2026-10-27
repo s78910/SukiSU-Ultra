@@ -1,20 +1,28 @@
 package com.sukisu.ultra.ui.util
 
-import androidx.annotation.StringRes
-import com.sukisu.ultra.R
+import androidx.compose.runtime.Immutable
 
 /**
  * Identifier of a kernel extension (KSU_IOCTL_EXTENSION / enum ksu_extension_id).
  * Mirrors `ExtensionId` in `userspace/ksud/src/extension_id.rs` and
  * `enum ksu_extension_id` in `uapi/extension.h`.
+ *
+ * This enum is only a compatibility table now:
+ *  - the kernel reports its handler table through KSU_EXTENSION_ENUM, so an
+ *    id this enum does not contain still reaches the UI;
+ *  - [legacyHasStickyBit] is consulted only when the kernel predates
+ *    extension ABI 1 and therefore cannot publish capability bits.
+ *
+ * UI metadata (localised title, summary, entry point) lives in
+ * [com.sukisu.ultra.ui.screen.extensions.ExtensionCatalog], not here.
  */
-enum class ExtensionId(val id: Int, val wireName: String, @StringRes val displayRes: Int) {
-    Kpm(0, "kpm", R.string.extension_kpm_title),
-    CpuSpoof(1, "cpu_spoof", R.string.extension_cpu_spoof_title),
-    UmountPaths(2, "umount_paths", R.string.extension_umount_paths_title),
-    DynamicManager(3, "dynamic_manager", R.string.extension_dynamic_manager_title),
-    SuSFS(4, "susfs", R.string.extension_susfs_title),
-    VersionSpoof(5, "version_spoof", R.string.extension_version_spoof_title);
+enum class ExtensionId(val id: Int, val wireName: String) {
+    Kpm(0, "kpm"),
+    CpuSpoof(1, "cpu_spoof"),
+    UmountPaths(2, "umount_paths"),
+    DynamicManager(3, "dynamic_manager"),
+    SuSFS(4, "susfs"),
+    VersionSpoof(5, "version_spoof");
 
     companion object {
         val ALL: List<ExtensionId> = listOf(Kpm, CpuSpoof, UmountPaths, DynamicManager, SuSFS, VersionSpoof)
@@ -43,6 +51,10 @@ enum class ExtensionId(val id: Int, val wireName: String, @StringRes val display
         get() = this == DynamicManager
 }
 
+/** [legacyHasStickyBit] by wire name, for states whose id has no enum entry. */
+fun legacyExtensionHasStickyBit(wireName: String): Boolean =
+    ExtensionId.fromWireName(wireName)?.legacyHasStickyBit == true
+
 /**
  * Runtime state of one extension, as reported by the kernel.
  *  - `supported`: the kernel has a registered handler; the card is
@@ -55,17 +67,22 @@ enum class ExtensionId(val id: Int, val wireName: String, @StringRes val display
  *    KPM / CPU spoof / umount paths the kernel always reports 0.
  *  - `sticky` / `persistent` / `perUid` / `needsReboot`: capability bits
  *    from the kernel. `capsKnown` is false on kernels older than extension
- *    ABI 1, where ksud substitutes [ExtensionId.legacyHasStickyBit].
+ *    ABI 1, where ksud substitutes [legacyExtensionHasStickyBit].
+ *
+ * [wireName] and [id] come from the kernel, so an extension this build has
+ * no [ExtensionId] for is still representable.
  */
+@Immutable
 data class ExtensionState(
-    val id: ExtensionId,
+    val id: Int,
+    val wireName: String,
     val value: Long,
     val supported: Boolean,
     val forced: Boolean,
     val managed: Boolean,
     val capsKnown: Boolean = false,
-    val sticky: Boolean = id.legacyHasStickyBit,
-    val persistent: Boolean = id.legacyHasStickyBit,
+    val sticky: Boolean = legacyExtensionHasStickyBit(wireName),
+    val persistent: Boolean = legacyExtensionHasStickyBit(wireName),
     val perUid: Boolean = false,
     val needsReboot: Boolean = false,
 ) {

@@ -25,7 +25,7 @@ class KpmTools private constructor(
             directory: File,
         ): KpmTools {
             val executable = File(context.applicationInfo.nativeLibraryDir, "libkptools.so")
-            check(executable.isFile && executable.canExecute()) { "Bundled kptools is unavailable" }
+            check(executable.isFile && executable.canExecute()) { "Bundled kptools-android is unavailable" }
             check(directory.isDirectory || directory.mkdirs()) { "Cannot create KPM work directory" }
             val kpimg = File(directory, "kpimg")
             context.assets.open("kpm/kpimg").use { input ->

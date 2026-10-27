@@ -1,6 +1,6 @@
 package com.sukisu.ultra.ui.kernelFlash.util
 
-/** Shared kptools invocation for AnyKernel3's `Image` and boot.img's extracted `kernel`. */
+/** Shared kptools-android invocation for AnyKernel3's `Image` and boot.img's extracted `kernel`. */
 object KpmPatchCommand {
     internal fun quote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
 

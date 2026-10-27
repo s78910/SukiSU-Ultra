@@ -1,9 +1,10 @@
 #![allow(clippy::unreadable_literal)]
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 
 use crate::extension_id::ExtensionId;
 use crate::ksu_uapi;
 use std::cell::Cell;
+use std::ffi::CStr;
 use std::fs;
 use std::io;
 use std::os::fd::RawFd;
@@ -152,6 +153,23 @@ pub fn ksuctl<T>(request: u32, arg: *mut T) -> Result<i32> {
         if ret < 0 {
             bail!("ksuctl failed: {}", io::Error::last_os_error())
         }
+        Ok(ret)
+    }
+}
+
+/// Same driver fd and ioctl as [`ksuctl`], but keeps the raw errno for
+/// callers that must tell a sentinel error (-ENOENT ends extension
+/// enumeration) apart from a real failure. Deliberately separate so the
+/// long-standing `ksuctl` error wording stays untouched.
+fn ksuctl_io<T>(request: u32, arg: *mut T) -> io::Result<i32> {
+    let fd = *DRIVER_FD.get_or_init(|| init_driver_fd().unwrap_or(-1));
+    if fd < 0 {
+        return Err(io::Error::from_raw_os_error(libc::ENODEV));
+    }
+    let ret = unsafe { libc::ioctl(fd as libc::c_int, request as i32, arg) };
+    if ret < 0 {
+        Err(io::Error::last_os_error())
+    } else {
         Ok(ret)
     }
 }
@@ -549,6 +567,71 @@ pub fn get_extension(extension_id: u32) -> Result<ExtensionState> {
         supported: caps & ksu_uapi::KSU_FEATURE_FLAG_SUPPORTED != 0,
         forced: caps & ksu_uapi::KSU_EXTENSION_FLAG_FORCED != 0,
     })
+}
+
+/// One handler as reported by KSU_EXTENSION_ENUM. Unlike
+/// [`ExtensionState`], this carries the kernel's own name and the
+/// handler's minimum ABI, so callers do not need a compiled-in copy of
+/// `enum ksu_extension_id`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExtensionDescriptor {
+    pub id: u32,
+    pub name: String,
+    pub caps: u32,
+    pub min_api_version: u32,
+    pub forced: bool,
+}
+
+/// Enumerate every handler the kernel currently has registered.
+///
+/// Returns an empty list on kernels that predate extension ABI 2; callers
+/// fall back to the static [`crate::extension_id::ExtensionId::ALL`] table
+/// for those. `KSU_EXTENSION_ENUM` uses the out-of-range probe id so a
+/// legacy kernel rejects it rather than treating `value` as a sticky write,
+/// and the list is bounded by the kernel's own `KSU_EXTENSION_MAX`.
+pub fn enumerate_extensions() -> Result<Vec<ExtensionDescriptor>> {
+    if extension_api_version() < 2 {
+        return Ok(Vec::new());
+    }
+
+    let api_version = extension_api_version();
+    let mut out = Vec::new();
+
+    for index in 0..ksu_uapi::ksu_extension_id_KSU_EXTENSION_MAX {
+        let mut desc: ksu_uapi::ksu_extension_desc = unsafe { std::mem::zeroed() };
+        let mut cmd = ksu_uapi::ksu_extension_cmd {
+            id: ksu_uapi::KSU_EXTENSION_ABI_PROBE_ID,
+            op: ksu_uapi::KSU_EXTENSION_ENUM,
+            supported: 0,
+            api_version,
+            value: u64::from(index),
+            user_ptr: &raw mut desc as u64,
+        };
+
+        match ksuctl_io(ksu_uapi::KSU_IOCTL_EXTENSION, &raw mut cmd) {
+            Ok(_) => {
+                // strscpy() in ksu_extension_enumerate() always terminates
+                // within KSU_EXTENSION_NAME_LEN, so the kernel never hands
+                // us an unterminated buffer.
+                let name = unsafe { CStr::from_ptr(desc.name.as_ptr()) }
+                    .to_string_lossy()
+                    .into_owned();
+                out.push(ExtensionDescriptor {
+                    id: desc.id,
+                    name,
+                    caps: desc.caps,
+                    min_api_version: desc.min_api_version,
+                    forced: desc.forced != 0,
+                });
+            }
+            Err(e) if e.raw_os_error() == Some(libc::ENOENT) => break,
+            Err(e) => {
+                return Err(e).with_context(|| "Failed to enumerate kernel extensions");
+            }
+        }
+    }
+
+    Ok(out)
 }
 
 pub fn set_extension(extension_id: u32, value: u64) -> Result<()> {

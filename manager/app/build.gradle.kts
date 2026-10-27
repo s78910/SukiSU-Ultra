@@ -275,7 +275,7 @@ val downloadKpmTools = tasks.register("downloadKpmTools") {
     }
     doLast {
         val baseUrl = "https://raw.githubusercontent.com/ShirkNeko/SukiSU_patch/refs/heads/main/kpm"
-        val downloads = listOf("kptools", "kpimg").associateWith { name ->
+        val downloads = listOf("kptools-android", "kpimg").associateWith { name ->
             val target = temporaryDir.resolve(name)
             val url = "$baseUrl/$name"
             try {
@@ -307,12 +307,12 @@ val downloadKpmTools = tasks.register("downloadKpmTools") {
                 check(process.waitFor() == 0) { "Cannot download $name with curl: ${output.trim()}" }
                 check(target.length() >= 1024) { "Incomplete KPM tool download: $name" }
             }
-                if (name == "kptools") {
+                if (name == "kptools-android") {
                     val header = target.inputStream().use { it.readNBytes(4) }
                     check(header.contentEquals(byteArrayOf(0x7f.toByte(), 0x45, 0x4c, 0x46))) {
-                        "Downloaded kptools is not an ELF file"
+                        "Downloaded kptools-android is not an ELF file"
                     }
-                    logger.warn("kptools architecture check skipped; verify it is ARM64 before releasing")
+                    logger.warn("kptools-android architecture check skipped; verify it is ARM64 before releasing")
                 }
                 logger.lifecycle("Downloaded $name (${target.length()} bytes)")
                 target
@@ -320,7 +320,7 @@ val downloadKpmTools = tasks.register("downloadKpmTools") {
         // Publish only after both downloads have passed validation.
         val root = kpmToolsDir.get().asFile
         downloads.forEach { (name, source) ->
-            val relativePath = if (name == "kptools") "jniLibs/arm64-v8a/libkptools.so" else "assets/kpm/kpimg"
+            val relativePath = if (name == "kptools-android") "jniLibs/arm64-v8a/libkptools.so" else "assets/kpm/kpimg"
             val output = root.resolve(relativePath)
             check(output.parentFile.isDirectory || output.parentFile.mkdirs()) { "Cannot create $output" }
             source.copyTo(output, overwrite = true)
