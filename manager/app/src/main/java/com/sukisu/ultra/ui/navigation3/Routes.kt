@@ -112,6 +112,11 @@ sealed interface Route : NavKey, Parcelable {
     @Serializable
     data object UmountManager: Route
 
+    /** Kernel module blacklist (block_modules=) overview. */
+    @Parcelize
+    @Serializable
+    data object KernelModules : Route
+
     @Parcelize
     @Serializable
     data object DynamicManagers : Route

@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Backup
+import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.ui.Alignment
@@ -120,6 +121,10 @@ fun ToolsMiuix(
                         onSelinuxToggle = actions.onSelinuxToggle
                     )
 
+                    KernelModulesSectionMiuix(
+                        onOpen = actions.onOpenKernelModules
+                    )
+
                     AllowlistBackupSectionMiuix(
                         onBackup = actions.onBackupAllowlist,
                         onRestore = actions.onRestoreAllowlist
@@ -156,6 +161,31 @@ private fun SelinuxToggleSectionMiuix(
             checked = selinuxEnforcing,
             enabled = !selinuxLoading,
             onCheckedChange = onSelinuxToggle
+        )
+    }
+}
+
+@Composable
+private fun KernelModulesSectionMiuix(
+    onOpen: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .padding(top = 12.dp)
+            .fillMaxWidth(),
+    ) {
+        ArrowPreference(
+            title = stringResource(R.string.kernel_modules_title),
+            summary = stringResource(R.string.tools_kernel_modules_summary),
+            startAction = {
+                Icon(
+                    imageVector = Icons.Rounded.Memory,
+                    modifier = Modifier.padding(end = 6.dp),
+                    contentDescription = stringResource(R.string.kernel_modules_title),
+                    tint = colorScheme.onBackground
+                )
+            },
+            onClick = onOpen
         )
     }
 }

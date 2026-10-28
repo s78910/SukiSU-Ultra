@@ -857,4 +857,78 @@
     <string name="version_spoof_section_fields">Reported versions</string>
     <string name="version_spoof_section_recovery">Warning preferences and recovery</string>
     <string name="version_spoof_recovery">Restore kernel versions: delete /data/adb/ksu/.version_spoof_config as root, then reboot the device.\n\nShow warnings again: delete /data/adb/ksu/.version_spoof_warning_hidden as root, then restart Manager or reboot. Removing this file does not reset version overrides. If Manager cannot open, use another available root or recovery environment.</string>
+
+    <!-- Kernel module blacklist (block_modules=) page. The page reads the
+         kernel core_param and the module tables; it never changes them. -->
+    <string name="kernel_modules_title">Kernel module blacklist</string>
+    <plurals name="kernel_modules_summary_count">
+        <item quantity="one">%1$d module blocked</item>
+        <item quantity="other">%1$d modules blocked</item>
+    </plurals>
+    <string name="kernel_modules_summary_details">Configured %1$d · currently loaded %2$d</string>
+    <plurals name="kernel_modules_summary_affected">
+        <item quantity="one">%1$d boot module depends on a blocked module</item>
+        <item quantity="other">%1$d boot modules depend on blocked modules</item>
+    </plurals>
+    <plurals name="kernel_modules_summary_configured">
+        <item quantity="one">%1$d module configured</item>
+        <item quantity="other">%1$d modules configured</item>
+    </plurals>
+    <plurals name="kernel_modules_summary_device">
+        <item quantity="one">%1$d module is blocked by the device blocklist</item>
+        <item quantity="other">%1$d modules are blocked by the device blocklist</item>
+    </plurals>
+    <string name="kernel_modules_source_active_unavailable">The kernel blacklist is not readable; only the boot config and device blocklist are shown.</string>
+    <string name="kernel_modules_source_config_unavailable">Boot config is not available for this boot; only the kernel blacklist and device blocklist are shown.</string>
+    <string name="kernel_modules_source_both_unavailable">Neither the kernel blacklist nor the boot config is readable; only device blocklist data is shown.</string>
+    <string name="kernel_modules_section_blocked">Blocked modules</string>
+    <string name="kernel_modules_section_suggested">Suggested</string>
+    <string name="kernel_modules_section_params">Flash parameters</string>
+    <string name="kernel_modules_status_blocked">Blocked</string>
+    <string name="kernel_modules_status_loaded">Still loaded</string>
+    <string name="kernel_modules_status_pending">Pending</string>
+    <string name="kernel_modules_status_configured">Configured</string>
+    <string name="kernel_modules_status_device">Device list</string>
+    <string name="kernel_modules_status_missing">Missing</string>
+    <string name="kernel_modules_reason_configured">In block_modules</string>
+    <string name="kernel_modules_reason_kernel">In the kernel blacklist</string>
+    <string name="kernel_modules_reason_pending">Configured, not active this boot</string>
+    <string name="kernel_modules_reason_device">In the device modules.blocklist</string>
+    <string name="kernel_modules_reason_missing">Not in modules.dep and not loaded</string>
+    <string name="kernel_modules_reason_loaded">still loaded; applies to future loads</string>
+    <string name="kernel_modules_tag_known">vendor module</string>
+    <string name="kernel_modules_dependents_title">Modules that depend on it</string>
+    <string name="kernel_modules_dependents_empty">No other module depends on it</string>
+    <string name="kernel_modules_dependents_unavailable">Dependency data is not available.</string>
+    <string name="kernel_modules_dependents_not_in_table">Not present in modules.dep on this device; no dependency data.</string>
+    <plurals name="kernel_modules_device_blocklist_hidden">
+        <item quantity="one">%1$d device blocklist entry has no module entry on this device and is hidden.</item>
+        <item quantity="other">%1$d device blocklist entries have no module entry on this device and are hidden.</item>
+    </plurals>
+    <string name="kernel_modules_dependency_unavailable">Module dependency data is unavailable; dependency chains and boot impact are not shown.</string>
+    <string name="kernel_modules_dependents_warning">Some dependents are not blocked; loading them may fail.</string>
+    <string name="kernel_modules_dependents_warning_pending">These dependents are not blocked, so first-stage init may keep loading it.</string>
+    <string name="kernel_modules_dependents_impacted">Will not load: %1$s</string>
+    <string name="kernel_modules_dependents_loaded">loaded</string>
+    <string name="kernel_modules_dependents_boot">boot</string>
+    <string name="kernel_modules_dependents_blocked">blocked</string>
+    <string name="kernel_modules_params_config">Boot config</string>
+    <string name="kernel_modules_params_cli">ksud boot-patch</string>
+    <string name="kernel_modules_params_source_config">Reproduces block_modules= from the boot config</string>
+    <string name="kernel_modules_params_source_suggested">Generated from loaded vendor anti-root modules</string>
+    <string name="kernel_modules_params_source_active">Generated from the current kernel blacklist</string>
+    <string name="kernel_modules_params_source_none">No modules to generate parameters for</string>
+    <string name="kernel_modules_params_empty">No modules selected. Configure block_modules= when patching a boot image.</string>
+    <string name="kernel_modules_params_too_long">The list exceeds the kernel 255-byte limit; shorten it before flashing.</string>
+    <string name="kernel_modules_params_note">Reflash the boot image with these parameters, then reboot. The kernel installs the blacklist in second-stage init. Blocking a module the system needs can break features or prevent boot; keep a stock boot image for fastboot recovery.</string>
+    <string name="kernel_modules_params_copy">Copy parameters</string>
+    <string name="kernel_modules_params_copied">Parameters copied</string>
+    <string name="kernel_modules_suggested_summary">Loaded vendor anti-root modules with no unblocked dependents. Review the generated parameters before flashing.</string>
+    <string name="kernel_modules_empty_title">No blocked modules</string>
+    <string name="kernel_modules_empty_summary">The boot config and kernel blacklist are empty. Loaded vendor anti-root modules will be suggested here.</string>
+    <string name="kernel_modules_load_failed">Could not read kernel module state</string>
+    <string name="kernel_modules_retry">Retry</string>
+    <string name="kernel_modules_expand">Show dependency chain</string>
+    <string name="kernel_modules_collapse">Hide dependency chain</string>
+    <string name="tools_kernel_modules_summary">Review blocked modules, dependencies and flash parameters</string>
 </resources>

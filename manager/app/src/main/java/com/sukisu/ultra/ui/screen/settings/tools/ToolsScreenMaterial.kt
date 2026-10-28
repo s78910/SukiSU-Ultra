@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Backup
+import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material3.Button
@@ -96,6 +97,10 @@ fun ToolsMaterial(
                         onSelinuxToggle = actions.onSelinuxToggle
                     )
 
+                    KernelModulesSectionMaterial(
+                        onOpen = actions.onOpenKernelModules
+                    )
+
                     AllowlistBackupSectionMaterial(
                         onBackup = actions.onBackupAllowlist,
                         onRestore = actions.onRestoreAllowlist
@@ -129,6 +134,28 @@ private fun SelinuxToggleSectionMaterial(
                         onCheckedChange = onSelinuxToggle
                     )
                 }
+            )
+        })
+    )
+}
+
+@Composable
+private fun KernelModulesSectionMaterial(
+    onOpen: () -> Unit,
+) {
+    SegmentedColumn(
+        modifier = Modifier.padding(top = 12.dp),
+        content = listOf({
+            SegmentedListItem(
+                headlineContent = { Text(stringResource(R.string.kernel_modules_title)) },
+                supportingContent = { Text(stringResource(R.string.tools_kernel_modules_summary)) },
+                leadingContent = {
+                    IconTile(
+                        Icons.Rounded.Memory,
+                        stringResource(R.string.kernel_modules_title),
+                    )
+                },
+                onClick = onOpen,
             )
         })
     )

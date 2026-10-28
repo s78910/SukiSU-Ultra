@@ -848,4 +848,77 @@
     <string name="version_spoof_section_fields">对外报告的版本</string>
     <string name="version_spoof_section_recovery">警告设置与恢复</string>
     <string name="version_spoof_recovery">恢复内核原始版本：使用 Root 权限删除 /data/adb/ksu/.version_spoof_config，然后重启设备。\n\n重新显示警告：使用 Root 权限删除 /data/adb/ksu/.version_spoof_warning_hidden，然后重启管理器或设备。删除此文件不会清除自定义版本。若管理器无法打开，请使用其他可用的 Root 或 Recovery 环境操作。</string>
+
+    <!-- 内核模块黑名单（block_modules=）页面 -->
+    <string name="kernel_modules_title">内核模块黑名单</string>
+    <plurals name="kernel_modules_summary_count">
+        <item quantity="one">%1$d 个内核模块已被阻止</item>
+        <item quantity="other">%1$d 个内核模块已被阻止</item>
+    </plurals>
+    <string name="kernel_modules_summary_details">已配置 %1$d 个 · 当前已加载 %2$d 个</string>
+    <plurals name="kernel_modules_summary_affected">
+        <item quantity="one">%1$d 个开机模块依赖被阻止的模块</item>
+        <item quantity="other">%1$d 个开机模块依赖被阻止的模块</item>
+    </plurals>
+    <plurals name="kernel_modules_summary_configured">
+        <item quantity="one">已配置 %1$d 个内核模块</item>
+        <item quantity="other">已配置 %1$d 个内核模块</item>
+    </plurals>
+    <plurals name="kernel_modules_summary_device">
+        <item quantity="one">%1$d 个模块被设备 blocklist 阻止</item>
+        <item quantity="other">%1$d 个模块被设备 blocklist 阻止</item>
+    </plurals>
+    <string name="kernel_modules_source_active_unavailable">无法读取内核黑名单，仅显示启动配置和设备 blocklist。</string>
+    <string name="kernel_modules_source_config_unavailable">无法获取本次启动的配置，仅显示内核黑名单和设备 blocklist。</string>
+    <string name="kernel_modules_source_both_unavailable">内核黑名单和启动配置均不可读取，仅显示设备 blocklist 数据。</string>
+    <string name="kernel_modules_section_blocked">已阻止的模块</string>
+    <string name="kernel_modules_section_suggested">建议</string>
+    <string name="kernel_modules_section_params">刷机参数</string>
+    <string name="kernel_modules_status_blocked">已阻止</string>
+    <string name="kernel_modules_status_loaded">仍在加载</string>
+    <string name="kernel_modules_status_pending">待生效</string>
+    <string name="kernel_modules_status_configured">已配置</string>
+    <string name="kernel_modules_status_device">设备列表</string>
+    <string name="kernel_modules_status_missing">未找到</string>
+    <string name="kernel_modules_reason_configured">位于 block_modules</string>
+    <string name="kernel_modules_reason_kernel">位于内核黑名单</string>
+    <string name="kernel_modules_reason_pending">已配置，本次启动未生效</string>
+    <string name="kernel_modules_reason_device">位于设备的 modules.blocklist</string>
+    <string name="kernel_modules_reason_missing">不在 modules.dep 中且未加载</string>
+    <string name="kernel_modules_reason_loaded">仍然加载；仅影响之后的加载</string>
+    <string name="kernel_modules_tag_known">厂商模块</string>
+    <string name="kernel_modules_dependents_title">依赖它的模块</string>
+    <string name="kernel_modules_dependents_empty">没有其他模块依赖它</string>
+    <string name="kernel_modules_dependents_unavailable">无法读取依赖信息。</string>
+    <string name="kernel_modules_dependents_not_in_table">该模块不在本机 modules.dep 中，无法显示依赖信息。</string>
+    <plurals name="kernel_modules_device_blocklist_hidden">
+        <item quantity="one">%1$d 个设备 blocklist 条目在本机没有对应的模块条目，已隐藏。</item>
+        <item quantity="other">%1$d 个设备 blocklist 条目在本机没有对应的模块条目，已隐藏。</item>
+    </plurals>
+    <string name="kernel_modules_dependency_unavailable">无法读取模块依赖数据，依赖链和开机影响不会显示。</string>
+    <string name="kernel_modules_dependents_warning">部分依赖模块未被一并阻止，加载它们可能失败。</string>
+    <string name="kernel_modules_dependents_warning_pending">这些依赖模块未被一并阻止，第一阶段 init 可能仍会加载它。</string>
+    <string name="kernel_modules_dependents_impacted">将无法加载：%1$s</string>
+    <string name="kernel_modules_dependents_loaded">已加载</string>
+    <string name="kernel_modules_dependents_boot">开机</string>
+    <string name="kernel_modules_dependents_blocked">已阻止</string>
+    <string name="kernel_modules_params_config">启动配置</string>
+    <string name="kernel_modules_params_cli">ksud boot-patch</string>
+    <string name="kernel_modules_params_source_config">与启动配置中的 block_modules= 一致</string>
+    <string name="kernel_modules_params_source_suggested">根据已加载的厂商反 Root 模块生成</string>
+    <string name="kernel_modules_params_source_active">根据内核当前黑名单生成</string>
+    <string name="kernel_modules_params_source_none">没有可生成参数的模块</string>
+    <string name="kernel_modules_params_empty">未选择模块。刷写 boot 镜像时配置 block_modules=。</string>
+    <string name="kernel_modules_params_too_long">列表超过内核 255 字节上限，请精简后再刷入。</string>
+    <string name="kernel_modules_params_note">用这些参数重新刷写 boot 镜像并重启。内核会在第二阶段 init 时安装黑名单。阻止设备需要的模块可能导致功能异常或无法开机，请保留原厂 boot 镜像以便通过 fastboot 恢复。</string>
+    <string name="kernel_modules_params_copy">复制参数</string>
+    <string name="kernel_modules_params_copied">已复制参数</string>
+    <string name="kernel_modules_suggested_summary">已加载且没有未阻止依赖项的厂商反 Root 模块。刷入前请确认生成的参数。</string>
+    <string name="kernel_modules_empty_title">没有已阻止的模块</string>
+    <string name="kernel_modules_empty_summary">启动配置和内核黑名单均为空。检测到已加载的厂商反 Root 模块时会在这里给出建议。</string>
+    <string name="kernel_modules_load_failed">无法读取内核模块状态</string>
+    <string name="kernel_modules_retry">重试</string>
+    <string name="kernel_modules_expand">显示依赖链</string>
+    <string name="kernel_modules_collapse">隐藏依赖链</string>
+    <string name="tools_kernel_modules_summary">查看被阻止的模块、依赖关系和刷机参数</string>
 </resources>

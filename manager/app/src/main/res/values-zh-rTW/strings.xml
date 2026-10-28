@@ -726,4 +726,77 @@
     <string name="version_spoof_section_fields">對外回報的版本</string>
     <string name="version_spoof_section_recovery">警告設定與還原</string>
     <string name="version_spoof_recovery">還原核心原始版本：使用 Root 權限刪除 /data/adb/ksu/.version_spoof_config，然後重新開機。\n\n重新顯示警告：使用 Root 權限刪除 /data/adb/ksu/.version_spoof_warning_hidden，然後重新啟動管理器或裝置。刪除此檔案不會清除自訂版本。若管理器無法開啟，請使用其他可用的 Root 或 Recovery 環境操作。</string>
+
+    <!-- 核心模組黑名單（block_modules=）頁面 -->
+    <string name="kernel_modules_title">核心模組黑名單</string>
+    <plurals name="kernel_modules_summary_count">
+        <item quantity="one">%1$d 個核心模組已被封鎖</item>
+        <item quantity="other">%1$d 個核心模組已被封鎖</item>
+    </plurals>
+    <string name="kernel_modules_summary_details">已設定 %1$d 個 · 目前載入 %2$d 個</string>
+    <plurals name="kernel_modules_summary_affected">
+        <item quantity="one">%1$d 個開機模組依賴被封鎖的模組</item>
+        <item quantity="other">%1$d 個開機模組依賴被封鎖的模組</item>
+    </plurals>
+    <plurals name="kernel_modules_summary_configured">
+        <item quantity="one">已設定 %1$d 個核心模組</item>
+        <item quantity="other">已設定 %1$d 個核心模組</item>
+    </plurals>
+    <plurals name="kernel_modules_summary_device">
+        <item quantity="one">%1$d 個模組被裝置 blocklist 封鎖</item>
+        <item quantity="other">%1$d 個模組被裝置 blocklist 封鎖</item>
+    </plurals>
+    <string name="kernel_modules_source_active_unavailable">無法讀取核心黑名單，僅顯示開機設定和裝置 blocklist。</string>
+    <string name="kernel_modules_source_config_unavailable">無法取得本次開機的設定，僅顯示核心黑名單和裝置 blocklist。</string>
+    <string name="kernel_modules_source_both_unavailable">核心黑名單和開機設定均無法讀取，僅顯示裝置 blocklist 資料。</string>
+    <string name="kernel_modules_section_blocked">被封鎖的模組</string>
+    <string name="kernel_modules_section_suggested">建議</string>
+    <string name="kernel_modules_section_params">刷機參數</string>
+    <string name="kernel_modules_status_blocked">已封鎖</string>
+    <string name="kernel_modules_status_loaded">仍載入中</string>
+    <string name="kernel_modules_status_pending">待生效</string>
+    <string name="kernel_modules_status_configured">已設定</string>
+    <string name="kernel_modules_status_device">裝置清單</string>
+    <string name="kernel_modules_status_missing">找不到</string>
+    <string name="kernel_modules_reason_configured">位於 block_modules</string>
+    <string name="kernel_modules_reason_kernel">位於核心黑名單</string>
+    <string name="kernel_modules_reason_pending">已設定，本次開機未生效</string>
+    <string name="kernel_modules_reason_device">位於裝置的 modules.blocklist</string>
+    <string name="kernel_modules_reason_missing">不在 modules.dep 中且未載入</string>
+    <string name="kernel_modules_reason_loaded">仍然載入；僅影響之後的載入</string>
+    <string name="kernel_modules_tag_known">廠商模組</string>
+    <string name="kernel_modules_dependents_title">依賴它的模組</string>
+    <string name="kernel_modules_dependents_empty">沒有其他模組依賴它</string>
+    <string name="kernel_modules_dependents_unavailable">無法讀取依賴資訊。</string>
+    <string name="kernel_modules_dependents_not_in_table">該模組不在本機 modules.dep 中，無法顯示依賴資訊。</string>
+    <plurals name="kernel_modules_device_blocklist_hidden">
+        <item quantity="one">%1$d 個裝置 blocklist 項目在本機沒有對應的模組項目，已隱藏。</item>
+        <item quantity="other">%1$d 個裝置 blocklist 項目在本機沒有對應的模組項目，已隱藏。</item>
+    </plurals>
+    <string name="kernel_modules_dependency_unavailable">無法讀取模組依賴資料，依賴鏈和開機影響不會顯示。</string>
+    <string name="kernel_modules_dependents_warning">部分依賴模組未被一併封鎖，載入它們可能失敗。</string>
+    <string name="kernel_modules_dependents_warning_pending">這些依賴模組未被一併封鎖，第一階段 init 可能仍會載入它。</string>
+    <string name="kernel_modules_dependents_impacted">將無法載入：%1$s</string>
+    <string name="kernel_modules_dependents_loaded">已載入</string>
+    <string name="kernel_modules_dependents_boot">開機</string>
+    <string name="kernel_modules_dependents_blocked">已封鎖</string>
+    <string name="kernel_modules_params_config">開機設定</string>
+    <string name="kernel_modules_params_cli">ksud boot-patch</string>
+    <string name="kernel_modules_params_source_config">與開機設定中的 block_modules= 一致</string>
+    <string name="kernel_modules_params_source_suggested">根據已載入的廠商反 Root 模組產生</string>
+    <string name="kernel_modules_params_source_active">根據核心目前黑名單產生</string>
+    <string name="kernel_modules_params_source_none">沒有可產生參數的模組</string>
+    <string name="kernel_modules_params_empty">未選擇模組。刷寫 boot 映像檔時設定 block_modules=。</string>
+    <string name="kernel_modules_params_too_long">清單超過核心 255 位元組上限，請精簡後再刷入。</string>
+    <string name="kernel_modules_params_note">用這些參數重新刷寫 boot 映像檔並重新開機。核心會在第二階段 init 時安裝黑名單。封鎖裝置需要的模組可能導致功能異常或無法開機，請保留原廠 boot 映像檔以便透過 fastboot 還原。</string>
+    <string name="kernel_modules_params_copy">複製參數</string>
+    <string name="kernel_modules_params_copied">已複製參數</string>
+    <string name="kernel_modules_suggested_summary">已載入且沒有未封鎖依賴項的廠商反 Root 模組。刷入前請確認產生的參數。</string>
+    <string name="kernel_modules_empty_title">沒有被封鎖的模組</string>
+    <string name="kernel_modules_empty_summary">開機設定和核心黑名單均為空。偵測到已載入的廠商反 Root 模組時會在這裡提供建議。</string>
+    <string name="kernel_modules_load_failed">無法讀取核心模組狀態</string>
+    <string name="kernel_modules_retry">重試</string>
+    <string name="kernel_modules_expand">顯示依賴鏈</string>
+    <string name="kernel_modules_collapse">隱藏依賴鏈</string>
+    <string name="tools_kernel_modules_summary">查看被封鎖的模組、依賴關係和刷機參數</string>
 </resources>
