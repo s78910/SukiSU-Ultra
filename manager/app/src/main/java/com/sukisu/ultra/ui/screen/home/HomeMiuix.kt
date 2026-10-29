@@ -54,21 +54,24 @@ import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.WarningLevel
 import com.sukisu.ultra.ui.component.dialog.rememberConfirmDialog
+import com.sukisu.ultra.ui.component.miuix.AppCard
+import com.sukisu.ultra.ui.component.miuix.AppScaffold
 import com.sukisu.ultra.ui.component.miuix.WarningCard
 import com.sukisu.ultra.ui.component.rebootlistpopup.RebootListPopupMiuix
 import com.sukisu.ultra.ui.component.statustag.StatusTag
+import com.sukisu.ultra.ui.theme.LocalBackgroundImagePath
 import com.sukisu.ultra.ui.theme.LocalEnableBlur
+import com.sukisu.ultra.ui.theme.backgroundAwareCardColors
+import com.sukisu.ultra.ui.theme.backgroundAwareColor
 import com.sukisu.ultra.ui.theme.isInDarkTheme
 import com.sukisu.ultra.ui.util.BlurredBar
 import com.sukisu.ultra.ui.util.module.LatestVersionInfo
 import com.sukisu.ultra.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -93,8 +96,10 @@ fun HomePagerMiuix(
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
-    val barColor = if (blurActive) Color.Transparent else colorScheme.surface
-    Scaffold(
+    val hasCustomBackground = LocalBackgroundImagePath.current.isNotEmpty()
+    val barColor = if (blurActive || hasCustomBackground) Color.Transparent else colorScheme.surface
+    AppScaffold(
+        containerColor = if (hasCustomBackground) Color.Transparent else colorScheme.surface,
         topBar = {
             TopBar(
                 scrollBehavior = scrollBehavior,
@@ -251,9 +256,9 @@ private fun TopBar(
     backdrop: LayerBackdrop?,
     barColor: Color,
 ) {
-    BlurredBar(backdrop) {
+    BlurredBar(backdrop = backdrop, scrollBehavior = scrollBehavior) {
         TopAppBar(
-            color = barColor,
+            color = Color.Transparent,
             title = stringResource(R.string.app_name),
             actions = {
                 RebootListPopupMiuix()
@@ -308,14 +313,16 @@ private fun ActiveStatusCard(
         else -> "Built-in"
     }
 
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.defaultColors(
-            color = when {
-                isDynamicColor -> colorScheme.secondaryContainer
-                isDark -> Color(0xFF1A3825)
-                else -> Color(0xFFDFFAE4)
-            }
+            color = backgroundAwareColor(
+                when {
+                    isDynamicColor -> colorScheme.secondaryContainer
+                    isDark -> Color(0xFF1A3825)
+                    else -> Color(0xFFDFFAE4)
+                }
+            )
         ),
         onClick = onClick,
         showIndication = !state.isLateLoadMode,
@@ -399,8 +406,9 @@ private fun InactiveStatusCard(
     notInstalled: Boolean,
     onClick: () -> Unit,
 ) {
-    Card(
+    AppCard(
         modifier = Modifier.fillMaxWidth(),
+        colors = backgroundAwareCardColors(),
         onClick = onClick,
         showIndication = !state.isLateLoadMode,
         pressFeedbackType = PressFeedbackType.Tilt
@@ -472,8 +480,9 @@ private fun StatsRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         tiles.forEach { (count, label, onClick) ->
-            Card(
+            AppCard(
                 modifier = Modifier.weight(1f),
+                colors = backgroundAwareCardColors(),
                 onClick = onClick,
                 showIndication = onClick != null,
                 pressFeedbackType = PressFeedbackType.Sink
@@ -509,7 +518,10 @@ private fun SupportLinks(
 ) {
     val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
 
-    Card(modifier = modifier) {
+    AppCard(
+        modifier = modifier,
+        colors = backgroundAwareCardColors(),
+    ) {
         ArrowPreference(
             title = stringResource(R.string.home_support_title),
             summary = stringResource(R.string.home_support_content),
@@ -544,7 +556,10 @@ private fun SpecSheet(
     rows: List<Pair<String, String>>,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
+    AppCard(
+        modifier = modifier.fillMaxWidth(),
+        colors = backgroundAwareCardColors(),
+    ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             rows.forEachIndexed { index, (label, value) ->
                 if (index > 0) {

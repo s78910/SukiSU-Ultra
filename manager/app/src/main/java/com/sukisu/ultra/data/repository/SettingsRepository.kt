@@ -1,13 +1,23 @@
 package com.sukisu.ultra.data.repository
 
 interface SettingsRepository {
+    var customBackgroundUri: String
+    var customBackgroundUpdatedAt: Long
+    /** Use the launcher wallpaper as the app background instead of [customBackgroundUri]. */
+    var useSystemWallpaper: Boolean
+    /** Derive the theme key color from the active background image. */
+    var extractColorFromBackground: Boolean
+    var cardBackgroundAlphaPercent: Int
+    var customBackgroundBlurPercent: Int
+    var customBackgroundScrimPercent: Int
     var uiMode: String
     var appLanguage: String
     var checkUpdate: Boolean
     var checkCiUpdate: Boolean
     var checkModuleUpdate: Boolean
     var autoDeleteModuleZip: Boolean
-    var alternativeIcon : Boolean
+    /** Id of the selected launcher icon (see [com.sukisu.ultra.ui.util.BuiltinAppIcons]). */
+    var appIconId: String
     var themeMode: Int
     var miuixMonet: Boolean
     var keyColor: Int
