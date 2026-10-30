@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
@@ -18,6 +19,7 @@ import android.util.Log
 import android.view.Window
 import android.webkit.JavascriptInterface
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.core.net.toUri
@@ -25,10 +27,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.sukisu.ultra.ui.util.listModules
 import com.sukisu.ultra.ui.util.withNewRootShell
-import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.ShellUtils
-import com.topjohnwu.superuser.internal.UiThreadHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,12 +37,11 @@ import kotlinx.coroutines.launch
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.util.DownloadManager
 import com.sukisu.ultra.ui.util.DownloadService
-import com.sukisu.ultra.ui.util.createRootShell
-import com.sukisu.ultra.ui.util.listModules
 import com.sukisu.ultra.ui.util.resolveDownloadMimeType
-import com.sukisu.ultra.ui.util.withNewRootShell
 import com.sukisu.ultra.ui.webui.file.KsuIO
 import com.sukisu.ultra.ui.webui.pm.KsuPm
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.coroutineScope
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -147,7 +146,7 @@ class WebViewInterface(private val state: WebUIState) {
                     delivery.join()
                     page.evaluateJavascript(
                         "(function() { try { ${callbackFunc}.emit('exit', ${result.code}); " +
-                            "} catch(e) { console.error(`emitExit error: \${e}`); } })();"
+                                $$"} catch(e) { console.error(`emitExit error: ${e}`); } })();"
                     )
                     // Keep the existing exit-before-error contract. The JS wrapper deletes its
                     // callback on exit; do not cache that object or make error newly observable.
@@ -312,6 +311,7 @@ class WebUIDownloadInterface(private val state: WebUIState) {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     @JavascriptInterface
     fun save(base64: String, fileName: String?) {
         val currentWebView = webView ?: return
