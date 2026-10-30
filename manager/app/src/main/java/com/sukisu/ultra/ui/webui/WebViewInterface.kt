@@ -41,8 +41,8 @@ import com.sukisu.ultra.ui.util.createRootShell
 import com.sukisu.ultra.ui.util.listModules
 import com.sukisu.ultra.ui.util.resolveDownloadMimeType
 import com.sukisu.ultra.ui.util.withNewRootShell
-import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import com.sukisu.ultra.ui.webui.file.KsuIO
+import com.sukisu.ultra.ui.webui.pm.KsuPm
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -221,9 +221,10 @@ class WebViewInterface(private val state: WebUIState) {
         return currentModuleInfo.toString()
     }
 
+    @Deprecated("Use ksu.pm().listPackages() instead")
     @JavascriptInterface
     fun listPackages(type: String): String {
-        val packageNames = SuperUserViewModel.apps
+        val packageNames = webUIApps()
             .filter { appInfo ->
                 if (appInfo.special) return@filter false
                 val flags = appInfo.packageInfo.applicationInfo?.flags ?: 0
@@ -243,11 +244,12 @@ class WebViewInterface(private val state: WebUIState) {
         return jsonArray.toString()
     }
 
+    @Deprecated("Use ksu.pm().getPackagesInfo() instead")
     @JavascriptInterface
     fun getPackagesInfo(packageNamesJson: String): String {
         val packageNames = JSONArray(packageNamesJson)
         val jsonArray = JSONArray()
-        val appMap = SuperUserViewModel.apps.filterNot { it.special }.associateBy { it.packageName }
+        val appMap = webUIApps().filterNot { it.special }.associateBy { it.packageName }
         for (i in 0 until packageNames.length()) {
             val pkgName = packageNames.getString(i)
             val appInfo = appMap[pkgName]
@@ -279,6 +281,9 @@ class WebViewInterface(private val state: WebUIState) {
 
     @JavascriptInterface
     fun io() = KsuIO
+
+    @JavascriptInterface
+    fun pm() = KsuPm
 
     fun destroy() {
         KsuIO.destroy()
