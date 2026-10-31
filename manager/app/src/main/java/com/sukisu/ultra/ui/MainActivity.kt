@@ -96,6 +96,9 @@ import com.sukisu.ultra.ui.navigation3.Navigator
 import com.sukisu.ultra.ui.navigation3.Route
 import com.sukisu.ultra.ui.navigation3.rememberNavigator
 import com.sukisu.ultra.ui.screen.about.AboutScreen
+import com.sukisu.ultra.ai.api.AiFeatureBridge
+import com.sukisu.ultra.ai.api.AiUiMode
+import com.sukisu.ultra.ai.host.ManagerAiTarget
 import com.sukisu.ultra.ui.screen.appicon.AppIconScreen
 import com.sukisu.ultra.ui.screen.customtext.CustomTextScreen
 import com.sukisu.ultra.ui.util.LocalCustomTexts
@@ -347,7 +350,7 @@ class MainActivity : ComponentActivity() {
                             entry<Route.Main>(swipeDismiss = swipeDismiss) { mainScreenEntry() }
                             entry<Route.About>(swipeDismiss = swipeDismiss) { AboutScreen() }
                             entry<Route.Sulog>(swipeDismiss = swipeDismiss) { SulogScreen() }
-                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { ColorPaletteScreen() }
+                            entry<Route.ColorPalette>(swipeDismiss = swipeDismiss) { key -> ColorPaletteScreen(key.section) }
                             entry<Route.CustomTexts>(swipeDismiss = swipeDismiss) { CustomTextScreen() }
                             entry<Route.AppIcon>(swipeDismiss = swipeDismiss) { AppIconScreen() }
                             entry<Route.BackgroundCrop>(swipeDismiss = NavSwipeDirection.None) { key ->
@@ -394,7 +397,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                 }
                                 entry<Route.Kpm>(swipeDismiss = swipeDismiss)  { KpmScreen() }
-                                entry<Route.SuSFS>(swipeDismiss = swipeDismiss)  { SuSFSScreen() }
+                                entry<Route.SuSFS>(swipeDismiss = swipeDismiss)  { key -> SuSFSScreen(key.tab) }
                                 entry<Route.Tool>(swipeDismiss = swipeDismiss)  { ToolsScreen() }
                                 entry<Route.UmountManager>(swipeDismiss = swipeDismiss)  { UmountManagerScreen() }
                                 entry<Route.KernelModules>(swipeDismiss = swipeDismiss)  { KernelModulesScreen() }
@@ -402,6 +405,43 @@ class MainActivity : ComponentActivity() {
                                 entry<Route.Extensions>(swipeDismiss = swipeDismiss) { ExtensionsScreen() }
                                 entry<Route.CpuSpoof>(swipeDismiss = swipeDismiss) { CpuSpoofScreen() }
                                 entry<Route.VersionSpoof>(swipeDismiss = swipeDismiss) { VersionSpoofScreen() }
+                                entry<Route.AiAssistant>(swipeDismiss = swipeDismiss) {
+                                    if (!AiFeatureBridge.isAvailable) {
+                                        LaunchedEffect(Unit) { navigator.pop() }
+                                    } else {
+                                        val assistantUiMode =
+                                            if (uiMode == UiMode.Miuix) AiUiMode.Miuix else AiUiMode.Material
+                                        AiFeatureBridge.ChatScreen(
+                                            uiMode = assistantUiMode,
+                                            onClose = {
+                                                if (navigator.current() == Route.AiAssistant) navigator.pop()
+                                            },
+                                            onOpenSettings = { navigator.push(Route.AiSettings) },
+                                            onNavigate = { target ->
+                                                when (target) {
+                                                    is ManagerAiTarget.Tab -> {
+                                                        viewModel.openMainPage(target.pageIndex, target.section)
+                                                        navigator.popUntil { it is Route.Main }
+                                                    }
+
+                                                    is ManagerAiTarget.Push -> navigator.navigateTo(target.route)
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                                entry<Route.AiSettings>(swipeDismiss = swipeDismiss) {
+                                    if (!AiFeatureBridge.isAvailable) {
+                                        LaunchedEffect(Unit) { navigator.pop() }
+                                    } else {
+                                        val assistantUiMode =
+                                            if (uiMode == UiMode.Miuix) AiUiMode.Miuix else AiUiMode.Material
+                                        AiFeatureBridge.SettingsScreen(
+                                            uiMode = assistantUiMode,
+                                            onBack = { navigator.pop() },
+                                        )
+                                    }
+                                }
                         }
                     }
 
@@ -524,6 +564,13 @@ fun MainScreen(
         pagerState = pagerState,
         animatePageChanges = !useNavigationRail,
     )
+    // The AI assistant can request a tab from outside MainScreen; follow the
+    // selected page when it changes without a pager gesture.
+    LaunchedEffect(initialPage) {
+        if (pagerState.currentPage != initialPage) {
+            mainPagerState.animateToPage(initialPage)
+        }
+    }
     val isFullFeatured = Natives.isFullFeatured()
     val pagerMode = PagerInterceptionMode.entries.getOrElse(pagerInterceptionMode) {
         PagerInterceptionMode.Native
